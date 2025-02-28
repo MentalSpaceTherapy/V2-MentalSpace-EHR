@@ -4,12 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { format, addHours, parse, setHours, setMinutes } from "date-fns";
+import { format } from "date-fns";
 
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -17,22 +16,12 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -41,15 +30,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarIcon, Clock, Video, Building, Save, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { X, Plus } from "lucide-react";
 import { SESSION_TYPES, SESSION_MEDIUMS, SESSION_STATUS } from "@/lib/constants";
 
 // Mock client data
@@ -66,18 +51,47 @@ const mockClients = [
   { id: 10, name: "John Smith" },
 ];
 
+// Mock service codes
+const mockServiceCodes = [
+  { id: 1, code: "90791", description: "Psychiatric Diagnostic Evaluation, 50 min" },
+  { id: 2, code: "90832", description: "Psychotherapy, 30 min" },
+  { id: 3, code: "90834", description: "Psychotherapy, 45 min" },
+  { id: 4, code: "90837", description: "Psychotherapy, 60 min" },
+  { id: 5, code: "90846", description: "Family Psychotherapy without patient, 45 min" },
+  { id: 6, code: "90847", description: "Family Psychotherapy with patient, 45 min" },
+  { id: 7, code: "90853", description: "Group Psychotherapy, 75 min" },
+];
+
+// Mock locations
+const mockLocations = [
+  { id: 1, name: "Main Office" },
+  { id: 2, name: "Downtown Clinic" },
+  { id: 3, name: "HIPAA Compliant Telehealth Platform" },
+  { id: 4, name: "Home Visit" },
+];
+
+// Mock frequency options
+const frequencyOptions = [
+  "One time",
+  "Weekly",
+  "Bi-weekly",
+  "Monthly",
+  "Every 3 months"
+];
+
 // Form schema
 const appointmentFormSchema = z.object({
-  clientId: z.string().min(1, "Please select a client"),
-  date: z.date({
-    required_error: "Please select a date",
-  }),
-  startTime: z.string().min(1, "Please select a start time"),
-  duration: z.string().min(1, "Please select a duration"),
-  sessionType: z.string().min(1, "Please select a session type"),
-  medium: z.string().min(1, "Please select a session medium"),
-  status: z.string().default("Scheduled"),
-  notes: z.string().optional(),
+  appointmentType: z.string().min(1, "Please select an appointment type"),
+  patientId: z.string().min(1, "Please select a patient"),
+  clinicianName: z.string().min(1, "Clinician name is required"),
+  location: z.string().min(1, "Please select a location"),
+  useTelehealth: z.boolean().optional(),
+  serviceCode: z.string().min(1, "Please select a service code"),
+  scheduledDate: z.string().min(1, "Please enter a date"),
+  scheduledTime: z.string().min(1, "Please enter a time"),
+  duration: z.string().min(1, "Please enter a duration"),
+  frequency: z.string().default("One time"),
+  alert: z.string().optional(),
 });
 
 type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
@@ -86,7 +100,7 @@ type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
 interface AppointmentFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: AppointmentFormValues) => void;
+  onSubmit: (data: any) => void;
   initialDate?: Date;
 }
 
@@ -95,62 +109,21 @@ export function AppointmentForm({ open, onOpenChange, onSubmit, initialDate }: A
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Time options
-  const timeOptions = Array.from({ length: 24 }, (_, hour) => {
-    // Morning times (8:00 AM to 11:30 AM)
-    if (hour >= 8 && hour < 12) {
-      return [
-        `${hour}:00 AM`,
-        `${hour}:15 AM`,
-        `${hour}:30 AM`,
-        `${hour}:45 AM`
-      ];
-    }
-    // Noon (12:00 PM to 12:45 PM)
-    else if (hour === 12) {
-      return [
-        "12:00 PM",
-        "12:15 PM",
-        "12:30 PM",
-        "12:45 PM"
-      ];
-    }
-    // Afternoon/Evening times (1:00 PM to 7:45 PM)
-    else if (hour >= 13 && hour < 20) {
-      const pmHour = hour - 12;
-      return [
-        `${pmHour}:00 PM`,
-        `${pmHour}:15 PM`,
-        `${pmHour}:30 PM`,
-        `${pmHour}:45 PM`
-      ];
-    }
-    return [];
-  }).flat();
-
-  // Duration options
-  const durationOptions = [
-    "30 minutes",
-    "45 minutes",
-    "50 minutes",
-    "60 minutes",
-    "75 minutes",
-    "90 minutes",
-    "120 minutes"
-  ];
-
   // Form initialization
   const form = useForm<AppointmentFormValues>({
     resolver: zodResolver(appointmentFormSchema),
     defaultValues: {
-      clientId: "",
-      date: initialDate || new Date(),
-      startTime: "9:00 AM",
-      duration: "50 minutes",
-      sessionType: SESSION_TYPES[0],
-      medium: SESSION_MEDIUMS[0],
-      status: "Scheduled",
-      notes: ""
+      appointmentType: "Therapy Session",
+      patientId: "",
+      clinicianName: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : "Brenda Jean-Baptiste",
+      location: "HIPAA Compliant Telehealth Platform",
+      useTelehealth: false,
+      serviceCode: "90834: Psychotherapy, 45 min",
+      scheduledDate: initialDate ? format(initialDate, "MM/dd/yyyy") : format(new Date(), "MM/dd/yyyy"),
+      scheduledTime: "09:00 AM",
+      duration: "45",
+      frequency: "One time",
+      alert: ""
     }
   });
 
@@ -158,38 +131,24 @@ export function AppointmentForm({ open, onOpenChange, onSubmit, initialDate }: A
     setIsSubmitting(true);
     
     try {
-      // Calculate end time based on start time and duration
-      const startTimeParts = data.startTime.split(/[: ]/);
-      let hours = parseInt(startTimeParts[0], 10);
-      const minutes = parseInt(startTimeParts[1], 10);
-      const isPM = data.startTime.includes("PM") && hours < 12;
-      
-      if (isPM) {
-        hours += 12;
-      } else if (hours === 12 && data.startTime.includes("AM")) {
-        hours = 0;
-      }
-      
-      // Set the appointment date with correct time
-      const appointmentDate = new Date(data.date);
-      appointmentDate.setHours(hours, minutes, 0, 0);
-      
-      // Parse duration to get minutes
-      const durationMinutes = parseInt(data.duration.split(" ")[0], 10);
-      
-      // Calculate end time
-      const endTime = new Date(appointmentDate.getTime() + durationMinutes * 60000);
+      // Convert form data to the format expected by the parent component
+      const formattedData = {
+        clientId: data.patientId,
+        date: new Date(data.scheduledDate),
+        startTime: data.scheduledTime,
+        duration: `${data.duration} minutes`,
+        sessionType: data.appointmentType,
+        medium: data.location.includes("Telehealth") ? "Telehealth" : "In-person",
+        status: "Scheduled",
+        notes: data.alert || ""
+      };
       
       // Process the data, in a real app we would submit to the backend
-      onSubmit({
-        ...data,
-        // Ensure we're using the date with the correct time
-        date: appointmentDate
-      });
+      onSubmit(formattedData);
       
       toast({
         title: "Appointment scheduled",
-        description: `Appointment with ${mockClients.find(c => c.id.toString() === data.clientId)?.name} on ${format(appointmentDate, "MMMM d, yyyy")} at ${data.startTime}`,
+        description: `${data.appointmentType} with ${mockClients.find(c => c.id.toString() === data.patientId)?.name || "Patient"} on ${data.scheduledDate} at ${data.scheduledTime}`,
       });
       
       onOpenChange(false);
@@ -208,265 +167,280 @@ export function AppointmentForm({ open, onOpenChange, onSubmit, initialDate }: A
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Schedule New Appointment</DialogTitle>
-          <DialogDescription>
-            Create a new appointment for a client. Fill in all the required fields.
-          </DialogDescription>
+          <DialogTitle className="text-xl">Create New Appointment</DialogTitle>
         </DialogHeader>
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+            {/* Appointment Type */}
+            <FormField
+              control={form.control}
+              name="appointmentType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Appointment Type:</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select appointment type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {SESSION_TYPES.map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Patient */}
+            <FormField
+              control={form.control}
+              name="patientId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Patient:</FormLabel>
+                  <div className="flex gap-2">
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Name or ID of existing patient" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {mockClients.map(client => (
+                          <SelectItem key={client.id} value={client.id.toString()}>
+                            {client.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" className="bg-blue-500 hover:bg-blue-600">
+                      <Plus className="h-4 w-4 mr-1" />
+                      New
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Clinician */}
+            <FormField
+              control={form.control}
+              name="clinicianName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Clinician:</FormLabel>
+                  <div className="flex gap-2 items-center">
+                    <FormControl>
+                      <Input
+                        {...field}
+                        disabled
+                        className="bg-neutral-50"
+                      />
+                    </FormControl>
+                    <X className="h-4 w-4 text-neutral-500" />
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Location */}
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location:</FormLabel>
+                  <div className="flex gap-2 items-center">
+                    <FormControl>
+                      <Input
+                        {...field}
+                        disabled
+                        className="bg-neutral-50"
+                      />
+                    </FormControl>
+                    <X className="h-4 w-4 text-neutral-500" />
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Telehealth Option */}
+            <FormField
+              control={form.control}
+              name="useTelehealth"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Use TherapyNotes Telehealth
+                    </FormLabel>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Service Code */}
+            <FormField
+              control={form.control}
+              name="serviceCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Service Code:</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select service code" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {mockServiceCodes.map(service => (
+                        <SelectItem key={service.id} value={`${service.code}: ${service.description}`}>
+                          {service.code}: {service.description}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Scheduled Time */}
             <div className="grid grid-cols-2 gap-4">
-              {/* Client Selection */}
-              <div className="col-span-2">
-                <FormField
-                  control={form.control}
-                  name="clientId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Client</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a client" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {mockClients.map(client => (
-                            <SelectItem key={client.id} value={client.id.toString()}>
-                              {client.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              {/* Date Selection */}
               <FormField
                 control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={
-                              "pl-3 text-left font-normal flex justify-between items-center"
-                            }
-                          >
-                            {field.value ? (
-                              format(field.value, "MMMM d, yyyy")
-                            ) : (
-                              <span>Select a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Start Time */}
-              <FormField
-                control={form.control}
-                name="startTime"
+                name="scheduledDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Start Time</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="flex items-center">
-                          <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                          <SelectValue placeholder="Select a time" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {timeOptions.map(time => (
-                          <SelectItem key={time} value={time}>{time}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Scheduled Time:</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="MM/DD/YYYY"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               
-              {/* Duration */}
               <FormField
                 control={form.control}
-                name="duration"
+                name="scheduledTime"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Duration</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select duration" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {durationOptions.map(duration => (
-                          <SelectItem key={duration} value={duration}>{duration}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <FormItem className="flex flex-col justify-end">
+                    <Label className="mb-2">at</Label>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="h:mm am"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
-              {/* Session Type */}
-              <FormField
-                control={form.control}
-                name="sessionType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Session Type</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select session type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {SESSION_TYPES.map(type => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Medium */}
-              <FormField
-                control={form.control}
-                name="medium"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Session Medium</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="flex items-center">
-                          {field.value === "Telehealth" ? (
-                            <Video className="mr-2 h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <Building className="mr-2 h-4 w-4 text-muted-foreground" />
-                          )}
-                          <SelectValue placeholder="Select medium" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {SESSION_MEDIUMS.map(medium => (
-                          <SelectItem key={medium} value={medium}>{medium}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Status */}
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {SESSION_STATUS.map(status => (
-                          <SelectItem key={status} value={status}>{status}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Notes */}
-              <div className="col-span-2">
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notes</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Add any notes or preparation instructions for this appointment..."
-                          {...field}
-                          className="min-h-[80px]"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
             </div>
             
-            <DialogFooter className="mt-6">
-              <DialogClose asChild>
-                <Button variant="outline" type="button">
-                  <X className="h-4 w-4 mr-2" />
-                  Cancel
-                </Button>
-              </DialogClose>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>Scheduling...</>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Schedule Appointment
-                  </>
-                )}
+            {/* Duration */}
+            <FormField
+              control={form.control}
+              name="duration"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Duration:</FormLabel>
+                  <div className="flex gap-2 items-center">
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        className="w-24"
+                      />
+                    </FormControl>
+                    <span className="text-neutral-500">minutes</span>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Frequency */}
+            <FormField
+              control={form.control}
+              name="frequency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Frequency:</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select frequency" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {frequencyOptions.map(option => (
+                        <SelectItem key={option} value={option}>{option}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Appointment Alert */}
+            <FormField
+              control={form.control}
+              name="alert"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Appointment Alert:</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Add any special instructions or alerts for this appointment..."
+                      {...field}
+                      className="min-h-[80px] resize-y"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <DialogFooter className="pt-4">
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="bg-lime-500 hover:bg-lime-600"
+              >
+                {isSubmitting ? "Scheduling..." : "Save New Appointment"}
               </Button>
             </DialogFooter>
           </form>

@@ -17,6 +17,7 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, subDays, is
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { AppointmentForm } from "@/components/scheduling/AppointmentForm";
+import { SetCalendarViewDialog, type CalendarViewSettings } from "@/components/scheduling/SetCalendarViewDialog";
 
 // Mock client data
 const mockClients = [
@@ -289,6 +290,25 @@ export default function Scheduling() {
     return <LoginForm />;
   }
 
+  const [isCalendarViewDialogOpen, setIsCalendarViewDialogOpen] = useState(false);
+  const [calendarViewSettings, setCalendarViewSettings] = useState<CalendarViewSettings>({
+    selectedClinicians: [9], // Default to Brenda Jean-Baptiste
+    location: "All Locations",
+    clinicianType: "All Clinicians",
+    hideInactiveClinicians: true,
+    hideMissedCancelled: false,
+    showPatientInitials: true
+  });
+  
+  const handleCalendarViewChange = (settings: CalendarViewSettings) => {
+    setCalendarViewSettings(settings);
+    // In a real app, this would filter appointments by clinician, etc.
+  };
+  
+  const getMonthName = (date: Date) => {
+    return format(date, "MMMM");
+  };
+  
   return (
     <div className="flex h-screen">
       <Sidebar />
@@ -304,41 +324,65 @@ export default function Scheduling() {
           initialDate={selectedDate}
         />
         
+        {/* Calendar View Settings Dialog */}
+        <SetCalendarViewDialog
+          open={isCalendarViewDialogOpen}
+          onOpenChange={setIsCalendarViewDialogOpen}
+          onViewChange={handleCalendarViewChange}
+        />
+        
         <div className="p-6 bg-neutral-50 min-h-screen">
+          {/* Calendar Header */}
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-semibold">
+              {view === "week" 
+                ? `Week of ${format(weekStart, "MMMM d, yyyy")}`
+                : `${getMonthName(selectedDate)} ${format(selectedDate, "d")}, ${format(selectedDate, "yyyy")}`
+              }
+            </h1>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsCalendarViewDialogOpen(true)}
+              >
+                Set Calendar View
+              </Button>
+              <Button 
+                onClick={handleScheduleAppointment}
+                className="bg-blue-500 hover:bg-blue-600"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New
+              </Button>
+            </div>
+          </div>
+          
+          {/* Calendar Navigation */}
           <Card>
-            <CardHeader className="pb-3 border-b border-neutral-200">
+            <CardHeader className="pb-2 border-b border-neutral-200">
               <div className="flex justify-between items-center">
-                <CardTitle>Appointment Schedule</CardTitle>
                 <div className="flex items-center space-x-2">
                   <Button variant="outline" size="sm" onClick={navigatePrevious}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="sm" onClick={navigateToday}>
-                    Today
+                  <span className="text-sm font-medium ml-2">
+                    Week of {format(weekStart, "MMMM d, yyyy")}
+                  </span>
+                  <span className="ml-2 text-sm text-gray-500">
+                    for Brenda Jean-Baptiste
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button variant="outline" size="sm" className="text-gray-500">
+                    Print
                   </Button>
-                  <Button variant="outline" size="sm" onClick={navigateNext}>
-                    <ChevronRight className="h-4 w-4" />
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-gray-500"
+                  >
+                    Agenda
                   </Button>
-                  
-                  <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="ml-4">
-                        <CalendarIcon className="h-4 w-4 mr-2" />
-                        {format(selectedDate, "MMMM d, yyyy")}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={handleSelectDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  
-                  <div className="border-l h-6 mx-2" />
-                  
                   <Button 
                     variant={view === "day" ? "secondary" : "outline"} 
                     size="sm"
@@ -353,12 +397,12 @@ export default function Scheduling() {
                   >
                     Week
                   </Button>
-                  
-                  <div className="border-l h-6 mx-2" />
-                  
-                  <Button onClick={handleScheduleAppointment}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Appointment
+                  <Button 
+                    variant={view === "month" ? "secondary" : "outline"} 
+                    size="sm"
+                    onClick={() => setView("month")}
+                  >
+                    Month
                   </Button>
                 </div>
               </div>
