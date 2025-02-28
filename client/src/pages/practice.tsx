@@ -26,7 +26,8 @@ import {
   AlertCircle,
   RefreshCw,
   Archive,
-  MoreHorizontal
+  MoreHorizontal,
+  ArrowDownToLine
 } from "lucide-react";
 import { format, addDays, addMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
