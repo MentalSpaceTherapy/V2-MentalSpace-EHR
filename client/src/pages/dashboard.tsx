@@ -10,6 +10,7 @@ import { QuickActions } from "@/components/dashboard/QuickActions";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { 
   Calendar, 
   FileText, 
@@ -25,6 +26,7 @@ import { addDays, subDays } from "date-fns";
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [_, setLocation] = useLocation();
   // Initialize as true to ensure content is visible from the start
   const [mounted, setMounted] = useState(true);
   
@@ -206,10 +208,41 @@ export default function Dashboard() {
 
   // Handle quick actions
   const handleQuickAction = (actionName: string) => {
-    toast({
-      title: actionName,
-      description: `Navigating to ${actionName.toLowerCase()} form...`,
-    });
+    switch(actionName) {
+      case "New Client":
+        setLocation("/clients");
+        toast({
+          title: actionName,
+          description: "Navigating to client form...",
+        });
+        break;
+      case "Schedule Session":
+        setLocation("/scheduling");
+        toast({
+          title: actionName,
+          description: "Navigating to scheduling...",
+        });
+        break;
+      case "Create Note":
+        setLocation("/documentation");
+        toast({
+          title: actionName,
+          description: "Navigating to documentation...",
+        });
+        break;
+      case "Create Invoice":
+        setLocation("/billing");
+        toast({
+          title: actionName,
+          description: "Navigating to billing...",
+        });
+        break;
+      default:
+        toast({
+          title: actionName,
+          description: `Navigating to ${actionName.toLowerCase()} form...`,
+        });
+    }
   };
 
   // If user is not authenticated, show login form
