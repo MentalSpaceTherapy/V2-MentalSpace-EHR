@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, HelpCircle, Settings, Search, Zap, Calendar, Sun, LogOut } from "lucide-react";
+import { Bell, HelpCircle, Settings, Search, Zap, Calendar, Sun, LogOut, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TopBarProps {
   title: string;
@@ -18,7 +26,7 @@ export function TopBar({ title, notificationCount = 0 }: TopBarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const { logout } = useAuth();
+  const { user, logout, changeRole } = useAuth();
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
 
@@ -29,6 +37,14 @@ export function TopBar({ title, notificationCount = 0 }: TopBarProps) {
       description: "You have been successfully logged out.",
     });
     setLocation("/auth");
+  };
+  
+  const handleRoleChange = (role: string) => {
+    changeRole(role);
+    toast({
+      title: "Role Changed",
+      description: `You are now acting as a ${role}.`,
+    });
   };
 
   useEffect(() => {
@@ -118,6 +134,50 @@ export function TopBar({ title, notificationCount = 0 }: TopBarProps) {
           >
             <Settings className="h-5 w-5 text-neutral-600" />
           </Button>
+
+          {/* Role Switcher */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={`rounded-full hover:bg-blue-100 hover:text-blue-600 transition-transform hover:scale-110 ${mounted ? "animate-slide-up" : "opacity-0"}`}
+                style={{ animationDelay: '550ms' }}
+                title="Switch Role"
+              >
+                <UserCog className="h-5 w-5 text-neutral-600" />
+                {user?.role && (
+                  <Badge 
+                    className="absolute -top-1 -right-1 h-5 px-1.5 rounded-full flex items-center justify-center bg-blue-500 text-white text-xs"
+                  >
+                    {user.role.substring(0, 1)}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Switch Role</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className={user?.role === "Therapist" ? "bg-blue-50 font-medium text-blue-700" : ""} 
+                onClick={() => handleRoleChange("Therapist")}
+              >
+                Therapist
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className={user?.role === "Administrator" ? "bg-blue-50 font-medium text-blue-700" : ""} 
+                onClick={() => handleRoleChange("Administrator")}
+              >
+                Administrator
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className={user?.role === "Supervisor" ? "bg-blue-50 font-medium text-blue-700" : ""} 
+                onClick={() => handleRoleChange("Supervisor")}
+              >
+                Supervisor
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           {/* Logout */}
           <Button 

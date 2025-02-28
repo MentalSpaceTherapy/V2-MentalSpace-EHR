@@ -3,7 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
-import Dashboard from "@/pages/dashboard-fixed"; // Using the fixed dashboard
+import Dashboard from "@/pages/dashboard"; // Using our updated dashboard
 import AuthPage from "@/pages/auth-page";
 import Clients from "@/pages/clients";
 import Documentation from "@/pages/documentation";

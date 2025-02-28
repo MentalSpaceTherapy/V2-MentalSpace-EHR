@@ -158,7 +158,8 @@ export default function Dashboard() {
     }
   ];
 
-  const quickActions = [
+  // Create role-specific and standard quick actions
+  const standardActions = [
     {
       id: "new-client",
       name: "New Client",
@@ -184,6 +185,69 @@ export default function Dashboard() {
       onClick: () => handleQuickAction("Create Invoice")
     }
   ];
+  
+  // Admin-specific actions
+  const adminActions = [
+    {
+      id: "new-client",
+      name: "New Client",
+      icon: "new-client" as const,
+      onClick: () => handleQuickAction("New Client")
+    },
+    {
+      id: "manage-therapists",
+      name: "Manage Therapists",
+      icon: "new-client" as const, // Reusing the icon type
+      onClick: () => handleQuickAction("Manage Therapists")
+    },
+    {
+      id: "assign-clients",
+      name: "Assign Clients",
+      icon: "schedule-session" as const, // Reusing the icon type
+      onClick: () => handleQuickAction("Assign Clients")
+    },
+    {
+      id: "practice-settings",
+      name: "Practice Settings",
+      icon: "create-invoice" as const, // Reusing the icon type
+      onClick: () => handleQuickAction("Practice Settings")
+    }
+  ];
+  
+  // Supervisor-specific actions
+  const supervisorActions = [
+    {
+      id: "new-client",
+      name: "New Client",
+      icon: "new-client" as const,
+      onClick: () => handleQuickAction("New Client")
+    },
+    {
+      id: "schedule-session",
+      name: "Schedule Session",
+      icon: "schedule-session" as const,
+      onClick: () => handleQuickAction("Schedule Session")
+    },
+    {
+      id: "review-notes",
+      name: "Review Notes",
+      icon: "create-note" as const,
+      onClick: () => handleQuickAction("Review Notes")
+    },
+    {
+      id: "therapist-performance",
+      name: "Therapist Reports",
+      icon: "create-invoice" as const,
+      onClick: () => handleQuickAction("Therapist Reports")
+    }
+  ];
+  
+  // Select quick actions based on user role
+  const quickActions = user?.role === "Administrator" 
+    ? adminActions 
+    : user?.role === "Supervisor" 
+      ? supervisorActions 
+      : standardActions;
 
   // Handle notification actions
   const handleMarkAllAsRead = () => {
@@ -237,6 +301,51 @@ export default function Dashboard() {
           description: "Navigating to billing...",
         });
         break;
+      
+      // Administrator specific actions
+      case "Manage Therapists":
+        setLocation("/practice");
+        toast({
+          title: actionName,
+          description: "Navigating to therapist management...",
+          variant: "default"
+        });
+        break;
+      case "Assign Clients":
+        setLocation("/clients");
+        toast({
+          title: actionName,
+          description: "Navigating to client assignment...",
+          variant: "default"
+        });
+        break;
+      case "Practice Settings":
+        setLocation("/practice");
+        toast({
+          title: actionName,
+          description: "Navigating to practice settings...",
+          variant: "default"
+        });
+        break;
+        
+      // Supervisor specific actions
+      case "Review Notes":
+        setLocation("/documentation");
+        toast({
+          title: actionName,
+          description: "Navigating to note review...",
+          variant: "default"
+        });
+        break;
+      case "Therapist Reports":
+        setLocation("/reports");
+        toast({
+          title: actionName,
+          description: "Navigating to therapist performance reports...",
+          variant: "default"
+        });
+        break;
+        
       default:
         toast({
           title: actionName,
@@ -271,7 +380,7 @@ export default function Dashboard() {
         <div className="p-8 bg-gradient-to-br from-neutral-50 to-white min-h-screen dashboard-content">
           {/* Welcome Banner */}
           <div 
-            className={`mb-8 p-6 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-500 text-white shadow-xl relative overflow-hidden welcome-banner ${mounted ? 'animate-fade-in' : ''}`}
+            className={`mb-8 p-6 rounded-2xl bg-gradient-to-r ${user.role === 'Administrator' ? 'from-blue-600 to-indigo-500' : user.role === 'Supervisor' ? 'from-emerald-600 to-teal-500' : 'from-primary-600 to-purple-500'} text-white shadow-xl relative overflow-hidden welcome-banner ${mounted ? 'animate-fade-in' : ''}`}
             style={{ animationDelay: '100ms' }}
           >
             <div className="absolute top-0 right-0 opacity-10">
@@ -280,20 +389,66 @@ export default function Dashboard() {
             <div className="relative z-10">
               <div className="flex items-center">
                 <Sparkles className="h-6 w-6 mr-3 text-primary-200" />
-                <h2 className="text-2xl font-bold">Welcome back, Dr. {user.firstName}!</h2>
+                <h2 className="text-2xl font-bold">
+                  {user.role === 'Administrator' ? (
+                    <>Welcome, {user.firstName} <span className="px-2 py-0.5 ml-2 bg-blue-400 bg-opacity-30 rounded-md text-sm uppercase tracking-wider">Administrator</span></>
+                  ) : user.role === 'Supervisor' ? (
+                    <>Welcome, {user.firstName} <span className="px-2 py-0.5 ml-2 bg-emerald-400 bg-opacity-30 rounded-md text-sm uppercase tracking-wider">Supervisor</span></>
+                  ) : (
+                    <>Welcome back, Dr. {user.firstName}!</>
+                  )}
+                </h2>
               </div>
-              <p className="mt-2 max-w-lg text-primary-100">
-                You have {sessions.length} sessions scheduled today and {documentationTasks.filter(t => t.status === "Overdue" || t.status === "Due Today").length} documentation items that need attention.
-              </p>
+              
+              {user.role === 'Administrator' ? (
+                <p className="mt-2 max-w-lg text-primary-100">
+                  Your practice has {sessions.length} sessions scheduled today across all therapists. You have {notifications.filter(n => !n.read).length} unread notifications.
+                </p>
+              ) : user.role === 'Supervisor' ? (
+                <p className="mt-2 max-w-lg text-primary-100">
+                  There are {documentationTasks.filter(t => t.status === "Overdue" || t.status === "Due Today").length} documentation items needing review and approval from your supervisees.
+                </p>
+              ) : (
+                <p className="mt-2 max-w-lg text-primary-100">
+                  You have {sessions.length} sessions scheduled today and {documentationTasks.filter(t => t.status === "Overdue" || t.status === "Due Today").length} documentation items that need attention.
+                </p>
+              )}
+              
               <div className="mt-4 flex items-center space-x-3">
-                <div className="bg-white bg-opacity-20 px-3 py-1.5 rounded-full text-sm font-medium flex items-center">
-                  <Clock className="h-4 w-4 mr-1.5" />
-                  <span>Next session: {sessions[0].time} with {sessions[0].clientName}</span>
-                </div>
-                <div className="bg-white bg-opacity-20 px-3 py-1.5 rounded-full text-sm font-medium flex items-center">
-                  <Workflow className="h-4 w-4 mr-1.5" />
-                  <span>Productivity score: 94%</span>
-                </div>
+                {user.role === 'Administrator' ? (
+                  <>
+                    <div className="bg-white bg-opacity-20 px-3 py-1.5 rounded-full text-sm font-medium flex items-center">
+                      <Users className="h-4 w-4 mr-1.5" />
+                      <span>12 active clinicians</span>
+                    </div>
+                    <div className="bg-white bg-opacity-20 px-3 py-1.5 rounded-full text-sm font-medium flex items-center">
+                      <TrendingUp className="h-4 w-4 mr-1.5" />
+                      <span>Practice growth: +8%</span>
+                    </div>
+                  </>
+                ) : user.role === 'Supervisor' ? (
+                  <>
+                    <div className="bg-white bg-opacity-20 px-3 py-1.5 rounded-full text-sm font-medium flex items-center">
+                      <Users className="h-4 w-4 mr-1.5" />
+                      <span>5 supervisees</span>
+                    </div>
+                    <div className="bg-white bg-opacity-20 px-3 py-1.5 rounded-full text-sm font-medium flex items-center">
+                      <FileText className="h-4 w-4 mr-1.5" />
+                      <span>8 notes pending review</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="bg-white bg-opacity-20 px-3 py-1.5 rounded-full text-sm font-medium flex items-center">
+                      <Clock className="h-4 w-4 mr-1.5" />
+                      <span>Next session: {sessions[0].time} with {sessions[0].clientName}</span>
+                    </div>
+                    <div className="bg-white bg-opacity-20 px-3 py-1.5 rounded-full text-sm font-medium flex items-center">
+                      <Workflow className="h-4 w-4 mr-1.5" />
+                      <span>Productivity score: 94%</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
