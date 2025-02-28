@@ -117,7 +117,11 @@ const mockDocuments = [
   }
 ];
 
-export default function Documentation() {
+interface DocumentationProps {
+  formType?: string;
+}
+
+export default function Documentation({ formType }: DocumentationProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
@@ -130,8 +134,16 @@ export default function Documentation() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
   const [activeDocument, setActiveDocument] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
-  const [currentForm, setCurrentForm] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'form'>(formType ? 'form' : 'list');
+  const [currentForm, setCurrentForm] = useState<string | null>(formType || null);
+  
+  // Initialize with formType if provided
+  useEffect(() => {
+    if (formType) {
+      setViewMode('form');
+      setCurrentForm(formType);
+    }
+  }, [formType]);
 
   // Filter documents based on search query, status filter, type filter, and active tab
   const filteredDocuments = documents.filter(doc => {
