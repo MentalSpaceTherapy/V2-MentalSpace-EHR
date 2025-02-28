@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
@@ -227,6 +227,21 @@ export default function Dashboard() {
   };
 
   // No longer needed after refactoring the quickActions
+  
+  // Initialize mounted state for animations
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    // Set content to be visible
+    setMounted(true);
+    
+    // Add 'content-loaded' class to body to override any visibility issues
+    document.body.classList.add('content-loaded');
+    
+    return () => {
+      document.body.classList.remove('content-loaded');
+    };
+  }, []);
 
   // If user is not authenticated, show login form
   if (!user) {
@@ -243,9 +258,12 @@ export default function Dashboard() {
           notificationCount={notifications.filter(n => !n.read).length}
         />
         
-        <main className="p-6 bg-gradient-to-br from-neutral-50 to-white min-h-screen overflow-y-auto">
+        <main className="p-8 bg-gradient-to-br from-neutral-50 to-white overflow-y-auto dashboard-content">
           {/* Welcome Banner */}
-          <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-600 text-white shadow-xl relative overflow-hidden">
+          <div 
+            className={`mb-8 p-6 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-600 text-white shadow-xl relative overflow-hidden welcome-banner ${mounted ? 'animate-fade-in' : 'opacity-0'}`}
+            style={{ animationDelay: '100ms' }}
+          >
             <div className="absolute top-0 right-0 opacity-10">
               <BrainCircuit className="w-64 h-64 -mt-12 -mr-12 text-white" />
             </div>
@@ -272,7 +290,7 @@ export default function Dashboard() {
           
           {/* Metrics Row */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div>
+            <div className={mounted ? 'animate-slide-up' : 'opacity-0'} style={{ animationDelay: '200ms' }}>
               <MetricCard 
                 title="Today's Sessions" 
                 value={sessions.length}
@@ -282,7 +300,7 @@ export default function Dashboard() {
               />
             </div>
             
-            <div>
+            <div className={mounted ? 'animate-slide-up' : 'opacity-0'} style={{ animationDelay: '300ms' }}>
               <MetricCard 
                 title="Pending Notes" 
                 value={documentationTasks.length}
@@ -292,7 +310,7 @@ export default function Dashboard() {
               />
             </div>
             
-            <div>
+            <div className={mounted ? 'animate-slide-up' : 'opacity-0'} style={{ animationDelay: '400ms' }}>
               <MetricCard 
                 title="Client Retention" 
                 value="87%"
