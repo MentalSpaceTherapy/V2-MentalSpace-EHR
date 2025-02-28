@@ -28,9 +28,11 @@ import {
   Database, 
   DollarSign, 
   FileSpreadsheet, 
+  FileCheck,
   Heart, 
   Megaphone, 
   Map, 
+  Mail,
   MessageSquare, 
   NetworkIcon, 
   StarIcon, 
@@ -39,7 +41,8 @@ import {
   TrendingDown, 
   UserIcon, 
   UserCheck, 
-  UserPlus
+  UserPlus,
+  Globe
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -67,7 +70,8 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  Radar
+  Radar,
+  ComposedChart
 } from "recharts";
 
 // Mock data for reports
@@ -639,7 +643,7 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
+                      <RechartsLineChart
                         data={attendanceData}
                         margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                       >
@@ -649,7 +653,7 @@ export default function Reports() {
                         <Legend />
                         <Line type="monotone" dataKey="noShow" name="No-Show Rate" stroke="#e53e3e" activeDot={{ r: 8 }} />
                         <Line type="monotone" dataKey="cancellation" name="Cancellation Rate" stroke="#dd6b20" />
-                      </LineChart>
+                      </RechartsLineChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
