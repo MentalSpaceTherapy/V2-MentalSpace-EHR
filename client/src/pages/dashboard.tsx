@@ -241,7 +241,7 @@ export default function Dashboard() {
         <div className="p-8 bg-gradient-to-br from-neutral-50 to-white min-h-screen">
           {/* Welcome Banner */}
           <div 
-            className={`mb-8 p-6 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-500 text-white shadow-xl relative overflow-hidden ${mounted ? 'animate-fade-in' : 'opacity-0'}`}
+            className={`mb-8 p-6 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-500 text-white shadow-xl relative overflow-hidden ${mounted ? 'animate-fade-in' : ''}`}
             style={{ animationDelay: '100ms' }}
           >
             <div className="absolute top-0 right-0 opacity-10">
@@ -270,7 +270,7 @@ export default function Dashboard() {
           
           {/* Metrics Row */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className={`${mounted ? 'animate-slide-up' : 'opacity-0'}`} style={{ animationDelay: '200ms' }}>
+            <div className={mounted ? 'animate-slide-up' : ''} style={{ animationDelay: '200ms' }}>
               <MetricCard 
                 title="Today's Sessions" 
                 value={sessions.length}
@@ -280,7 +280,7 @@ export default function Dashboard() {
               />
             </div>
             
-            <div className={`${mounted ? 'animate-slide-up' : 'opacity-0'}`} style={{ animationDelay: '300ms' }}>
+            <div className={mounted ? 'animate-slide-up' : ''} style={{ animationDelay: '300ms' }}>
               <MetricCard 
                 title="Pending Notes" 
                 value={documentationTasks.length}
@@ -290,7 +290,7 @@ export default function Dashboard() {
               />
             </div>
             
-            <div className={`${mounted ? 'animate-slide-up' : 'opacity-0'}`} style={{ animationDelay: '400ms' }}>
+            <div className={mounted ? 'animate-slide-up' : ''} style={{ animationDelay: '400ms' }}>
               <MetricCard 
                 title="Client Retention" 
                 value="87%"
