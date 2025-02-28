@@ -177,8 +177,26 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("personal");
+  
+  // Initialize new relationship options for dropdown
+  const relationshipOptions = [
+    "Parent", "Spouse", "Partner", "Sibling", "Child", 
+    "Friend", "Other Relative", "Guardian", "Caregiver", "Other"
+  ];
+  
+  // Insurance provider options
+  const insuranceProviders = [
+    "Aetna", "Blue Cross Blue Shield", "Cigna", "Humana", "Kaiser Permanente", 
+    "Medicaid", "Medicare", "Optum Health", "Tricare", "United Healthcare", "Other"
+  ];
+  
+  // Card types for payment cards
+  const cardTypes = [
+    "Visa", "Mastercard", "American Express", "Discover", "Other"
+  ];
 
   // Initialize form with default values or existing client data
+  // Set up field arrays for managing repeatable sections
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
@@ -216,18 +234,53 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
       referralSource: client?.referralSource || undefined,
       employment: client?.employment || undefined,
       
-      // Emergency Contact
+      // Emergency Contacts - New array format
+      emergencyContacts: client?.emergencyContacts || (() => {
+        // If we have legacy data, convert it to the new format
+        if (client?.emergencyContactName) {
+          return [{
+            name: client.emergencyContactName,
+            phone: client.emergencyContactPhone,
+            relationship: client.emergencyContactRelationship
+          }];
+        }
+        return [];
+      })(),
+      
+      // Legacy Emergency Contact fields (kept for backwards compatibility)
       emergencyContactName: client?.emergencyContactName || "",
       emergencyContactPhone: client?.emergencyContactPhone || "",
       emergencyContactRelationship: client?.emergencyContactRelationship || undefined,
       
-      // Insurance Information
+      // Insurance Information - New array format
+      insuranceInformation: client?.insuranceInformation || (() => {
+        // If we have legacy data, convert it to the new format
+        if (client?.insuranceProvider) {
+          return [{
+            provider: client.insuranceProvider,
+            policyNumber: client.insurancePolicyNumber,
+            groupNumber: client.insuranceGroupNumber,
+            copay: client.insuranceCopay,
+            deductible: client.insuranceDeductible,
+            isPrimary: true,
+            priorAuthNumber: "",
+            priorAuthVisitsApproved: undefined,
+            priorAuthVisitsUsed: undefined
+          }];
+        }
+        return [];
+      })(),
+      
+      // Legacy Insurance fields (kept for backwards compatibility)
       insuranceProvider: client?.insuranceProvider || undefined,
       insurancePolicyNumber: client?.insurancePolicyNumber || "",
       insuranceGroupNumber: client?.insuranceGroupNumber || "",
       insuranceCopay: client?.insuranceCopay || "",
       insuranceDeductible: client?.insuranceDeductible || "",
       responsibleParty: client?.responsibleParty || "self",
+      
+      // Payment Methods
+      paymentCards: client?.paymentCards || [],
       
       // Clinical Information
       diagnosisCodes: client?.diagnosisCodes || [],
