@@ -197,19 +197,19 @@ export default function Dashboard() {
     {
       id: "manage-therapists",
       name: "Manage Therapists",
-      icon: "new-client" as const, // Reusing the icon type
+      icon: "manage-therapists" as const,
       onClick: () => handleQuickAction("Manage Therapists")
     },
     {
       id: "assign-clients",
       name: "Assign Clients",
-      icon: "schedule-session" as const, // Reusing the icon type
+      icon: "assign-clients" as const,
       onClick: () => handleQuickAction("Assign Clients")
     },
     {
       id: "practice-settings",
       name: "Practice Settings",
-      icon: "create-invoice" as const, // Reusing the icon type
+      icon: "practice-settings" as const,
       onClick: () => handleQuickAction("Practice Settings")
     }
   ];
@@ -231,13 +231,13 @@ export default function Dashboard() {
     {
       id: "review-notes",
       name: "Review Notes",
-      icon: "create-note" as const,
+      icon: "review-notes" as const,
       onClick: () => handleQuickAction("Review Notes")
     },
     {
       id: "therapist-performance",
       name: "Therapist Reports",
-      icon: "create-invoice" as const,
+      icon: "therapist-performance" as const,
       onClick: () => handleQuickAction("Therapist Reports")
     }
   ];
