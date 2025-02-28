@@ -10,12 +10,26 @@ import { QuickActions } from "@/components/dashboard/QuickActions";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, FileText, Users } from "lucide-react";
+import { 
+  Calendar, 
+  FileText, 
+  Users, 
+  Sparkles, 
+  TrendingUp, 
+  Clock, 
+  BrainCircuit,
+  Workflow
+} from "lucide-react";
 import { addDays, subDays } from "date-fns";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // Mock data for the dashboard
   const [sessions, setSessions] = useState([
@@ -206,6 +220,14 @@ export default function Dashboard() {
     return <LoginForm />;
   }
 
+  // Animation delay calculation helper
+  const getAnimationDelay = (index: number) => {
+    return {
+      animationDelay: `${150 + (index * 100)}ms`,
+      style: { animationDelay: `${150 + (index * 100)}ms` }
+    };
+  };
+
   return (
     <div className="flex h-screen">
       <Sidebar />
@@ -216,48 +238,100 @@ export default function Dashboard() {
           notificationCount={notifications.filter(n => !n.read).length}
         />
         
-        <div className="p-6 bg-neutral-50 min-h-screen">
+        <div className="p-8 bg-gradient-to-br from-neutral-50 to-white min-h-screen">
+          {/* Welcome Banner */}
+          <div 
+            className={`mb-8 p-6 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-500 text-white shadow-xl relative overflow-hidden ${mounted ? 'animate-fade-in' : 'opacity-0'}`}
+            style={{ animationDelay: '100ms' }}
+          >
+            <div className="absolute top-0 right-0 opacity-10">
+              <BrainCircuit className="w-64 h-64 -mt-12 -mr-12 text-white" />
+            </div>
+            <div className="relative z-10">
+              <div className="flex items-center">
+                <Sparkles className="h-6 w-6 mr-3 text-primary-200" />
+                <h2 className="text-2xl font-bold">Welcome back, Dr. {user.firstName}!</h2>
+              </div>
+              <p className="mt-2 max-w-lg text-primary-100">
+                You have {sessions.length} sessions scheduled today and {documentationTasks.filter(t => t.status === "Overdue" || t.status === "Due Today").length} documentation items that need attention.
+              </p>
+              <div className="mt-4 flex items-center space-x-3">
+                <div className="bg-white bg-opacity-20 px-3 py-1.5 rounded-full text-sm font-medium flex items-center">
+                  <Clock className="h-4 w-4 mr-1.5" />
+                  <span>Next session: {sessions[0].time} with {sessions[0].clientName}</span>
+                </div>
+                <div className="bg-white bg-opacity-20 px-3 py-1.5 rounded-full text-sm font-medium flex items-center">
+                  <Workflow className="h-4 w-4 mr-1.5" />
+                  <span>Productivity score: 94%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
           {/* Metrics Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <MetricCard 
-              title="Today's Sessions" 
-              value={sessions.length}
-              change={{ value: "2 more than yesterday", positive: true }}
-              icon={<Calendar className="h-5 w-5 text-primary-500" />}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className={`${mounted ? 'animate-slide-up' : 'opacity-0'}`} style={{ animationDelay: '200ms' }}>
+              <MetricCard 
+                title="Today's Sessions" 
+                value={sessions.length}
+                change={{ value: "2 more than yesterday", positive: true }}
+                icon={<Calendar className="h-5 w-5 text-white" />}
+                className="bg-gradient-purple shadow-lg shadow-purple-200 hover-lift"
+              />
+            </div>
             
-            <MetricCard 
-              title="Pending Notes" 
-              value={documentationTasks.length}
-              change={{ value: "2 due today", positive: false }}
-              icon={<FileText className="h-5 w-5 text-warning-500" />}
-            />
+            <div className={`${mounted ? 'animate-slide-up' : 'opacity-0'}`} style={{ animationDelay: '300ms' }}>
+              <MetricCard 
+                title="Pending Notes" 
+                value={documentationTasks.length}
+                change={{ value: "2 due today", positive: false }}
+                icon={<FileText className="h-5 w-5 text-white" />}
+                className="bg-gradient-blue shadow-lg shadow-blue-200 hover-lift"
+              />
+            </div>
             
-            <MetricCard 
-              title="Client Retention" 
-              value="87%"
-              change={{ value: "4% increase this month", positive: true }}
-              icon={<Users className="h-5 w-5 text-success-500" />}
-            />
+            <div className={`${mounted ? 'animate-slide-up' : 'opacity-0'}`} style={{ animationDelay: '400ms' }}>
+              <MetricCard 
+                title="Client Retention" 
+                value="87%"
+                change={{ value: "4% increase this month", positive: true }}
+                icon={<TrendingUp className="h-5 w-5 text-white" />}
+                className="bg-gradient-green shadow-lg shadow-green-200 hover-lift"
+              />
+            </div>
           </div>
           
           {/* Main Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column (2/3 width) */}
-            <div className="lg:col-span-2 space-y-6">
-              <UpcomingSessions sessions={sessions} />
-              <DocumentationTasks tasks={documentationTasks} />
+            <div className="lg:col-span-2 space-y-8">
+              <div className={`${mounted ? 'animate-scale' : 'opacity-0'}`} style={{ animationDelay: '500ms' }}>
+                <UpcomingSessions sessions={sessions} />
+              </div>
+              
+              <div className={`${mounted ? 'animate-scale' : 'opacity-0'}`} style={{ animationDelay: '600ms' }}>
+                <DocumentationTasks tasks={documentationTasks} />
+              </div>
             </div>
             
             {/* Right Column (1/3 width) */}
-            <div className="space-y-6">
-              <Notifications 
-                notifications={notifications}
-                onMarkAllAsRead={handleMarkAllAsRead}
-                onViewNotification={handleViewNotification}
-              />
-              <PerformanceMetrics metrics={performanceMetrics} />
-              <QuickActions actions={quickActions} />
+            <div className="space-y-8">
+              <div className={`${mounted ? 'animate-scale' : 'opacity-0'}`} style={{ animationDelay: '700ms' }}>
+                <Notifications 
+                  notifications={notifications}
+                  onMarkAllAsRead={handleMarkAllAsRead}
+                  onViewNotification={handleViewNotification}
+                  className="glass-effect"
+                />
+              </div>
+              
+              <div className={`${mounted ? 'animate-scale' : 'opacity-0'}`} style={{ animationDelay: '800ms' }}>
+                <PerformanceMetrics metrics={performanceMetrics} />
+              </div>
+              
+              <div className={`${mounted ? 'animate-scale' : 'opacity-0'}`} style={{ animationDelay: '900ms' }}>
+                <QuickActions actions={quickActions} />
+              </div>
             </div>
           </div>
         </div>
