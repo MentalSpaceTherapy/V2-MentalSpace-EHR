@@ -7,7 +7,40 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowDownToLine, Calendar, BarChart2, LineChart, PieChart, Users, FileText, CalendarCheck, UserX, Percent } from "lucide-react";
+import { 
+  ArrowDownToLine, 
+  Calendar, 
+  BarChart2, 
+  LineChart, 
+  PieChart, 
+  Users, 
+  FileText, 
+  CalendarCheck, 
+  UserX, 
+  Percent, 
+  TrendingUp, 
+  Clock, 
+  Activity, 
+  Award, 
+  Briefcase, 
+  BriefcaseMedical,
+  Compass, 
+  Database, 
+  DollarSign, 
+  FileSpreadsheet, 
+  Heart, 
+  Megaphone, 
+  Map, 
+  MessageSquare, 
+  NetworkIcon, 
+  StarIcon, 
+  Target, 
+  ThumbsUp, 
+  TrendingDown, 
+  UserIcon, 
+  UserCheck, 
+  UserPlus
+} from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { addMonths, format, subMonths } from "date-fns";
@@ -23,7 +56,18 @@ import {
   Line,
   PieChart as RechartsPieChart,
   Pie,
-  Cell
+  Cell,
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Scatter,
+  ScatterChart,
+  ZAxis,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar
 } from "recharts";
 
 // Mock data for reports
@@ -116,6 +160,130 @@ const attendanceData = [
   { month: 'Sep', noShow: 9, cancellation: 11 },
   { month: 'Oct', noShow: 8, cancellation: 12 }
 ];
+
+// Marketing analytics data
+const marketingMetrics = {
+  referralSources: [
+    { name: "Physician Referrals", value: 28 },
+    { name: "Insurance Directory", value: 22 },
+    { name: "Online Search", value: 18 },
+    { name: "Client Referrals", value: 15 },
+    { name: "Social Media", value: 12 },
+    { name: "Other", value: 5 }
+  ],
+  websiteTraffic: [
+    { month: 'Jan', visitors: 520, conversions: 22 },
+    { month: 'Feb', visitors: 480, conversions: 18 },
+    { month: 'Mar', visitors: 590, conversions: 25 },
+    { month: 'Apr', visitors: 650, conversions: 32 },
+    { month: 'May', visitors: 720, conversions: 38 },
+    { month: 'Jun', visitors: 690, conversions: 35 },
+    { month: 'Jul', visitors: 710, conversions: 36 },
+    { month: 'Aug', visitors: 740, conversions: 42 },
+    { month: 'Sep', visitors: 790, conversions: 48 },
+    { month: 'Oct', visitors: 810, conversions: 50 }
+  ],
+  servicePopularity: [
+    { service: "Individual Therapy", inquiries: 65, conversions: 48 },
+    { service: "Family Therapy", inquiries: 42, conversions: 28 },
+    { service: "Group Therapy", inquiries: 30, conversions: 18 },
+    { service: "Online Counseling", inquiries: 38, conversions: 32 },
+    { service: "Psychological Testing", inquiries: 25, conversions: 15 }
+  ]
+};
+
+// Outcomes and quality data
+const outcomesMetrics = {
+  clientOutcomes: [
+    { outcome: "Significant Improvement", percentage: 42 },
+    { outcome: "Moderate Improvement", percentage: 31 },
+    { outcome: "Slight Improvement", percentage: 18 },
+    { outcome: "No Change", percentage: 7 },
+    { outcome: "Deterioration", percentage: 2 }
+  ],
+  satisfactionScores: [
+    { category: "Quality of Care", score: 4.7 },
+    { category: "Clinician Empathy", score: 4.8 },
+    { category: "Appointment Availability", score: 4.3 },
+    { category: "Administrative Support", score: 4.5 },
+    { category: "Telehealth Experience", score: 4.4 },
+    { category: "Facility Comfort", score: 4.6 }
+  ],
+  treatmentEffectiveness: [
+    { diagnosis: "Anxiety Disorders", baselineScore: 7.8, currentScore: 4.2, sessions: 8 },
+    { diagnosis: "Depressive Disorders", baselineScore: 8.2, currentScore: 3.8, sessions: 10 },
+    { diagnosis: "PTSD", baselineScore: 8.5, currentScore: 5.1, sessions: 12 },
+    { diagnosis: "Adjustment Disorders", baselineScore: 6.9, currentScore: 3.5, sessions: 6 },
+    { diagnosis: "Bipolar Disorders", baselineScore: 7.6, currentScore: 4.8, sessions: 14 }
+  ]
+};
+
+// Performance data
+const performanceMetrics = {
+  clinicianProductivity: [
+    { name: "Dr. Johnson", sessionsPerWeek: 28, documentation: 95, clientSatisfaction: 4.8 },
+    { name: "Dr. Williams", sessionsPerWeek: 24, documentation: 97, clientSatisfaction: 4.9 },
+    { name: "Dr. Smith", sessionsPerWeek: 30, documentation: 88, clientSatisfaction: 4.6 },
+    { name: "Dr. Garcia", sessionsPerWeek: 22, documentation: 98, clientSatisfaction: 4.7 },
+    { name: "Dr. Chen", sessionsPerWeek: 26, documentation: 92, clientSatisfaction: 4.8 }
+  ],
+  documentationTiming: [
+    { clinician: "All Clinicians", sameDay: 65, nextDay: 25, twoPlus: 10 }
+  ],
+  treatmentPlanCompliance: [
+    { month: 'Jan', compliance: 88 },
+    { month: 'Feb', compliance: 90 },
+    { month: 'Mar', compliance: 92 },
+    { month: 'Apr', compliance: 91 },
+    { month: 'May', compliance: 93 },
+    { month: 'Jun', compliance: 95 },
+    { month: 'Jul', compliance: 94 },
+    { month: 'Aug', compliance: 96 },
+    { month: 'Sep', compliance: 97 },
+    { month: 'Oct', compliance: 98 }
+  ]
+};
+
+// Growth and strategic metrics
+const growthMetrics = {
+  capacityUtilization: [
+    { month: 'Jan', utilized: 72, available: 100 },
+    { month: 'Feb', utilized: 76, available: 100 },
+    { month: 'Mar', utilized: 78, available: 100 },
+    { month: 'Apr', utilized: 80, available: 100 },
+    { month: 'May', utilized: 82, available: 100 },
+    { month: 'Jun', utilized: 84, available: 100 },
+    { month: 'Jul', utilized: 85, available: 100 },
+    { month: 'Aug', utilized: 88, available: 100 },
+    { month: 'Sep', utilized: 90, available: 100 },
+    { month: 'Oct', utilized: 92, available: 100 }
+  ],
+  growthOpportunities: [
+    { service: "Telehealth Services", potentialRevenue: 28000, implementationCost: 5000, timeToImplement: "1-2 months" },
+    { service: "Group Therapy Expansion", potentialRevenue: 35000, implementationCost: 8000, timeToImplement: "2-3 months" },
+    { service: "Assessment Services", potentialRevenue: 42000, implementationCost: 12000, timeToImplement: "3-4 months" },
+    { service: "Specialized Treatment Programs", potentialRevenue: 55000, implementationCost: 15000, timeToImplement: "4-6 months" }
+  ],
+  waitlistAnalysis: {
+    totalWaitlist: 28,
+    averageWaitTime: 12, // days
+    servicesDemanded: [
+      { service: "Individual Therapy", count: 15 },
+      { service: "Specialized Trauma Treatment", count: 7 },
+      { service: "Family Therapy", count: 4 },
+      { service: "Psychological Testing", count: 2 }
+    ]
+  }
+};
+
+// Compliance data
+const complianceMetrics = {
+  documentationCompleteness: 92,
+  hipaaCompliance: 98,
+  auditReadiness: 95,
+  requiredTrainingCompletion: 94,
+  supervisionCompliance: 97
+};
 
 // Colors for pie charts
 const COLORS = ['#4db6bc', '#2c7a7b', '#4fd1c5', '#32a39a', '#9cdbd8', '#d1edec'];
@@ -249,18 +417,38 @@ export default function Reports() {
           </div>
 
           <Tabs defaultValue="clinical" className="mb-6">
-            <TabsList>
+            <TabsList className="flex flex-wrap">
               <TabsTrigger value="clinical" className="flex items-center">
-                <FileText className="h-4 w-4 mr-2" />
-                Clinical
+                <BriefcaseMedical className="h-4 w-4 mr-2" />
+                Clinical Outcomes
               </TabsTrigger>
               <TabsTrigger value="operational" className="flex items-center">
                 <CalendarCheck className="h-4 w-4 mr-2" />
                 Operational
               </TabsTrigger>
               <TabsTrigger value="financial" className="flex items-center">
-                <BarChart2 className="h-4 w-4 mr-2" />
+                <DollarSign className="h-4 w-4 mr-2" />
                 Financial
+              </TabsTrigger>
+              <TabsTrigger value="marketing" className="flex items-center">
+                <Megaphone className="h-4 w-4 mr-2" />
+                Marketing
+              </TabsTrigger>
+              <TabsTrigger value="performance" className="flex items-center">
+                <Activity className="h-4 w-4 mr-2" />
+                Performance
+              </TabsTrigger>
+              <TabsTrigger value="outcomes" className="flex items-center">
+                <ThumbsUp className="h-4 w-4 mr-2" />
+                Quality & Outcomes
+              </TabsTrigger>
+              <TabsTrigger value="compliance" className="flex items-center">
+                <FileCheck className="h-4 w-4 mr-2" />
+                Compliance
+              </TabsTrigger>
+              <TabsTrigger value="growth" className="flex items-center">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Growth Opportunities
               </TabsTrigger>
             </TabsList>
 
