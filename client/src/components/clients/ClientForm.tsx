@@ -77,7 +77,7 @@ const clientSchema = z.object({
   middleName: z.string().optional().or(z.literal("")),
   preferredName: z.string().optional().or(z.literal("")),
   dateOfBirth: z.date().optional(),
-  administrativeSex: z.enum(["male", "female", "unknown", ""]).optional(),
+  administrativeSex: z.enum(["male", "female", "unknown"]).optional(),
   genderIdentity: z.string().optional().or(z.literal("")),
   sexualOrientation: z.string().optional().or(z.literal("")),
   preferredPronouns: z.string().optional().or(z.literal("")),
@@ -422,7 +422,6 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Select administrative sex</SelectItem>
                             <SelectItem value="male">Male</SelectItem>
                             <SelectItem value="female">Female</SelectItem>
                             <SelectItem value="unknown">Unknown</SelectItem>
@@ -449,7 +448,6 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Select gender identity</SelectItem>
                             <SelectItem value="male">Male</SelectItem>
                             <SelectItem value="female">Female</SelectItem>
                             <SelectItem value="transgender-male">Transgender Male</SelectItem>
@@ -480,7 +478,6 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Select sexual orientation</SelectItem>
                             <SelectItem value="straight">Straight/Heterosexual</SelectItem>
                             <SelectItem value="gay">Gay</SelectItem>
                             <SelectItem value="lesbian">Lesbian</SelectItem>
@@ -512,7 +509,6 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Select pronouns</SelectItem>
                             <SelectItem value="she/her">she/her</SelectItem>
                             <SelectItem value="he/him">he/him</SelectItem>
                             <SelectItem value="they/them">they/them</SelectItem>
