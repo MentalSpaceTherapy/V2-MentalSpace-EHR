@@ -6,7 +6,12 @@ import {
   FilePlus, 
   Receipt, 
   Zap, 
-  Sparkles 
+  Sparkles,
+  UserCog,
+  UsersRound,
+  Settings,
+  ClipboardCheck,
+  BarChart
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -16,7 +21,7 @@ import { useState } from "react";
 interface Action {
   id: string;
   name: string;
-  icon: "new-client" | "schedule-session" | "create-note" | "create-invoice";
+  icon: "new-client" | "schedule-session" | "create-note" | "create-invoice" | "manage-therapists" | "assign-clients" | "practice-settings" | "review-notes" | "therapist-performance";
   onClick: () => void;
 }
 
@@ -39,6 +44,16 @@ export function QuickActions({ actions, className }: QuickActionsProps) {
         return "text-green-500 group-hover:text-green-600";
       case "create-invoice":
         return "text-amber-500 group-hover:text-amber-600";
+      case "manage-therapists":
+        return "text-indigo-500 group-hover:text-indigo-600";
+      case "assign-clients":
+        return "text-cyan-500 group-hover:text-cyan-600";
+      case "practice-settings":
+        return "text-violet-500 group-hover:text-violet-600";
+      case "review-notes":
+        return "text-emerald-500 group-hover:text-emerald-600";
+      case "therapist-performance":
+        return "text-teal-500 group-hover:text-teal-600";
       default:
         return "text-primary-500 group-hover:text-primary-600";
     }
@@ -54,6 +69,16 @@ export function QuickActions({ actions, className }: QuickActionsProps) {
         return "from-green-50 to-white";
       case "create-invoice":
         return "from-amber-50 to-white";
+      case "manage-therapists":
+        return "from-indigo-50 to-white";
+      case "assign-clients":
+        return "from-cyan-50 to-white";
+      case "practice-settings":
+        return "from-violet-50 to-white";
+      case "review-notes":
+        return "from-emerald-50 to-white";
+      case "therapist-performance":
+        return "from-teal-50 to-white";
       default:
         return "from-primary-50 to-white";
     }
@@ -76,6 +101,16 @@ export function QuickActions({ actions, className }: QuickActionsProps) {
         return <FilePlus className={className} />;
       case "create-invoice":
         return <Receipt className={className} />;
+      case "manage-therapists":
+        return <UserCog className={className} />;
+      case "assign-clients":
+        return <UsersRound className={className} />;
+      case "practice-settings":
+        return <Settings className={className} />;
+      case "review-notes":
+        return <ClipboardCheck className={className} />;
+      case "therapist-performance":
+        return <BarChart className={className} />;
     }
   };
 
