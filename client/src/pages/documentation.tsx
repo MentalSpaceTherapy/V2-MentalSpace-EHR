@@ -45,7 +45,10 @@ import {
   X,
   ClipboardEdit,
   FileQuestion,
-  Edit
+  Edit,
+  Phone,
+  FileClock,
+  FileSpreadsheet
 } from "lucide-react";
 import { format, subDays, addDays } from "date-fns";
 import { 
