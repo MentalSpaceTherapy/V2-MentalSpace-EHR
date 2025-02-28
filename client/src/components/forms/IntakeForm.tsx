@@ -1813,16 +1813,25 @@ export function IntakeForm() {
                         Save as Draft
                       </Button>
                     </div>
-                    <Button 
+                    <button 
                       onClick={finalizeNote} 
                       type="button" 
-                      className="bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-md px-6 rounded-md"
-                      style={{ display: 'flex', alignItems: 'center' }}
+                      className="bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-md px-6 rounded-md flex items-center"
+                      style={{ 
+                        backgroundColor: '#4f46e5',
+                        color: 'white',
+                        padding: '0.5rem 1.5rem',
+                        borderRadius: '0.375rem',
+                        fontWeight: '600',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                      }}
                       disabled={isSubmitting}
                     >
                       <ClipboardCheck className="h-4 w-4 mr-1.5" />
                       Finalize & Sign
-                    </Button>
+                    </button>
                   </CardFooter>
                 </Card>
               </TabsContent>

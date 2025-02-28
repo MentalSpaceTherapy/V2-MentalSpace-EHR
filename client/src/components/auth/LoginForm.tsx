@@ -91,14 +91,23 @@ export function LoginForm() {
               </Button>
             </div>
 
-            <Button 
+            <button 
               type="submit" 
               className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-4 text-base shadow-md rounded-md"
-              style={{ display: 'block', marginTop: '1rem' }}
+              style={{ 
+                display: 'block !important', 
+                marginTop: '1rem', 
+                width: '100%', 
+                backgroundColor: '#4f46e5',
+                color: 'white',
+                padding: '1rem',
+                borderRadius: '0.375rem',
+                fontWeight: '500'
+              }}
               disabled={isLoading}
             >
               {isLoading ? "Signing in..." : "Sign in"}
-            </Button>
+            </button>
             
             <div className="flex items-center justify-center mt-4">
               <p className="text-sm text-neutral-500">
