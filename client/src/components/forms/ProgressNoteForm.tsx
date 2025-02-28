@@ -979,7 +979,7 @@ export function ProgressNoteForm() {
                     <Button 
                       onClick={finalizeNote} 
                       type="button" 
-                      className="bg-primary-600 hover:bg-primary-700"
+                      className="bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-md px-6"
                       disabled={isSubmitting}
                     >
                       <ClipboardCheck className="h-4 w-4 mr-1.5" />
