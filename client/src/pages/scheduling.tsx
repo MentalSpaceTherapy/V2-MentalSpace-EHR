@@ -167,6 +167,11 @@ export default function Scheduling() {
       setSelectedDate(subDays(selectedDate, 1));
     } else if (view === "week") {
       setSelectedDate(subWeeks(selectedDate, 1));
+    } else if (view === "month") {
+      // Subtract one month
+      const newDate = new Date(selectedDate);
+      newDate.setMonth(newDate.getMonth() - 1);
+      setSelectedDate(newDate);
     }
   };
 
@@ -175,6 +180,11 @@ export default function Scheduling() {
       setSelectedDate(addDays(selectedDate, 1));
     } else if (view === "week") {
       setSelectedDate(addWeeks(selectedDate, 1));
+    } else if (view === "month") {
+      // Add one month
+      const newDate = new Date(selectedDate);
+      newDate.setMonth(newDate.getMonth() + 1);
+      setSelectedDate(newDate);
     }
   };
 
@@ -545,6 +555,108 @@ export default function Scheduling() {
                       No appointments scheduled for this day.
                     </div>
                   )}
+                </div>
+              ) : view === "month" ? (
+                // Month view
+                <div className="p-4">
+                  <h2 className="text-xl font-medium mb-4">{format(selectedDate, "MMMM yyyy")}</h2>
+                  
+                  <div className="grid grid-cols-7 gap-1">
+                    {/* Day headers */}
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
+                      <div key={index} className="text-center font-medium text-sm py-2">
+                        {day}
+                      </div>
+                    ))}
+                    
+                    {/* Calendar days */}
+                    {(() => {
+                      // Get days for the current month view
+                      const monthStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+                      const monthEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+                      const startDate = new Date(monthStart);
+                      startDate.setDate(startDate.getDate() - startDate.getDay()); // Start from the previous Sunday
+                      
+                      const endDate = new Date(monthEnd);
+                      endDate.setDate(endDate.getDate() + (6 - endDate.getDay())); // End on the next Saturday
+                      
+                      const dayCount = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24) + 1;
+                      const days = Array.from({ length: dayCount }, (_, i) => {
+                        const date = new Date(startDate);
+                        date.setDate(date.getDate() + i);
+                        return date;
+                      });
+                      
+                      return days.map((day, i) => {
+                        const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
+                        const dayAppointments = getAppointmentsForDay(day);
+                        
+                        return (
+                          <div 
+                            key={i}
+                            onClick={() => {
+                              // On day click, switch to day view for that day
+                              setSelectedDate(day);
+                              setView("day");
+                            }}
+                            className={cn(
+                              "h-24 border p-1 overflow-hidden relative cursor-pointer",
+                              isCurrentMonth ? "bg-white" : "bg-neutral-50 text-neutral-400",
+                              isSameDay(day, new Date()) && "bg-primary-50 border-primary-200",
+                            )}
+                          >
+                            <div className="flex justify-between">
+                              <span className={cn(
+                                "font-medium text-sm",
+                                isSameDay(day, new Date()) && "text-primary-700"
+                              )}>
+                                {format(day, "d")}
+                              </span>
+                              {dayAppointments.length > 0 && (
+                                <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded-sm">
+                                  {dayAppointments.length}
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="mt-1 space-y-1 text-xs">
+                              {dayAppointments.slice(0, 2).map(app => (
+                                <div 
+                                  key={app.id}
+                                  className={cn("truncate px-1 py-0.5 rounded", 
+                                    getTimeslotBackground(app.status)
+                                  )}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAppointmentClick(app);
+                                  }}
+                                >
+                                  {app.startTime} {app.clientName}
+                                </div>
+                              ))}
+                              {dayAppointments.length > 2 && (
+                                <div className="text-xs text-neutral-500 truncate">
+                                  + {dayAppointments.length - 2} more
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Add appointment indicator */}
+                            <div 
+                              className="absolute bottom-0 right-0 p-1 opacity-0 hover:opacity-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Set time to 9am for new appointments
+                                handleScheduleAppointment(day, "9:00");
+                              }}
+                            >
+                              <Plus className="h-3 w-3 text-neutral-400" />
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
                 </div>
               ) : (
                 <div className="overflow-x-auto">

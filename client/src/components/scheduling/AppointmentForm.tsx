@@ -188,7 +188,7 @@ export function AppointmentForm({ open, onOpenChange, onSubmit, initialDate, ini
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] bg-white">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle className="text-xl">Create New Appointment</DialogTitle>
         </DialogHeader>
