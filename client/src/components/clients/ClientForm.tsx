@@ -164,13 +164,13 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
       preferredName: client?.preferredName || "",
       dateOfBirth: client?.dateOfBirth,
       administrativeSex: client?.administrativeSex || undefined,
-      genderIdentity: client?.genderIdentity || "",
-      sexualOrientation: client?.sexualOrientation || "",
-      preferredPronouns: client?.preferredPronouns || "",
-      race: client?.race || "",
-      ethnicity: client?.ethnicity || "",
-      language: client?.language || "",
-      maritalStatus: client?.maritalStatus || "",
+      genderIdentity: client?.genderIdentity || undefined,
+      sexualOrientation: client?.sexualOrientation || undefined,
+      preferredPronouns: client?.preferredPronouns || undefined,
+      race: client?.race || undefined,
+      ethnicity: client?.ethnicity || undefined,
+      language: client?.language || undefined,
+      maritalStatus: client?.maritalStatus || undefined,
       
       // Contact Information
       email: client?.email || "",
@@ -181,23 +181,23 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
       address1: client?.address1 || (client?.address ? client.address.split('\n')[0] : ""),
       address2: client?.address2 || "",
       city: client?.city || "",
-      state: client?.state || "",
+      state: client?.state || undefined,
       zipCode: client?.zipCode || "",
-      timeZone: client?.timeZone || "",
+      timeZone: client?.timeZone || undefined,
       
       // Client Status
       status: client?.status || "active",
       primaryTherapistId: client?.primaryTherapistId,
-      referralSource: client?.referralSource || "",
-      employment: client?.employment || "",
+      referralSource: client?.referralSource || undefined,
+      employment: client?.employment || undefined,
       
       // Emergency Contact
       emergencyContactName: client?.emergencyContactName || "",
       emergencyContactPhone: client?.emergencyContactPhone || "",
-      emergencyContactRelationship: client?.emergencyContactRelationship || "",
+      emergencyContactRelationship: client?.emergencyContactRelationship || undefined,
       
       // Insurance Information
-      insuranceProvider: client?.insuranceProvider || "",
+      insuranceProvider: client?.insuranceProvider || undefined,
       insurancePolicyNumber: client?.insurancePolicyNumber || "",
       insuranceGroupNumber: client?.insuranceGroupNumber || "",
       insuranceCopay: client?.insuranceCopay || "",
@@ -538,7 +538,6 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Select race</SelectItem>
                             <SelectItem value="american-indian">American Indian or Alaska Native</SelectItem>
                             <SelectItem value="asian">Asian</SelectItem>
                             <SelectItem value="black">Black or African American</SelectItem>
@@ -570,7 +569,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Select ethnicity</SelectItem>
+                            
                             <SelectItem value="hispanic">Hispanic or Latino</SelectItem>
                             <SelectItem value="not-hispanic">Not Hispanic or Latino</SelectItem>
                             <SelectItem value="decline">Decline to state</SelectItem>
@@ -597,7 +596,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Select language</SelectItem>
+                            
                             <SelectItem value="english">English</SelectItem>
                             <SelectItem value="spanish">Spanish</SelectItem>
                             <SelectItem value="french">French</SelectItem>
@@ -629,7 +628,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Select marital status</SelectItem>
+                            
                             <SelectItem value="single">Single</SelectItem>
                             <SelectItem value="married">Married</SelectItem>
                             <SelectItem value="partnered">Partnered</SelectItem>
@@ -691,7 +690,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Select referral source</SelectItem>
+                            
                             <SelectItem value="insurance">Insurance Provider</SelectItem>
                             <SelectItem value="doctor">Doctor Referral</SelectItem>
                             <SelectItem value="therapist">Another Therapist</SelectItem>
@@ -723,7 +722,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Select employment status</SelectItem>
+                            
                             <SelectItem value="full-time">Full-time</SelectItem>
                             <SelectItem value="part-time">Part-time</SelectItem>
                             <SelectItem value="self-employed">Self-employed</SelectItem>
@@ -883,7 +882,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="max-h-[300px]">
-                            <SelectItem value="">Select state</SelectItem>
+                            
                             <SelectItem value="AL">Alabama</SelectItem>
                             <SelectItem value="AK">Alaska</SelectItem>
                             <SelectItem value="AZ">Arizona</SelectItem>
@@ -972,7 +971,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Select time zone</SelectItem>
+                            
                             <SelectItem value="eastern">Eastern (EST/EDT)</SelectItem>
                             <SelectItem value="central">Central (CST/CDT)</SelectItem>
                             <SelectItem value="mountain">Mountain (MST/MDT)</SelectItem>
@@ -1047,7 +1046,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Select relationship</SelectItem>
+                            
                             <SelectItem value="spouse">Spouse/Partner</SelectItem>
                             <SelectItem value="parent">Parent</SelectItem>
                             <SelectItem value="child">Child</SelectItem>
@@ -1154,7 +1153,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Select insurance provider</SelectItem>
+                            
                             <SelectItem value="aetna">Aetna</SelectItem>
                             <SelectItem value="anthem">Anthem</SelectItem>
                             <SelectItem value="bcbs">Blue Cross Blue Shield</SelectItem>
@@ -1364,7 +1363,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">Select diagnosis</SelectItem>
+                                
                                 <SelectItem value="F32.9">F32.9 - Major Depressive Disorder</SelectItem>
                                 <SelectItem value="F41.1">F41.1 - Generalized Anxiety Disorder</SelectItem>
                                 <SelectItem value="F43.10">F43.10 - Post-Traumatic Stress Disorder</SelectItem>
@@ -1446,7 +1445,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">Select status</SelectItem>
+                              
                               <SelectItem value="current">Current Smoker</SelectItem>
                               <SelectItem value="former">Former Smoker</SelectItem>
                               <SelectItem value="never">Never Smoked</SelectItem>
