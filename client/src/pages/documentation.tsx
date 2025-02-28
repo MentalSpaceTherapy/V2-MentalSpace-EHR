@@ -180,19 +180,19 @@ export default function Documentation({ formType }: DocumentationProps) {
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case "Overdue":
-        return "bg-red-100 text-red-800 hover:bg-red-100";
+        return "bg-gradient-to-r from-red-500 to-rose-500 text-white hover:shadow-md hover:shadow-red-200 border-transparent font-medium animate-pulse";
       case "Due Today":
-        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
+        return "bg-gradient-to-r from-yellow-400 to-amber-500 text-white hover:shadow-md hover:shadow-yellow-200 border-transparent font-medium";
       case "In Progress":
-        return "bg-blue-100 text-blue-800 hover:bg-blue-100";
+        return "bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:shadow-md hover:shadow-blue-200 border-transparent font-medium";
       case "Complete":
-        return "bg-green-100 text-green-800 hover:bg-green-100";
+        return "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:shadow-md hover:shadow-green-200 border-transparent font-medium";
       case "Signed":
-        return "bg-purple-100 text-purple-800 hover:bg-purple-100";
+        return "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:shadow-md hover:shadow-purple-200 border-transparent font-medium";
       case "Draft":
-        return "bg-neutral-100 text-neutral-800 hover:bg-neutral-100";
+        return "bg-gradient-to-r from-slate-400 to-gray-500 text-white hover:shadow-md hover:shadow-gray-200 border-transparent font-medium";
       default:
-        return "bg-neutral-100 text-neutral-800 hover:bg-neutral-100";
+        return "bg-gradient-to-r from-slate-400 to-gray-500 text-white hover:shadow-md hover:shadow-gray-200 border-transparent font-medium";
     }
   };
 
@@ -295,10 +295,14 @@ export default function Documentation({ formType }: DocumentationProps) {
                   </div>
                   <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button className="bg-primary-600 hover:bg-primary-700 transition-colors">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Document
-                      </Button>
+                      <button 
+                        className="group relative inline-flex items-center overflow-hidden rounded-md bg-gradient-to-r from-indigo-600 to-purple-700 px-6 py-2 font-medium text-white shadow-lg transition-all duration-300 hover:shadow-indigo-500/25 hover:scale-105"
+                      >
+                        <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 transition duration-300 group-hover:opacity-100"></span>
+                        <Plus className="h-4 w-4 mr-2 relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-90" />
+                        <span className="relative z-10">Create Document</span>
+                        <span className="absolute -bottom-1 left-1/2 h-1 w-0 -translate-x-1/2 rounded-full bg-white opacity-70 transition-all duration-300 group-hover:w-1/2"></span>
+                      </button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-lg">
                       <DialogHeader>
@@ -308,22 +312,42 @@ export default function Documentation({ formType }: DocumentationProps) {
                         </DialogDescription>
                       </DialogHeader>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                        {DOCUMENTATION_TYPES.map((type) => (
-                          <button
-                            key={type}
-                            className={cn(
-                              "flex flex-col items-center p-4 border rounded-lg transition-all",
-                              "hover:border-primary-300 hover:bg-primary-50",
-                              "focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            )}
-                            onClick={() => handleCreateDocument(type)}
-                          >
-                            <div className="bg-primary-100 p-3 rounded-full mb-3">
-                              {getDocTypeIcon(type)}
-                            </div>
-                            <span className="text-sm font-medium text-gray-700">{type}</span>
-                          </button>
-                        ))}
+                        {DOCUMENTATION_TYPES.map((type) => {
+                          const getButtonStyle = () => {
+                            switch(type) {
+                              case "Progress Note":
+                                return "from-blue-500 to-indigo-500 shadow-blue-200";
+                              case "Intake Form":
+                                return "from-purple-500 to-pink-500 shadow-purple-200";
+                              case "Treatment Plan":
+                                return "from-green-500 to-emerald-500 shadow-green-200";
+                              case "Assessment":
+                                return "from-amber-500 to-yellow-500 shadow-amber-200";
+                              case "Discharge Summary":
+                                return "from-red-500 to-rose-500 shadow-red-200";
+                              default:
+                                return "from-gray-500 to-slate-500 shadow-gray-200";
+                            }
+                          };
+                          
+                          return (
+                            <button
+                              key={type}
+                              className={cn(
+                                "group flex flex-col items-center p-4 border border-transparent rounded-lg transition-all duration-300",
+                                "hover:border-primary-300 hover:bg-white hover:shadow-xl hover:scale-105",
+                                "focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              )}
+                              onClick={() => handleCreateDocument(type)}
+                            >
+                              <div className={`bg-gradient-to-r ${getButtonStyle()} p-3 rounded-full mb-3 shadow-lg transition-all duration-500 group-hover:shadow-2xl group-hover:scale-110`}>
+                                {getDocTypeIcon(type)}
+                              </div>
+                              <span className="text-sm font-medium text-gray-700 transition-all duration-300 group-hover:text-primary-700 group-hover:font-semibold">{type}</span>
+                              <div className="mt-2 h-0.5 w-0 bg-gradient-to-r from-transparent via-primary-500 to-transparent transition-all duration-300 group-hover:w-3/4 opacity-0 group-hover:opacity-100"></div>
+                            </button>
+                          );
+                        })}
                       </div>
                       <DialogFooter>
                         <DialogClose asChild>
@@ -337,16 +361,30 @@ export default function Documentation({ formType }: DocumentationProps) {
               
               <CardContent>
                 <Tabs defaultValue="pending" onValueChange={setCurrentTab} className="mb-6">
-                  <TabsList>
-                    <TabsTrigger value="pending" className="flex items-center">
-                      <ClipboardList className="h-4 w-4 mr-2" />
+                  <TabsList className="p-1 bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 rounded-xl">
+                    <TabsTrigger 
+                      value="pending" 
+                      className="flex items-center transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105"
+                    >
+                      <div className="relative">
+                        <ClipboardList className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:scale-110" />
+                        <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full opacity-80 animate-pulse"></span>
+                      </div>
                       Pending
                     </TabsTrigger>
-                    <TabsTrigger value="completed" className="flex items-center">
-                      <FileText className="h-4 w-4 mr-2" />
+                    <TabsTrigger 
+                      value="completed" 
+                      className="flex items-center transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105"
+                    >
+                      <FileText className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:scale-110" />
                       Completed
                     </TabsTrigger>
-                    <TabsTrigger value="all" className="flex items-center">All Documents</TabsTrigger>
+                    <TabsTrigger 
+                      value="all" 
+                      className="flex items-center transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105"
+                    >
+                      All Documents
+                    </TabsTrigger>
                   </TabsList>
                 </Tabs>
                 
