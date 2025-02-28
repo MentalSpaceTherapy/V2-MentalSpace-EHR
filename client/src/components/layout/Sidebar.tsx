@@ -2,7 +2,12 @@ import { useLocation, Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Pen, LayoutDashboard, Users, FileText, Calendar, MessageSquare, DollarSign, BarChart2, Building, MoreVertical } from "lucide-react";
+import { useState, useEffect } from "react";
+import { 
+  Pen, LayoutDashboard, Users, FileText, Calendar, 
+  MessageSquare, DollarSign, BarChart2, Building, 
+  MoreVertical, ChevronRight, Brain, Sparkles 
+} from "lucide-react";
 
 interface SidebarProps {
   className?: string;
@@ -11,6 +16,11 @@ interface SidebarProps {
 export function Sidebar({ className }: SidebarProps) {
   const [location] = useLocation();
   const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -24,42 +34,74 @@ export function Sidebar({ className }: SidebarProps) {
   ];
 
   return (
-    <div className={cn("w-64 bg-white h-full shadow-md z-10 fixed left-0 top-0", className)}>
+    <div 
+      className={cn(
+        "w-64 bg-white h-full z-10 fixed left-0 top-0 shadow-[0_0_40px_rgba(118,36,255,0.1)]",
+        "animate-fade-in", 
+        className
+      )}
+    >
       <div className="h-full flex flex-col justify-between">
         <div>
           {/* Logo */}
-          <div className="p-4 border-b border-neutral-200">
+          <div className="p-6 border-b border-neutral-100">
             <div className="flex items-center">
-              <div className="rounded-md bg-primary-50 p-1">
-                <Pen className="w-6 h-6 text-primary-500" />
+              <div className="rounded-xl bg-gradient-purple p-2 shadow-lg shadow-purple-200">
+                <Brain className="w-6 h-6 text-white" />
               </div>
-              <span className="ml-2 text-lg font-semibold text-neutral-800">MentalSpace</span>
+              <div className="ml-3">
+                <span className="text-xl font-bold gradient-text">MentalSpace</span>
+                <div className="flex items-center mt-0.5">
+                  <Sparkles className="w-3 h-3 text-primary-400 mr-1" />
+                  <span className="text-xs text-primary-600 font-medium">EHR Platform</span>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="pt-3 pb-2">
-            <ul>
-              {navigation.map((item) => {
+          <nav className="pt-4 pb-2 px-3">
+            <ul className="space-y-1.5">
+              {navigation.map((item, index) => {
                 const isActive = location === item.href;
                 const Icon = item.icon;
                 
                 return (
-                  <li key={item.name}>
+                  <li 
+                    key={item.name}
+                    style={{ 
+                      animationDelay: `${(index + 1) * 50}ms`,
+                    }}
+                    className={mounted ? "animate-slide-up" : "opacity-0"}
+                  >
                     <Link href={item.href}>
                       <a
                         className={cn(
-                          "flex items-center px-4 py-3 text-neutral-700 hover:bg-neutral-100 cursor-pointer",
-                          isActive && "bg-primary-50 border-l-3 border-primary-500 text-primary-700"
+                          "flex items-center px-3 py-3 rounded-xl transition-all duration-200",
+                          "hover:bg-primary-50 cursor-pointer group",
+                          isActive 
+                            ? "bg-primary-50 text-primary-700 shadow-sm" 
+                            : "text-neutral-600"
                         )}
                       >
-                        <Icon className={cn("mr-3 h-5 w-5", isActive ? "text-primary-700" : "text-neutral-500")} />
-                        <span>{item.name}</span>
+                        <div className={cn(
+                          "mr-3 p-2 rounded-lg transition-colors",
+                          isActive 
+                            ? "bg-primary-100 text-primary-700" 
+                            : "text-neutral-500 group-hover:text-primary-600 group-hover:bg-primary-50"
+                        )}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <span className="font-medium">{item.name}</span>
                         {item.badge && (
-                          <span className="ml-auto bg-primary-500 text-white text-xs px-2 py-1 rounded-full">
+                          <span className="ml-auto bg-primary-500 text-white text-xs px-2 py-1 rounded-full animate-pulse-subtle">
                             {item.badge}
                           </span>
                         )}
+                        <ChevronRight className={cn(
+                          "ml-auto h-4 w-4 opacity-0 -translate-x-2 transition-all duration-200", 
+                          isActive ? "opacity-100 translate-x-0 text-primary-500" : "group-hover:opacity-70 group-hover:translate-x-0 text-neutral-400"
+                        )} />
                       </a>
                     </Link>
                   </li>
@@ -71,19 +113,21 @@ export function Sidebar({ className }: SidebarProps) {
 
         {/* User profile */}
         {user && (
-          <div className="border-t border-neutral-200 p-4">
+          <div className="border-t border-neutral-100 p-4 mx-3 my-3 bg-gradient-to-r from-primary-50 to-white rounded-xl card-transition">
             <div className="flex items-center">
-              <Avatar>
+              <Avatar className="border-2 border-white shadow-md hover-lift">
                 <AvatarImage src={user.profileImageUrl} />
-                <AvatarFallback>{`${user.firstName[0]}${user.lastName[0]}`}</AvatarFallback>
+                <AvatarFallback className="bg-gradient-purple text-white">
+                  {`${user.firstName[0]}${user.lastName[0]}`}
+                </AvatarFallback>
               </Avatar>
               <div className="ml-3">
-                <p className="text-sm font-medium text-neutral-700">
+                <p className="text-sm font-semibold text-neutral-800">
                   Dr. {user.firstName} {user.lastName}
                 </p>
-                <p className="text-xs text-neutral-500">{user.licenseType}</p>
+                <p className="text-xs text-primary-600">{user.licenseType}</p>
               </div>
-              <button className="ml-auto text-neutral-400 hover:text-neutral-600">
+              <button className="ml-auto text-neutral-400 hover:text-primary-600 p-1 rounded-full hover:bg-primary-50 transition-colors">
                 <MoreVertical className="h-4 w-4" />
               </button>
             </div>
