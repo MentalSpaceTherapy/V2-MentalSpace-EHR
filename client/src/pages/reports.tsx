@@ -793,6 +793,498 @@ export default function Reports() {
               </div>
             </TabsContent>
 
+            {/* Performance Reports */}
+            <TabsContent value="performance" className="mt-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Clinician Productivity */}
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Clinician Productivity</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={performanceMetrics.clinicianProductivity}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="sessionsPerWeek" name="Sessions per Week" fill="#4db6bc" />
+                        <Bar dataKey="documentation" name="Documentation Compliance (%)" fill="#805ad5" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Documentation Timing */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Documentation Timing</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Same Day Completion</span>
+                        <span className="text-sm font-medium">{performanceMetrics.documentationTiming[0].sameDay}%</span>
+                      </div>
+                      <Progress value={performanceMetrics.documentationTiming[0].sameDay} className="h-3" />
+                    </div>
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Next Day Completion</span>
+                        <span className="text-sm font-medium">{performanceMetrics.documentationTiming[0].nextDay}%</span>
+                      </div>
+                      <Progress value={performanceMetrics.documentationTiming[0].nextDay} className="h-3" />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">2+ Days Later</span>
+                        <span className="text-sm font-medium">{performanceMetrics.documentationTiming[0].twoPlus}%</span>
+                      </div>
+                      <Progress value={performanceMetrics.documentationTiming[0].twoPlus} className="h-3" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Treatment Plan Compliance */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Treatment Plan Compliance</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsLineChart
+                        data={performanceMetrics.treatmentPlanCompliance}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis domain={[80, 100]} />
+                        <Tooltip formatter={(value) => `${value}%`} />
+                        <Legend />
+                        <Line type="monotone" dataKey="compliance" name="Treatment Plan Compliance" stroke="#4db6bc" activeDot={{ r: 8 }} />
+                      </RechartsLineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Marketing Reports */}
+            <TabsContent value="marketing" className="mt-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Referral Sources */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Referral Sources</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPieChart>
+                        <Pie
+                          data={marketingMetrics.referralSources}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, value }) => `${name}: ${value}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {marketingMetrics.referralSources.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => `${value}%`} />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Website Traffic */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Website Traffic & Conversions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsLineChart
+                        data={marketingMetrics.websiteTraffic}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis yAxisId="left" />
+                        <YAxis yAxisId="right" orientation="right" />
+                        <Tooltip />
+                        <Legend />
+                        <Line yAxisId="left" type="monotone" dataKey="visitors" name="Website Visitors" stroke="#4db6bc" />
+                        <Line yAxisId="right" type="monotone" dataKey="conversions" name="Conversions" stroke="#805ad5" />
+                      </RechartsLineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Service Popularity */}
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Service Popularity & Conversion Rates</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={marketingMetrics.servicePopularity}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="service" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="inquiries" name="Inquiries" fill="#4db6bc" />
+                        <Bar dataKey="conversions" name="Converted to Clients" fill="#805ad5" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Quality & Outcomes */}
+            <TabsContent value="outcomes" className="mt-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Client Outcomes */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Client Outcomes</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPieChart>
+                        <Pie
+                          data={outcomesMetrics.clientOutcomes}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ outcome, percentage }) => `${outcome}: ${percentage}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="percentage"
+                          nameKey="outcome"
+                        >
+                          {outcomesMetrics.clientOutcomes.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => `${value}%`} />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Satisfaction Scores */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Client Satisfaction</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={outcomesMetrics.satisfactionScores}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        layout="vertical"
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" domain={[0, 5]} />
+                        <YAxis dataKey="category" type="category" width={150} />
+                        <Tooltip formatter={(value) => `${value} / 5`} />
+                        <Bar dataKey="score" name="Satisfaction Score" fill="#4db6bc" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Treatment Effectiveness */}
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Treatment Effectiveness</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={outcomesMetrics.treatmentEffectiveness}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="diagnosis" />
+                        <YAxis domain={[0, 10]} />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="baselineScore" name="Baseline Assessment Score" fill="#805ad5" />
+                        <Bar dataKey="currentScore" name="Current Assessment Score" fill="#4db6bc" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Compliance Reports */}
+            <TabsContent value="compliance" className="mt-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Documentation Completeness</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col items-center my-4">
+                      <div className="relative w-48 h-48 flex items-center justify-center rounded-full">
+                        <div className="absolute inset-0">
+                          <div
+                            className="h-full w-full rounded-full"
+                            style={{
+                              background: `conic-gradient(#4fd1c5 ${complianceMetrics.documentationCompleteness}%, #e2e8f0 0)`
+                            }}
+                          />
+                          <div className="absolute inset-4 bg-white rounded-full" />
+                        </div>
+                        <div className="relative text-4xl font-bold">
+                          {complianceMetrics.documentationCompleteness}%
+                        </div>
+                      </div>
+                      <p className="mt-4 text-neutral-500">Required fields completion rate</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">HIPAA Compliance</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col items-center my-4">
+                      <div className="relative w-48 h-48 flex items-center justify-center rounded-full">
+                        <div className="absolute inset-0">
+                          <div
+                            className="h-full w-full rounded-full"
+                            style={{
+                              background: `conic-gradient(#4fd1c5 ${complianceMetrics.hipaaCompliance}%, #e2e8f0 0)`
+                            }}
+                          />
+                          <div className="absolute inset-4 bg-white rounded-full" />
+                        </div>
+                        <div className="relative text-4xl font-bold">
+                          {complianceMetrics.hipaaCompliance}%
+                        </div>
+                      </div>
+                      <p className="mt-4 text-neutral-500">Privacy protocol adherence</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Required Training Completion</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col items-center my-4">
+                      <div className="relative w-48 h-48 flex items-center justify-center rounded-full">
+                        <div className="absolute inset-0">
+                          <div
+                            className="h-full w-full rounded-full"
+                            style={{
+                              background: `conic-gradient(#4fd1c5 ${complianceMetrics.requiredTrainingCompletion}%, #e2e8f0 0)`
+                            }}
+                          />
+                          <div className="absolute inset-4 bg-white rounded-full" />
+                        </div>
+                        <div className="relative text-4xl font-bold">
+                          {complianceMetrics.requiredTrainingCompletion}%
+                        </div>
+                      </div>
+                      <p className="mt-4 text-neutral-500">Staff training compliance</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="lg:col-span-3">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Compliance Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="font-medium mb-3">Compliance Metrics</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm font-medium">Documentation Completeness</span>
+                              <span className="text-sm font-medium">{complianceMetrics.documentationCompleteness}%</span>
+                            </div>
+                            <Progress value={complianceMetrics.documentationCompleteness} className="h-2" />
+                          </div>
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm font-medium">HIPAA Compliance</span>
+                              <span className="text-sm font-medium">{complianceMetrics.hipaaCompliance}%</span>
+                            </div>
+                            <Progress value={complianceMetrics.hipaaCompliance} className="h-2" />
+                          </div>
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm font-medium">Audit Readiness</span>
+                              <span className="text-sm font-medium">{complianceMetrics.auditReadiness}%</span>
+                            </div>
+                            <Progress value={complianceMetrics.auditReadiness} className="h-2" />
+                          </div>
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm font-medium">Required Training Completion</span>
+                              <span className="text-sm font-medium">{complianceMetrics.requiredTrainingCompletion}%</span>
+                            </div>
+                            <Progress value={complianceMetrics.requiredTrainingCompletion} className="h-2" />
+                          </div>
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm font-medium">Supervision Compliance</span>
+                              <span className="text-sm font-medium">{complianceMetrics.supervisionCompliance}%</span>
+                            </div>
+                            <Progress value={complianceMetrics.supervisionCompliance} className="h-2" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-neutral-50 p-4 rounded-md">
+                        <h3 className="font-medium mb-2">Compliance Actions Needed</h3>
+                        <ul className="space-y-2 text-sm">
+                          <li className="flex items-start">
+                            <AlertCircle className="h-4 w-4 mr-2 text-amber-500 mt-0.5" />
+                            <span>2 clinicians have expired CEU documentation</span>
+                          </li>
+                          <li className="flex items-start">
+                            <AlertCircle className="h-4 w-4 mr-2 text-amber-500 mt-0.5" />
+                            <span>3 supervision sessions need documentation</span>
+                          </li>
+                          <li className="flex items-start">
+                            <AlertCircle className="h-4 w-4 mr-2 text-amber-500 mt-0.5" />
+                            <span>5 treatment plans need quarterly updates</span>
+                          </li>
+                          <li className="flex items-start">
+                            <AlertCircle className="h-4 w-4 mr-2 text-error-500 mt-0.5" />
+                            <span>2 BAAs need renewal within 30 days</span>
+                          </li>
+                          <li className="flex items-start">
+                            <CheckCircle className="h-4 w-4 mr-2 text-success-500 mt-0.5" />
+                            <span>All staff HIPAA training is current</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Growth Opportunities */}
+            <TabsContent value="growth" className="mt-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Capacity Utilization */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Capacity Utilization</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={growthMetrics.capacityUtilization}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Area type="monotone" dataKey="utilized" name="Utilized Capacity (%)" stackId="1" stroke="#4db6bc" fill="#4db6bc" />
+                        <Area type="monotone" dataKey="available" name="Available Capacity (%)" stackId="1" stroke="#e2e8f0" fill="#e2e8f0" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Waitlist Analysis */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Waitlist Analysis</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col items-center justify-center p-4 mb-4">
+                      <div className="flex items-baseline gap-4">
+                        <div className="text-center">
+                          <p className="text-3xl font-bold text-primary-500">{growthMetrics.waitlistAnalysis.totalWaitlist}</p>
+                          <p className="text-sm text-neutral-500">Clients Waitlisted</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-3xl font-bold text-primary-500">{growthMetrics.waitlistAnalysis.averageWaitTime}</p>
+                          <p className="text-sm text-neutral-500">Avg. Wait Time (days)</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <h3 className="font-medium mb-3">Services in Demand</h3>
+                    <div className="space-y-3">
+                      {growthMetrics.waitlistAnalysis.servicesDemanded.map((service, index) => (
+                        <div key={index}>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-sm">{service.service}</span>
+                            <span className="text-sm">{service.count} clients</span>
+                          </div>
+                          <Progress value={(service.count / growthMetrics.waitlistAnalysis.totalWaitlist) * 100} className="h-2" />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Growth Opportunities */}
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Growth Opportunities</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="py-2 px-4 text-left font-medium text-sm">Service Expansion</th>
+                            <th className="py-2 px-4 text-left font-medium text-sm">Potential Revenue</th>
+                            <th className="py-2 px-4 text-left font-medium text-sm">Implementation Cost</th>
+                            <th className="py-2 px-4 text-left font-medium text-sm">Timeline</th>
+                            <th className="py-2 px-4 text-left font-medium text-sm">ROI</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {growthMetrics.growthOpportunities.map((opportunity, index) => (
+                            <tr key={index} className={index % 2 === 0 ? "bg-neutral-50" : ""}>
+                              <td className="py-3 px-4">{opportunity.service}</td>
+                              <td className="py-3 px-4">${opportunity.potentialRevenue.toLocaleString()}</td>
+                              <td className="py-3 px-4">${opportunity.implementationCost.toLocaleString()}</td>
+                              <td className="py-3 px-4">{opportunity.timeToImplement}</td>
+                              <td className="py-3 px-4">
+                                {((opportunity.potentialRevenue / opportunity.implementationCost) * 100).toFixed(0)}%
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
             {/* Financial Reports */}
             <TabsContent value="financial" className="mt-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
