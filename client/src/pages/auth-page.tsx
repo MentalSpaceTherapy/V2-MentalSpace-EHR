@@ -243,7 +243,7 @@ export default function AuthPage() {
       </div>
       
       {/* Right side - Hero section */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-500 to-purple-700 text-white p-12 flex-col justify-center relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-600 to-purple-800 text-white p-12 flex-col justify-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-1/4 right-1/4">
             <BrainCircuit className="w-96 h-96 text-white" />
@@ -251,41 +251,41 @@ export default function AuthPage() {
         </div>
         <div className="relative z-10 max-w-lg">
           <h1 className="text-4xl font-bold mb-6">MentalSpace EHR</h1>
-          <p className="text-xl mb-8">
+          <p className="text-xl mb-8 text-white">
             A comprehensive electronic health record system designed specifically for mental health professionals.
           </p>
           <div className="space-y-4">
             <div className="flex items-start space-x-3">
-              <div className="mt-1 bg-white bg-opacity-20 p-2 rounded-full">
+              <div className="mt-1 bg-white bg-opacity-30 p-2 rounded-full">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold">Streamlined Documentation</h3>
-                <p className="text-primary-100">Efficiently create and manage clinical documentation with specialized forms.</p>
+                <h3 className="font-semibold text-white">Streamlined Documentation</h3>
+                <p className="text-white">Efficiently create and manage clinical documentation with specialized forms.</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
-              <div className="mt-1 bg-white bg-opacity-20 p-2 rounded-full">
+              <div className="mt-1 bg-white bg-opacity-30 p-2 rounded-full">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold">Comprehensive Client Management</h3>
-                <p className="text-primary-100">Track all client information, history, and treatment plans in one place.</p>
+                <h3 className="font-semibold text-white">Comprehensive Client Management</h3>
+                <p className="text-white">Track all client information, history, and treatment plans in one place.</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
-              <div className="mt-1 bg-white bg-opacity-20 p-2 rounded-full">
+              <div className="mt-1 bg-white bg-opacity-30 p-2 rounded-full">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold">Integrated Scheduling & Billing</h3>
-                <p className="text-primary-100">Manage appointments and process payments seamlessly.</p>
+                <h3 className="font-semibold text-white">Integrated Scheduling & Billing</h3>
+                <p className="text-white">Manage appointments and process payments seamlessly.</p>
               </div>
             </div>
           </div>

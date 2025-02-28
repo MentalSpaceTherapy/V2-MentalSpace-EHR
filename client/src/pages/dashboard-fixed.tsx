@@ -243,18 +243,18 @@ export default function Dashboard() {
           notificationCount={notifications.filter(n => !n.read).length}
         />
         
-        <div className="p-8 bg-gradient-to-br from-neutral-50 to-white min-h-screen">
+        <main className="p-6 bg-gradient-to-br from-neutral-50 to-white min-h-screen overflow-y-auto">
           {/* Welcome Banner */}
-          <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-500 text-white shadow-xl relative overflow-hidden">
+          <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-600 text-white shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 opacity-10">
               <BrainCircuit className="w-64 h-64 -mt-12 -mr-12 text-white" />
             </div>
             <div className="relative z-10">
               <div className="flex items-center">
                 <Sparkles className="h-6 w-6 mr-3 text-primary-200" />
-                <h2 className="text-2xl font-bold">Welcome back, Dr. {user.firstName}!</h2>
+                <h2 className="text-2xl font-bold">Welcome back, Dr. {user?.firstName}!</h2>
               </div>
-              <p className="mt-2 max-w-lg text-primary-100">
+              <p className="mt-2 max-w-lg text-white">
                 You have {sessions.length} sessions scheduled today and {documentationTasks.filter(t => t.status === "Overdue" || t.status === "Due Today").length} documentation items that need attention.
               </p>
               <div className="mt-4 flex items-center space-x-3">
@@ -336,7 +336,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );
