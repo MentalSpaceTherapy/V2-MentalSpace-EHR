@@ -1824,6 +1824,265 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                   />
                 </CardContent>
                 
+                <CardHeader className="border-t border-b mt-6 bg-gradient-to-r from-blue-50 to-indigo-50">
+                  <CardTitle className="flex items-center text-base">
+                    <CreditCard className="mr-2 h-5 w-5 text-blue-600" />
+                    Payment Methods
+                  </CardTitle>
+                  <CardDescription>Client's payment card information</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-6">
+                  {paymentCards.fields.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-8 bg-gray-50 border border-dashed rounded-md">
+                      <CreditCard className="h-12 w-12 text-gray-300 mb-3" />
+                      <h3 className="text-lg font-medium text-gray-600 mb-1">No Payment Cards</h3>
+                      <p className="text-sm text-gray-500 mb-4 text-center">Add payment cards for faster checkout and automatic billing</p>
+                      <Button 
+                        type="button"
+                        variant="outline"
+                        className="text-blue-600"
+                        onClick={() => paymentCards.append({
+                          cardType: undefined,
+                          lastFourDigits: "",
+                          expiryMonth: undefined,
+                          expiryYear: undefined,
+                          cardholderName: "",
+                          isDefault: true,
+                          billingAddress: ""
+                        })}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Payment Card
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {paymentCards.fields.map((card, index) => (
+                        <div key={card.id} className="border rounded-md">
+                          <div className="p-4 bg-blue-50 flex justify-between items-center">
+                            <div className="flex items-center">
+                              {(() => {
+                                // Card type icon
+                                const type = form.getValues(`paymentCards.${index}.cardType`);
+                                if (type === "visa") {
+                                  return <div className="w-10 h-6 bg-blue-600 rounded text-white text-xs font-bold flex items-center justify-center">VISA</div>;
+                                } else if (type === "mastercard") {
+                                  return <div className="w-10 h-6 bg-red-500 rounded text-white text-xs font-bold flex items-center justify-center">MC</div>;
+                                } else if (type === "american express") {
+                                  return <div className="w-10 h-6 bg-green-600 rounded text-white text-xs font-bold flex items-center justify-center">AMEX</div>;
+                                } else if (type === "discover") {
+                                  return <div className="w-10 h-6 bg-orange-500 rounded text-white text-xs font-bold flex items-center justify-center">DISC</div>;
+                                } else {
+                                  return <CreditCard className="h-5 w-5 text-gray-500 mr-1" />;
+                                }
+                              })()}
+                              <span className="ml-2 font-medium">
+                                {form.getValues(`paymentCards.${index}.cardType`)?.charAt(0).toUpperCase() + form.getValues(`paymentCards.${index}.cardType`)?.slice(1) || "Card"} 
+                                {form.getValues(`paymentCards.${index}.lastFourDigits`) && 
+                                  ` ****${form.getValues(`paymentCards.${index}.lastFourDigits`)}`}
+                              </span>
+                              {form.getValues(`paymentCards.${index}.isDefault`) && (
+                                <Badge className="ml-2 bg-blue-100 text-blue-800 border-blue-200">Default</Badge>
+                              )}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => paymentCards.remove(index)}
+                              className="h-8 w-8 text-gray-500 hover:text-red-500"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name={`paymentCards.${index}.cardType`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Card Type</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    value={field.value || ""}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select card type" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {cardTypes.map((type) => (
+                                        <SelectItem key={type} value={type.toLowerCase()}>
+                                          {type}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`paymentCards.${index}.lastFourDigits`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Last 4 Digits</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="1234" 
+                                      maxLength={4}
+                                      {...field} 
+                                      onChange={(e) => {
+                                        // Only allow numbers
+                                        const value = e.target.value.replace(/[^0-9]/g, '');
+                                        if (value.length <= 4) {
+                                          field.onChange(value);
+                                        }
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormDescription>For identification only</FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <FormField
+                                control={form.control}
+                                name={`paymentCards.${index}.expiryMonth`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Exp. Month</FormLabel>
+                                    <Select
+                                      onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                                      value={field.value?.toString() || ""}
+                                    >
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="MM" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                                          <SelectItem key={month} value={month.toString()}>
+                                            {month.toString().padStart(2, '0')}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`paymentCards.${index}.expiryYear`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Exp. Year</FormLabel>
+                                    <Select
+                                      onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                                      value={field.value?.toString() || ""}
+                                    >
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="YYYY" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i).map((year) => (
+                                          <SelectItem key={year} value={year.toString()}>
+                                            {year}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            
+                            <FormField
+                              control={form.control}
+                              name={`paymentCards.${index}.cardholderName`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Cardholder Name</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="Name on card" 
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <div className="md:col-span-2">
+                              <FormField
+                                control={form.control}
+                                name={`paymentCards.${index}.isDefault`}
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={(checked) => {
+                                          // Set all cards to not default
+                                          if (checked) {
+                                            paymentCards.fields.forEach((_, i) => {
+                                              if (i !== index) {
+                                                form.setValue(`paymentCards.${i}.isDefault`, false);
+                                              }
+                                            });
+                                          }
+                                          field.onChange(checked);
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <div className="space-y-1 leading-none">
+                                      <FormLabel>Make Default Payment Method</FormLabel>
+                                      <FormDescription>
+                                        This card will be used for automatic billing
+                                      </FormDescription>
+                                    </div>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => paymentCards.append({
+                          cardType: undefined,
+                          lastFourDigits: "",
+                          expiryMonth: undefined,
+                          expiryYear: undefined,
+                          cardholderName: "",
+                          isDefault: paymentCards.fields.length === 0, // Make default if first card
+                          billingAddress: ""
+                        })}
+                        className="mt-4"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Another Card
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+                
                 <CardHeader className="border-t border-b mt-6 bg-gradient-to-r from-yellow-50 to-green-50">
                   <CardTitle className="flex items-center text-base">
                     <Upload className="mr-2 h-5 w-5 text-green-600" />
