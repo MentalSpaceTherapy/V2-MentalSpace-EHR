@@ -8,7 +8,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Plus, Download, DollarSign, AlertCircle, CheckCircle, Clock, FileText } from "lucide-react";
+import { 
+  Search, 
+  Filter, 
+  Plus, 
+  Download, 
+  DollarSign, 
+  AlertCircle, 
+  CheckCircle, 
+  Clock, 
+  FileText,
+  Settings,
+  FileBarChart,
+  FileSpreadsheet,
+  FileClock,
+  Receipt,
+  CreditCard,
+  Ban,
+  RefreshCw,
+  FileCheck,
+  FileSearch,
+  FilePlus,
+  Calendar,
+  BarChart,
+  PieChart
+} from "lucide-react";
 import { format, subDays } from "date-fns";
 import { 
   Select,
@@ -203,6 +227,144 @@ export default function Billing() {
         <TopBar title="Billing & Insurance" />
         
         <div className="p-6 bg-neutral-50 min-h-screen">
+          {/* Billing Categories */}
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                {/* Patient Accounting */}
+                <div>
+                  <h3 className="font-semibold text-gray-600 mb-3">Patient Accounting</h3>
+                  <div className="space-y-2">
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <Receipt className="h-4 w-4 mr-2" />
+                      Enter Patient Payment
+                    </Button>
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Enter Misc Charge
+                    </Button>
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <Ban className="h-4 w-4 mr-2" />
+                      Enter Refund
+                    </Button>
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Enter Misc Credit
+                    </Button>
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Create Statement
+                    </Button>
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Pt Aging & Batch Statements
+                    </Button>
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Pt Credit Cards
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Insurance Claims */}
+                <div>
+                  <h3 className="font-semibold text-gray-600 mb-3">Insurance Claims</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <Button variant="link" className="justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                        <FileSearch className="h-4 w-4 mr-2" />
+                        Eligibility History
+                      </Button>
+                      <Badge className="ml-2 bg-blue-500 rounded-full text-xs">948</Badge>
+                    </div>
+                    <div className="flex items-center">
+                      <Button variant="link" className="justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                        <FilePlus className="h-4 w-4 mr-2" />
+                        Submit Primary Claims
+                      </Button>
+                      <Badge className="ml-2 bg-blue-500 rounded-full text-xs">20</Badge>
+                    </div>
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <FilePlus className="h-4 w-4 mr-2" />
+                      Submit Secondary Claims
+                    </Button>
+                    <div className="flex items-center">
+                      <Button variant="link" className="justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Mark External Claims
+                      </Button>
+                      <Badge className="ml-2 bg-neutral-200 rounded-full text-xs">0</Badge>
+                    </div>
+                    <div className="flex items-center">
+                      <Button variant="link" className="justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                        <FilePlus className="h-4 w-4 mr-2" />
+                        Create CMS-1500
+                      </Button>
+                      <Badge className="ml-2 bg-neutral-200 rounded-full text-xs">0</Badge>
+                    </div>
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Create Superbill
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Insurance Payments */}
+                <div>
+                  <h3 className="font-semibold text-gray-600 mb-3">Insurance Payments</h3>
+                  <div className="space-y-2">
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <Receipt className="h-4 w-4 mr-2" />
+                      Enter Insurance Payment
+                    </Button>
+                    <div className="flex items-center">
+                      <Button variant="link" className="justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Electronic Claim History
+                      </Button>
+                      <Badge className="ml-2 bg-neutral-200 rounded-full text-xs">9</Badge>
+                    </div>
+                    <div className="flex items-center">
+                      <Button variant="link" className="justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                        <BarChart className="h-4 w-4 mr-2" />
+                        ERA
+                      </Button>
+                      <Badge className="ml-2 bg-neutral-200 rounded-full text-xs">0</Badge>
+                    </div>
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <FileClock className="h-4 w-4 mr-2" />
+                      Insurance Aging Report
+                    </Button>
+                  </div>
+                </div>
+
+                {/* More Reports */}
+                <div>
+                  <h3 className="font-semibold text-gray-600 mb-3">More Reports</h3>
+                  <div className="space-y-2">
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <FileBarChart className="h-4 w-4 mr-2" />
+                      Revenue Report
+                    </Button>
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Write-Off Report
+                    </Button>
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <FileCheck className="h-4 w-4 mr-2" />
+                      Note Count Report
+                    </Button>
+                    <Button variant="link" className="w-full justify-start p-0 text-primary hover:text-primary/80 text-sm h-auto">
+                      <FileCheck className="h-4 w-4 mr-2" />
+                      Prior Authorizations
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Financial Dashboard */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             {/* Total Outstanding */}
             <Card>
@@ -260,6 +422,154 @@ export default function Billing() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Transaction Search */}
+          <Card className="mb-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Search Billing Transactions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Clinician:</label>
+                  <Select defaultValue="any">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Any Clinician" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Any Clinician</SelectItem>
+                      <SelectItem value="dr-johnson">Dr. Johnson</SelectItem>
+                      <SelectItem value="dr-williams">Dr. Williams</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payer:</label>
+                  <Select defaultValue="any">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Any Payer or Direct from Patient" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Any Payer or Direct from Patient</SelectItem>
+                      <SelectItem value="bcbs">Blue Cross Blue Shield</SelectItem>
+                      <SelectItem value="aetna">Aetna</SelectItem>
+                      <SelectItem value="direct">Direct from Patient</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type:</label>
+                  <Select defaultValue="any">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Any Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Any Type</SelectItem>
+                      <SelectItem value="payment">Payment</SelectItem>
+                      <SelectItem value="claim">Claim</SelectItem>
+                      <SelectItem value="adjustment">Adjustment</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location:</label>
+                  <Select defaultValue="any">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Any Location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Any Location</SelectItem>
+                      <SelectItem value="main">Main Office</SelectItem>
+                      <SelectItem value="north">North Branch</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Method:</label>
+                  <Select defaultValue="any">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Any Submission Method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Any Submission Method</SelectItem>
+                      <SelectItem value="electronic">Electronic</SelectItem>
+                      <SelectItem value="paper">Paper</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Items:</label>
+                  <Select defaultValue="charges">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Charges and Payments" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="charges">Charges and Payments</SelectItem>
+                      <SelectItem value="charges-only">Charges Only</SelectItem>
+                      <SelectItem value="payments-only">Payments Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date:</label>
+                  <div className="flex items-center space-x-2">
+                    <Select defaultValue="7days">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Last 7 Days" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7days">Last 7 Days</SelectItem>
+                        <SelectItem value="30days">Last 30 Days</SelectItem>
+                        <SelectItem value="90days">Last 90 Days</SelectItem>
+                        <SelectItem value="custom">Custom Range</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-gray-500">to</span>
+                    <Input type="date" className="w-36" value="2025-02-28" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status:</label>
+                  <Select defaultValue="any">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Any Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Any Status</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="denied">Denied</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ID:</label>
+                  <Input placeholder="Check Number or Transaction ID" />
+                </div>
+              </div>
+              
+              <div className="flex justify-start mt-4">
+                <Button>
+                  <Search className="h-4 w-4 mr-2" />
+                  Search Billing Transactions
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Practice Settings Button */}
+          <div className="flex justify-end mb-6">
+            <Button variant="outline" className="flex items-center">
+              <Settings className="h-4 w-4 mr-2" />
+              Practice Billing Settings
+            </Button>
           </div>
 
           <Tabs defaultValue="invoices" className="mb-6">
