@@ -249,15 +249,15 @@ export default function AuthPage() {
       </div>
       
       {/* Right side - Hero section */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-600 to-purple-800 text-white p-12 flex-col justify-center relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-500 to-purple-700 text-white p-12 flex-col justify-center relative overflow-hidden shadow-2xl">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-1/4 right-1/4">
             <BrainCircuit className="w-96 h-96 text-white" />
           </div>
         </div>
         <div className="relative z-10 max-w-lg">
-          <h1 className="text-4xl font-bold mb-6">MentalSpace EHR</h1>
-          <p className="text-xl mb-8 text-white">
+          <h1 className="text-4xl font-bold mb-6 text-white drop-shadow-md">MentalSpace EHR</h1>
+          <p className="text-xl mb-8 text-white drop-shadow-sm font-medium">
             A comprehensive electronic health record system designed specifically for mental health professionals.
           </p>
           <div className="space-y-4">
@@ -268,8 +268,8 @@ export default function AuthPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-white">Streamlined Documentation</h3>
-                <p className="text-white">Efficiently create and manage clinical documentation with specialized forms.</p>
+                <h3 className="font-semibold text-white drop-shadow-md">Streamlined Documentation</h3>
+                <p className="text-white drop-shadow-sm">Efficiently create and manage clinical documentation with specialized forms.</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
@@ -279,8 +279,8 @@ export default function AuthPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-white">Comprehensive Client Management</h3>
-                <p className="text-white">Track all client information, history, and treatment plans in one place.</p>
+                <h3 className="font-semibold text-white drop-shadow-md">Comprehensive Client Management</h3>
+                <p className="text-white drop-shadow-sm">Track all client information, history, and treatment plans in one place.</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
@@ -290,8 +290,8 @@ export default function AuthPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-white">Integrated Scheduling & Billing</h3>
-                <p className="text-white">Manage appointments and process payments seamlessly.</p>
+                <h3 className="font-semibold text-white drop-shadow-md">Integrated Scheduling & Billing</h3>
+                <p className="text-white drop-shadow-sm">Manage appointments and process payments seamlessly.</p>
               </div>
             </div>
           </div>
