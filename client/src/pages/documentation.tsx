@@ -132,10 +132,10 @@ export default function Documentation({ formType }: DocumentationProps) {
   
   // State for document creation and editing
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
+  const [selectedDocType, setSelectedDocType] = useState<string | undefined>(undefined);
   const [activeDocument, setActiveDocument] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'form'>(formType ? 'form' : 'list');
-  const [currentForm, setCurrentForm] = useState<string | null>(formType || null);
+  const [currentForm, setCurrentForm] = useState<string | undefined>(formType);
   
   // Initialize with formType if provided
   useEffect(() => {
@@ -241,9 +241,9 @@ export default function Documentation({ formType }: DocumentationProps) {
 
   const handleReturnToList = () => {
     setViewMode('list');
-    setCurrentForm(null);
+    setCurrentForm(undefined);
     setActiveDocument(null);
-    setSelectedDocType(null);
+    setSelectedDocType(undefined);
   };
 
   // If user is not authenticated, show login form
