@@ -5,6 +5,11 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { useAuth } from "@/hooks/useAuth";
 import { ProgressNoteForm } from "@/components/forms/ProgressNoteForm";
 import { IntakeForm } from "@/components/forms/IntakeForm";
+import { TreatmentPlanForm } from "@/components/forms/TreatmentPlanForm";
+import { ContactNoteForm } from "@/components/forms/ContactNoteForm";
+import { AbsenceNoteForm } from "@/components/forms/AbsenceNoteForm";
+import { ConsultationForm } from "@/components/forms/ConsultationForm";
+import { MiscellaneousForm } from "@/components/forms/MiscellaneousForm";
 import { 
   Card, 
   CardContent, 
@@ -260,23 +265,34 @@ export default function Documentation({ formType }: DocumentationProps) {
 
   // Render form based on document type
   const renderForm = () => {
-    if (currentForm === "Progress Note") {
-      return <ProgressNoteForm />;
-    } else if (currentForm === "Intake Form") {
-      return <IntakeForm />;
-    } else {
-      return (
-        <div className="max-w-4xl mx-auto p-10 text-center bg-white rounded-lg shadow-md">
-          <FileQuestion className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-xl font-medium text-gray-700 mb-2">Form Not Implemented Yet</h3>
-          <p className="text-gray-500 mb-6">
-            The {currentForm} form is currently under development and will be available soon.
-          </p>
-          <Button onClick={handleReturnToList}>
-            Return to Documents
-          </Button>
-        </div>
-      );
+    switch (currentForm) {
+      case "Progress Note":
+        return <ProgressNoteForm />;
+      case "Intake Form":
+        return <IntakeForm />;
+      case "Treatment Plan":
+        return <TreatmentPlanForm />;
+      case "Contact Note":
+        return <ContactNoteForm />;
+      case "Absence Note":
+        return <AbsenceNoteForm />;
+      case "Consultation":
+        return <ConsultationForm />;
+      case "Miscellaneous":
+        return <MiscellaneousForm />;
+      default:
+        return (
+          <div className="max-w-4xl mx-auto p-10 text-center bg-white rounded-lg shadow-md">
+            <FileQuestion className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-xl font-medium text-gray-700 mb-2">Form Not Implemented Yet</h3>
+            <p className="text-gray-500 mb-6">
+              The {currentForm} form is currently under development and will be available soon.
+            </p>
+            <Button onClick={handleReturnToList}>
+              Return to Documents
+            </Button>
+          </div>
+        );
     }
   };
 
