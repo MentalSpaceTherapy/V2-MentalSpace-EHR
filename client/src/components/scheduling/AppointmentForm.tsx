@@ -102,12 +102,29 @@ interface AppointmentFormProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: any) => void;
   initialDate?: Date;
+  initialTimeSlot?: {
+    date: Date;
+    time: string;
+  };
 }
 
-export function AppointmentForm({ open, onOpenChange, onSubmit, initialDate }: AppointmentFormProps) {
+export function AppointmentForm({ open, onOpenChange, onSubmit, initialDate, initialTimeSlot }: AppointmentFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Convert 24-hour format time to 12-hour format with AM/PM for display
+  const formatTimeFor12Hour = (time: string) => {
+    if (!time) return "09:00 AM";
+    
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours, 10);
+    
+    if (hour === 0) return `12:${minutes || '00'} AM`;
+    if (hour < 12) return `${hour}:${minutes || '00'} AM`;
+    if (hour === 12) return `12:${minutes || '00'} PM`;
+    return `${hour - 12}:${minutes || '00'} PM`;
+  };
 
   // Form initialization
   const form = useForm<AppointmentFormValues>({
@@ -119,8 +136,14 @@ export function AppointmentForm({ open, onOpenChange, onSubmit, initialDate }: A
       location: "HIPAA Compliant Telehealth Platform",
       useTelehealth: false,
       serviceCode: "90834: Psychotherapy, 45 min",
-      scheduledDate: initialDate ? format(initialDate, "MM/dd/yyyy") : format(new Date(), "MM/dd/yyyy"),
-      scheduledTime: "09:00 AM",
+      scheduledDate: initialTimeSlot?.date 
+        ? format(initialTimeSlot.date, "MM/dd/yyyy") 
+        : initialDate 
+          ? format(initialDate, "MM/dd/yyyy") 
+          : format(new Date(), "MM/dd/yyyy"),
+      scheduledTime: initialTimeSlot?.time 
+        ? formatTimeFor12Hour(initialTimeSlot.time)
+        : "09:00 AM",
       duration: "45",
       frequency: "One time",
       alert: ""

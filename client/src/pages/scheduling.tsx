@@ -354,6 +354,7 @@ export default function Scheduling() {
           onOpenChange={setIsAppointmentFormOpen}
           onSubmit={handleCreateAppointment}
           initialDate={selectedDate}
+          initialTimeSlot={selectedTimeSlot}
         />
         
         {/* Calendar View Settings Dialog */}
@@ -572,14 +573,36 @@ export default function Scheduling() {
                           });
                           
                           return (
-                            <div key={dayIndex} className="p-1 border-r min-h-[60px] relative">
+                            <div 
+                              key={dayIndex} 
+                              className="p-1 border-r min-h-[60px] relative cursor-pointer hover:bg-neutral-50"
+                              onClick={() => {
+                                // Extract hour from time slot for the appointment form
+                                const hour = timeSlot.split(":")[0];
+                                const isPM = timeSlot.includes("PM");
+                                
+                                // Format time for 24 hour format
+                                let timeHour = parseInt(hour, 10);
+                                if (isPM && timeHour !== 12) timeHour += 12;
+                                if (!isPM && timeHour === 12) timeHour = 0;
+                                
+                                // Format as hours:minutes
+                                const timeString = `${timeHour}:00`;
+                                
+                                // Open appointment form with this day and time
+                                handleScheduleAppointment(day, timeString);
+                              }}
+                            >
                               {hourAppointments.map(app => (
                                 <div 
                                   key={app.id}
                                   className={cn("p-1 text-xs rounded mb-1 border cursor-pointer", 
                                     getTimeslotBackground(app.status)
                                   )}
-                                  onClick={() => handleAppointmentClick(app)}
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Prevent triggering parent onClick
+                                    handleAppointmentClick(app);
+                                  }}
                                 >
                                   <div className="font-medium">{app.startTime} - {app.clientName}</div>
                                   <div className="flex items-center mt-0.5">
@@ -592,6 +615,11 @@ export default function Scheduling() {
                                   </div>
                                 </div>
                               ))}
+                              {hourAppointments.length === 0 && (
+                                <div className="w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                  <Plus className="h-3 w-3 text-neutral-400" />
+                                </div>
+                              )}
                             </div>
                           );
                         })}
