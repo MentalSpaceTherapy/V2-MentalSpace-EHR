@@ -77,7 +77,7 @@ const clientSchema = z.object({
   middleName: z.string().optional().or(z.literal("")),
   preferredName: z.string().optional().or(z.literal("")),
   dateOfBirth: z.date().optional(),
-  administrativeSex: z.enum(["male", "female", "unknown"]).optional(),
+  administrativeSex: z.enum(["male", "female", "unknown", ""]).optional(),
   genderIdentity: z.string().optional().or(z.literal("")),
   sexualOrientation: z.string().optional().or(z.literal("")),
   preferredPronouns: z.string().optional().or(z.literal("")),
@@ -413,7 +413,8 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                         <FormLabel>Administrative Sex</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          value={field.value}
+                          value={field.value || ""}
+                          defaultValue=""
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -421,6 +422,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="">Select administrative sex</SelectItem>
                             <SelectItem value="male">Male</SelectItem>
                             <SelectItem value="female">Female</SelectItem>
                             <SelectItem value="unknown">Unknown</SelectItem>
@@ -653,7 +655,8 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                         <FormLabel>Client Status</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value || "active"}
+                          defaultValue="active"
                         >
                           <FormControl>
                             <SelectTrigger>
