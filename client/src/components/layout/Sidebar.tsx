@@ -53,7 +53,7 @@ export function Sidebar({ className }: SidebarProps) {
     { name: "Progress Notes", href: "/documentation/progress-notes", icon: FileSignature },
     { name: "Treatment Plans", href: "/documentation/treatment-plans", icon: ClipboardCheck },
     { name: "Contact Notes", href: "/documentation/contact-notes", icon: Phone },
-    { name: "Absence Notes", href: "/documentation/absence-notes", icon: FileClock },
+    { name: "Cancellation/Missed Appointment", href: "/documentation/absence-notes", icon: FileClock },
     { name: "Consultations", href: "/documentation/consultations", icon: FileSpreadsheet },
     { name: "Miscellaneous", href: "/documentation/miscellaneous", icon: FileQuestion },
   ];
