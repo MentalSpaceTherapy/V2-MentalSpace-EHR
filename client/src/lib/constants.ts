@@ -49,12 +49,13 @@ export const SESSION_STATUS = [
 
 // Documentation types
 export const DOCUMENTATION_TYPES = [
+  "Intake Form",
   "Progress Note",
   "Treatment Plan", 
-  "Assessment", 
-  "Intake Form",
-  "Diagnosis",
-  "Discharge Summary",
+  "Contact Note",
+  "Absence Note",
+  "Consultation",
+  "Miscellaneous",
 ];
 
 // Documentation status

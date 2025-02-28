@@ -204,10 +204,14 @@ export default function Documentation({ formType }: DocumentationProps) {
         return <UserPlus className="h-5 w-5 text-purple-500" />;
       case "Treatment Plan":
         return <FileEdit className="h-5 w-5 text-green-500" />;
-      case "Assessment":
-        return <ClipboardList className="h-5 w-5 text-amber-500" />;
-      case "Discharge Summary":
-        return <FileCheck className="h-5 w-5 text-red-500" />;
+      case "Contact Note":
+        return <Phone className="h-5 w-5 text-indigo-500" />;
+      case "Absence Note":
+        return <FileClock className="h-5 w-5 text-amber-500" />;
+      case "Consultation":
+        return <FileSpreadsheet className="h-5 w-5 text-teal-500" />;
+      case "Miscellaneous":
+        return <FileQuestion className="h-5 w-5 text-gray-500" />;
       default:
         return <FileQuestion className="h-5 w-5 text-gray-500" />;
     }
@@ -321,10 +325,14 @@ export default function Documentation({ formType }: DocumentationProps) {
                                 return "from-purple-500 to-pink-500 shadow-purple-200";
                               case "Treatment Plan":
                                 return "from-green-500 to-emerald-500 shadow-green-200";
-                              case "Assessment":
+                              case "Contact Note":
+                                return "from-indigo-500 to-blue-500 shadow-indigo-200";
+                              case "Absence Note":
                                 return "from-amber-500 to-yellow-500 shadow-amber-200";
-                              case "Discharge Summary":
-                                return "from-red-500 to-rose-500 shadow-red-200";
+                              case "Consultation":
+                                return "from-teal-500 to-cyan-500 shadow-teal-200";
+                              case "Miscellaneous":
+                                return "from-gray-500 to-slate-500 shadow-gray-200";
                               default:
                                 return "from-gray-500 to-slate-500 shadow-gray-200";
                             }
