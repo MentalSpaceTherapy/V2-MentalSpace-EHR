@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { AppointmentForm } from "@/components/scheduling/AppointmentForm";
 import { SetCalendarViewDialog, type CalendarViewSettings } from "@/components/scheduling/SetCalendarViewDialog";
+import { AppointmentDetailsDialog } from "@/components/scheduling/AppointmentDetailsDialog";
 
 // Mock client data
 const mockClients = [
@@ -182,9 +183,42 @@ export default function Scheduling() {
   };
 
   const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
+  const [isAppointmentDetailsOpen, setIsAppointmentDetailsOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<typeof mockAppointments[0] | null>(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<{date: Date, time: string} | null>(null);
   
-  const handleScheduleAppointment = () => {
+  const handleScheduleAppointment = (date?: Date, time?: string) => {
+    if (date && time) {
+      // Set the selected time slot for use in the form
+      setSelectedTimeSlot({ date, time });
+      
+      // Convert time string to format expected by form
+      const timeParts = time.split(":");
+      const hour = parseInt(timeParts[0]);
+      const formattedTime = hour > 12 
+        ? `${hour - 12}:00 PM` 
+        : hour === 12 ? "12:00 PM" : `${hour}:00 AM`;
+      
+      // Pre-populate form with selected date and time
+      setSelectedDate(date);
+    } else {
+      setSelectedTimeSlot(null);
+    }
+    
     setIsAppointmentFormOpen(true);
+  };
+  
+  const handleStartSession = (appointmentId: number) => {
+    const appointment = appointments.find(app => app.id === appointmentId);
+    
+    if (appointment) {
+      toast({
+        title: "Starting Session",
+        description: `Starting ${appointment.type} session with ${appointment.clientName}`,
+      });
+      
+      // In a real app, this would navigate to a video call or session page
+    }
   };
   
   // Type definition for the appointment form data
@@ -257,10 +291,8 @@ export default function Scheduling() {
   };
 
   const handleAppointmentClick = (appointment: typeof mockAppointments[0]) => {
-    toast({
-      title: `${appointment.clientName} - ${appointment.type}`,
-      description: `${format(appointment.date, "EEEE, MMMM d")} at ${appointment.startTime} (${appointment.medium})`,
-    });
+    setSelectedAppointment(appointment);
+    setIsAppointmentDetailsOpen(true);
   };
 
   const handleConfirmAppointment = (appointmentId: number) => {
@@ -331,6 +363,16 @@ export default function Scheduling() {
           onViewChange={handleCalendarViewChange}
         />
         
+        {/* Appointment Details Dialog */}
+        <AppointmentDetailsDialog
+          open={isAppointmentDetailsOpen}
+          onOpenChange={setIsAppointmentDetailsOpen}
+          appointment={selectedAppointment}
+          onConfirm={handleConfirmAppointment}
+          onCancel={handleCancelAppointment}
+          onStartSession={handleStartSession}
+        />
+        
         <div className="p-6 bg-neutral-50 min-h-screen">
           {/* Calendar Header */}
           <div className="flex justify-between items-center mb-4">
@@ -348,7 +390,7 @@ export default function Scheduling() {
                 Set Calendar View
               </Button>
               <Button 
-                onClick={handleScheduleAppointment}
+                onClick={() => setIsAppointmentFormOpen(true)}
                 className="bg-blue-500 hover:bg-blue-600"
               >
                 <Plus className="h-4 w-4 mr-2" />

@@ -165,7 +165,7 @@ export function AppointmentForm({ open, onOpenChange, onSubmit, initialDate }: A
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] bg-white">
         <DialogHeader>
           <DialogTitle className="text-xl">Create New Appointment</DialogTitle>
         </DialogHeader>
