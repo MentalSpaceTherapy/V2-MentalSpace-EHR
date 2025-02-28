@@ -22,6 +22,10 @@
     animation: slideUp 0.4s ease-out;
   }
   
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+  
   .animate-scale {
     animation: scale 0.3s ease-in-out;
   }
@@ -57,6 +61,11 @@
 
 @keyframes slideUp {
   from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-10px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
