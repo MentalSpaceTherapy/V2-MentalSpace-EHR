@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { BrainCircuit, Lock, AtSign, ArrowRight, UserPlus } from "lucide-react";
+import { BrainCircuit, Lock, AtSign, ArrowRight, UserPlus, Loader2 } from "lucide-react";
 
 export default function AuthPage() {
   const [_, setLocation] = useLocation();
@@ -148,9 +148,10 @@ export default function AuthPage() {
                 <CardFooter>
                   <Button 
                     type="submit" 
-                    className="w-full bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700"
+                    className="w-full bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all font-medium text-white"
                     disabled={isLoading}
                   >
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {isLoading ? "Signing in..." : "Sign In"}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -235,9 +236,10 @@ export default function AuthPage() {
                 <CardFooter>
                   <Button 
                     type="submit" 
-                    className="w-full bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700"
+                    className="w-full bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all font-medium text-white"
                     disabled={isLoading}
                   >
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {isLoading ? "Creating account..." : "Create Account"}
                     <UserPlus className="ml-2 h-4 w-4" />
                   </Button>
