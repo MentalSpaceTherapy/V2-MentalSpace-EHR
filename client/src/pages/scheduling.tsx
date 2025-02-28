@@ -354,7 +354,7 @@ export default function Scheduling() {
           onOpenChange={setIsAppointmentFormOpen}
           onSubmit={handleCreateAppointment}
           initialDate={selectedDate}
-          initialTimeSlot={selectedTimeSlot}
+          initialTimeSlot={selectedTimeSlot || undefined}
         />
         
         {/* Calendar View Settings Dialog */}
@@ -408,6 +408,12 @@ export default function Scheduling() {
                   <Button variant="outline" size="sm" onClick={navigatePrevious}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
+                  <Button variant="outline" size="sm" onClick={navigateToday} className="mx-1">
+                    Today
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={navigateNext}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                   <span className="text-sm font-medium ml-2">
                     Week of {format(weekStart, "MMMM d, yyyy")}
                   </span>
@@ -416,16 +422,6 @@ export default function Scheduling() {
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" className="text-gray-500">
-                    Print
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="text-gray-500"
-                  >
-                    Agenda
-                  </Button>
                   <Button 
                     variant={view === "day" ? "secondary" : "outline"} 
                     size="sm"
@@ -446,6 +442,20 @@ export default function Scheduling() {
                     onClick={() => setView("month")}
                   >
                     Month
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-gray-500 ml-4"
+                  >
+                    Print
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-gray-500"
+                  >
+                    Agenda
                   </Button>
                 </div>
               </div>

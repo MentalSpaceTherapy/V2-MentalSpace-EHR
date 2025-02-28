@@ -112,7 +112,7 @@ export function SetCalendarViewDialog({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] bg-white">
         <DialogHeader>
           <DialogTitle className="text-xl">Set Calendar View</DialogTitle>
         </DialogHeader>
