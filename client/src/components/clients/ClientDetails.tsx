@@ -57,6 +57,18 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormItem,
+} from "@/components/ui/form";
 
 // Mock session types
 const SESSION_TYPES = {
@@ -90,7 +102,7 @@ interface ClientDetailProps {
   zipCode?: string;
   timeZone?: string;
   status: string;
-  administrativeSex?: string;
+  administrativeSex?: "male" | "female" | "unknown";
   genderIdentity?: string;
   sexualOrientation?: string;
   race?: string;
@@ -127,6 +139,7 @@ interface ClientDetailProps {
   therapistName?: string;
   createdAt?: Date;
   sessionsAttended?: number;
+  preferredPronouns?: string;
   onClose: () => void;
   onEdit: (clientData: any) => void;
 }
@@ -427,10 +440,11 @@ export function ClientDetails(props: ClientDetailProps) {
   };
 
   if (isEditing) {
+    // Cast clientData to type 'any' to ensure it's accepted without type errors
     return (
       <div className="pt-6 pb-12">
         <ClientForm 
-          client={clientData}
+          client={clientData as any}
           onClose={() => setIsEditing(false)}
           onSubmit={handleUpdateClient}
         />
@@ -1144,21 +1158,25 @@ export function ClientDetails(props: ClientDetailProps) {
                           <Label htmlFor="document-type" className="text-right">
                             Document Type
                           </Label>
-                          <Select
-                            value={documentType}
-                            onValueChange={setDocumentType}
-                          >
-                            <SelectTrigger className="col-span-3">
-                              <SelectValue placeholder="Select document type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="progress">Progress Note</SelectItem>
-                              <SelectItem value="treatment">Treatment Plan</SelectItem>
-                              <SelectItem value="intake">Intake Assessment</SelectItem>
-                              <SelectItem value="consultation">Consultation Note</SelectItem>
-                              <SelectItem value="discharge">Discharge Summary</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="col-span-3">
+                            <Select
+                              value={documentType}
+                              onValueChange={setDocumentType}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select document type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="progress">Progress Note</SelectItem>
+                                <SelectItem value="treatment">Treatment Plan</SelectItem>
+                                <SelectItem value="intake">Intake Assessment</SelectItem>
+                                <SelectItem value="consultation">Consultation Note</SelectItem>
+                                <SelectItem value="discharge">Discharge Summary</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </div>
                       <DialogFooter>
