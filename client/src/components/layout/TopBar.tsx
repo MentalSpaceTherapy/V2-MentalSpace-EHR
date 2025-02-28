@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
-import { Bell, HelpCircle, Settings, Search, Zap, Calendar, Sun } from "lucide-react";
+import { Bell, HelpCircle, Settings, Search, Zap, Calendar, Sun, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { format } from "date-fns";
 
 interface TopBarProps {
@@ -15,6 +18,18 @@ export function TopBar({ title, notificationCount = 0 }: TopBarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const { logout } = useAuth();
+  const { toast } = useToast();
+  const [_, setLocation] = useLocation();
+
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+    setLocation("/auth");
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -102,6 +117,18 @@ export function TopBar({ title, notificationCount = 0 }: TopBarProps) {
             style={{ animationDelay: '500ms' }}
           >
             <Settings className="h-5 w-5 text-neutral-600" />
+          </Button>
+          
+          {/* Logout */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`rounded-full hover:bg-red-100 hover:text-red-600 transition-transform hover:scale-110 ${mounted ? "animate-slide-up" : "opacity-0"}`}
+            style={{ animationDelay: '600ms' }}
+            onClick={handleLogout}
+            title="Logout"
+          >
+            <LogOut className="h-5 w-5 text-neutral-600" />
           </Button>
         </div>
       </div>

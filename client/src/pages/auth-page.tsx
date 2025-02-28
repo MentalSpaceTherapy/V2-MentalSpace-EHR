@@ -11,9 +11,15 @@ import { BrainCircuit, Lock, AtSign, ArrowRight, UserPlus } from "lucide-react";
 
 export default function AuthPage() {
   const [_, setLocation] = useLocation();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Redirect if already logged in
+  if (user) {
+    setLocation("/");
+    return null;
+  }
   
   // Login form state
   const [loginEmail, setLoginEmail] = useState("therapist@mentalspace.com");
