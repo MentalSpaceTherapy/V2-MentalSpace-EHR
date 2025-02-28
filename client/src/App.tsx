@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard-fixed"; // Using the fixed dashboard
+import AuthPage from "@/pages/auth-page";
 import Clients from "@/pages/clients";
 import Documentation from "@/pages/documentation";
 import Scheduling from "@/pages/scheduling";
@@ -40,21 +41,24 @@ const DocumentationRoute = () => {
   return <Documentation formType={formType} />;
 };
 
+import { ProtectedRoute } from "./lib/protected-route";
+
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/clients" component={Clients} />
+      <Route path="/auth" component={AuthPage} />
+      <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/clients" component={Clients} />
       
       {/* Documentation routes */}
-      <Route path="/documentation" component={DocumentationRoute} />
-      <Route path="/documentation/:type" component={DocumentationRoute} />
+      <ProtectedRoute path="/documentation" component={DocumentationRoute} />
+      <ProtectedRoute path="/documentation/:type" component={DocumentationRoute} />
       
-      <Route path="/scheduling" component={Scheduling} />
-      <Route path="/messages" component={Messages} />
-      <Route path="/billing" component={Billing} />
-      <Route path="/reports" component={Reports} />
-      <Route path="/practice" component={Practice} />
+      <ProtectedRoute path="/scheduling" component={Scheduling} />
+      <ProtectedRoute path="/messages" component={Messages} />
+      <ProtectedRoute path="/billing" component={Billing} />
+      <ProtectedRoute path="/reports" component={Reports} />
+      <ProtectedRoute path="/practice" component={Practice} />
       <Route component={NotFound} />
     </Switch>
   );
