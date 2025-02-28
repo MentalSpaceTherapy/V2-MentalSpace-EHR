@@ -42,7 +42,9 @@ import {
   UserIcon, 
   UserCheck, 
   UserPlus,
-  Globe
+  Globe,
+  AlertCircle,
+  CheckCircle
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
