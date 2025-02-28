@@ -16,6 +16,21 @@ import { cn } from "@/lib/utils";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, subDays, isSameDay, addWeeks, subWeeks } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { AppointmentForm } from "@/components/scheduling/AppointmentForm";
+
+// Mock client data
+const mockClients = [
+  { id: 1, name: "Emma Wilson" },
+  { id: 2, name: "Michael Chen" },
+  { id: 3, name: "Sophie Garcia" },
+  { id: 4, name: "Alex Johnson" },
+  { id: 5, name: "Jamie Rodriguez" },
+  { id: 6, name: "Robert Miller" },
+  { id: 7, name: "Maria Lopez" },
+  { id: 8, name: "David Thompson" },
+  { id: 9, name: "Rebecca Taylor" },
+  { id: 10, name: "John Smith" },
+];
 
 // Mock appointment data
 const mockAppointments = [
@@ -138,9 +153,11 @@ export default function Scheduling() {
     return appointments.filter(app => isSameDay(app.date, date));
   };
 
-  const handleSelectDate = (date: Date) => {
-    setSelectedDate(date);
-    setCalendarOpen(false);
+  const handleSelectDate = (date: Date | undefined) => {
+    if (date) {
+      setSelectedDate(date);
+      setCalendarOpen(false);
+    }
   };
 
   const navigatePrevious = () => {
@@ -163,10 +180,78 @@ export default function Scheduling() {
     setSelectedDate(new Date());
   };
 
+  const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
+  
   const handleScheduleAppointment = () => {
+    setIsAppointmentFormOpen(true);
+  };
+  
+  // Type definition for the appointment form data
+  type AppointmentFormData = {
+    clientId: string;
+    date: Date;
+    startTime: string;
+    duration: string;
+    sessionType: string;
+    medium: string;
+    status: string;
+    notes?: string;
+  };
+  
+  const handleCreateAppointment = (formData: AppointmentFormData) => {
+    // Generate a unique ID for the new appointment
+    const newId = Math.max(...appointments.map(a => a.id)) + 1;
+    
+    // Extract hours and minutes from the time
+    const startTimeMatch = formData.startTime.match(/(\d+):(\d+)\s(AM|PM)/);
+    if (!startTimeMatch || startTimeMatch.length < 4) {
+      toast({
+        title: "Invalid time format",
+        description: "The time format is invalid. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const hours = parseInt(startTimeMatch[1]);
+    const minutes = parseInt(startTimeMatch[2]);
+    const period = startTimeMatch[3];
+    
+    // Calculate duration in minutes
+    const durationInMinutes = parseInt(formData.duration.split(' ')[0]);
+    
+    // Calculate end time (adding duration to start time)
+    const startDate = new Date(formData.date);
+    let startHours = hours;
+    if (period === "PM" && hours < 12) startHours += 12;
+    if (period === "AM" && hours === 12) startHours = 0;
+    
+    startDate.setHours(startHours, minutes);
+    
+    const endDate = new Date(startDate.getTime() + durationInMinutes * 60000);
+    
+    // Format start and end times for display
+    const startTimeFormatted = formData.startTime;
+    const endTimeFormatted = format(endDate, "h:mm a").toUpperCase();
+    
+    // Create the new appointment object
+    const newAppointment = {
+      id: newId,
+      clientName: mockClients.find(c => c.id.toString() === formData.clientId)?.name || "Unknown Client",
+      date: formData.date,
+      startTime: startTimeFormatted,
+      endTime: endTimeFormatted,
+      type: formData.sessionType,
+      medium: formData.medium,
+      status: formData.status
+    };
+    
+    // Add the new appointment to the state
+    setAppointments([...appointments, newAppointment]);
+    
     toast({
-      title: "Schedule Appointment",
-      description: "Opening appointment scheduler...",
+      title: "Appointment Scheduled",
+      description: `${newAppointment.type} with ${newAppointment.clientName} on ${format(newAppointment.date, "MMMM d")} at ${newAppointment.startTime}`,
     });
   };
 
@@ -210,6 +295,14 @@ export default function Scheduling() {
       
       <div className="flex-1 ml-64">
         <TopBar title="Scheduling" />
+        
+        {/* Appointment Form Dialog */}
+        <AppointmentForm 
+          open={isAppointmentFormOpen}
+          onOpenChange={setIsAppointmentFormOpen}
+          onSubmit={handleCreateAppointment}
+          initialDate={selectedDate}
+        />
         
         <div className="p-6 bg-neutral-50 min-h-screen">
           <Card>
