@@ -48,6 +48,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   CheckSquare,
+  Plus,
   Trash2,
   PlusCircle,
   Clock,
@@ -63,6 +64,13 @@ import {
   CardDescription, 
   CardFooter 
 } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -194,7 +202,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
   const cardTypes = [
     "Visa", "Mastercard", "American Express", "Discover", "Other"
   ];
-
+  
   // Initialize form with default values or existing client data
   // Set up field arrays for managing repeatable sections
   const form = useForm<ClientFormValues>({
@@ -298,6 +306,22 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
       billingNotes: client?.billingNotes || "",
       privateNotes: client?.privateNotes || "",
     },
+  });
+  
+  // Set up field arrays for emergency contacts, insurance info, and payment cards
+  const emergencyContacts = useFieldArray({
+    name: "emergencyContacts",
+    control: form.control
+  });
+  
+  const insuranceInfo = useFieldArray({
+    name: "insuranceInformation",
+    control: form.control
+  });
+  
+  const paymentCards = useFieldArray({
+    name: "paymentCards",
+    control: form.control
   });
 
   const handleSubmit = (data: ClientFormValues) => {
@@ -1069,75 +1093,200 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
               </Card>
             </TabsContent>
             
-            {/* Emergency Contact Tab */}
+            {/* Emergency Contacts Tab */}
             <TabsContent value="emergency" className="space-y-4">
               <Card>
                 <CardHeader className="bg-gradient-to-r from-purple-50 to-red-50 border-b">
                   <CardTitle className="flex items-center">
                     <Phone className="mr-2 h-5 w-5 text-purple-600" />
-                    Emergency Contact
+                    Emergency Contacts
                   </CardTitle>
                   <CardDescription>Who to contact in case of emergency</CardDescription>
                 </CardHeader>
-                <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="emergencyContactName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Emergency Contact Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Full name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="emergencyContactPhone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Emergency Contact Phone</FormLabel>
-                        <FormControl>
-                          <Input placeholder="(555) 123-4567" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="emergencyContactRelationship"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Relationship to Client</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value || ""}
+                <CardContent className="pt-6 space-y-6">
+                  {/* Legacy emergency contact fields (for backward compatibility) */}
+                  {emergencyContacts.fields.length === 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="emergencyContactName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Emergency Contact Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Full name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="emergencyContactPhone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Emergency Contact Phone</FormLabel>
+                            <FormControl>
+                              <Input placeholder="(555) 123-4567" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="emergencyContactRelationship"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Relationship to Client</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value || ""}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select relationship" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {relationshipOptions.map((option) => (
+                                  <SelectItem key={option} value={option.toLowerCase()}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="flex items-center justify-start md:col-span-2 mt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Convert legacy fields to the new array format
+                            if (form.getValues("emergencyContactName")) {
+                              emergencyContacts.append({
+                                name: form.getValues("emergencyContactName"),
+                                phone: form.getValues("emergencyContactPhone"),
+                                relationship: form.getValues("emergencyContactRelationship")
+                              });
+                              form.setValue("emergencyContactName", "");
+                              form.setValue("emergencyContactPhone", "");
+                              form.setValue("emergencyContactRelationship", undefined);
+                            } else {
+                              emergencyContacts.append({
+                                name: "",
+                                phone: "",
+                                relationship: undefined
+                              });
+                            }
+                          }}
+                          className="text-purple-600 flex gap-1"
                         >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select relationship" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            
-                            <SelectItem value="spouse">Spouse/Partner</SelectItem>
-                            <SelectItem value="parent">Parent</SelectItem>
-                            <SelectItem value="child">Child</SelectItem>
-                            <SelectItem value="sibling">Sibling</SelectItem>
-                            <SelectItem value="friend">Friend</SelectItem>
-                            <SelectItem value="other-family">Other Family Member</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <Plus className="h-4 w-4" />
+                          <span>Switch to Multiple Contacts</span>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Multiple Emergency Contacts UI */}
+                  {emergencyContacts.fields.length > 0 && (
+                    <div className="space-y-4">
+                      {emergencyContacts.fields.map((contact, index) => (
+                        <div 
+                          key={contact.id} 
+                          className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-md bg-purple-50/30 relative"
+                        >
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => emergencyContacts.remove(index)}
+                            className="absolute top-2 right-2 h-6 w-6 text-gray-500 hover:text-red-500"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          
+                          <FormField
+                            control={form.control}
+                            name={`emergencyContacts.${index}.name`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Full Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Contact name" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name={`emergencyContacts.${index}.phone`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Phone Number</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="(555) 123-4567" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name={`emergencyContacts.${index}.relationship`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Relationship</FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  value={field.value || ""}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select relationship" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {relationshipOptions.map((option) => (
+                                      <SelectItem key={option} value={option.toLowerCase()}>
+                                        {option}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => emergencyContacts.append({
+                          name: "",
+                          phone: "",
+                          relationship: undefined
+                        })}
+                        className="mt-2 text-purple-600 flex gap-1"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Add Another Contact</span>
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
                 
                 <CardHeader className="border-t border-b mt-6 bg-gradient-to-r from-blue-50 to-purple-50">
@@ -1214,48 +1363,347 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                   </CardTitle>
                   <CardDescription>Client's insurance details and billing preferences</CardDescription>
                 </CardHeader>
-                <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="insuranceProvider"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Insurance Provider</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value || ""}
+                <CardContent className="pt-6 space-y-6">
+                  {/* Legacy insurance fields (for backward compatibility) */}
+                  {insuranceInfo.fields.length === 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="insuranceProvider"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Insurance Provider</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value || ""}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select insurance provider" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {insuranceProviders.map((provider) => (
+                                  <SelectItem key={provider} value={provider.toLowerCase().replace(/\s+/g, '-')}>
+                                    {provider}
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value="self-pay">Self-Pay</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Select "Self-Pay" if the client is not using insurance
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="flex items-center justify-start md:col-span-2 mt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Convert legacy fields to the new array format
+                            if (form.getValues("insuranceProvider")) {
+                              insuranceInfo.append({
+                                provider: form.getValues("insuranceProvider"),
+                                policyNumber: form.getValues("insurancePolicyNumber"),
+                                groupNumber: form.getValues("insuranceGroupNumber"),
+                                copay: form.getValues("insuranceCopay"),
+                                deductible: form.getValues("insuranceDeductible"),
+                                isPrimary: true,
+                                priorAuthNumber: "",
+                                priorAuthVisitsApproved: undefined,
+                                priorAuthVisitsUsed: undefined
+                              });
+                              // Clear legacy fields
+                              form.setValue("insuranceProvider", undefined);
+                              form.setValue("insurancePolicyNumber", "");
+                              form.setValue("insuranceGroupNumber", "");
+                              form.setValue("insuranceCopay", "");
+                              form.setValue("insuranceDeductible", "");
+                            } else {
+                              insuranceInfo.append({
+                                provider: undefined,
+                                policyNumber: "",
+                                groupNumber: "",
+                                copay: "",
+                                deductible: "",
+                                isPrimary: true,
+                                priorAuthNumber: "",
+                                priorAuthVisitsApproved: undefined,
+                                priorAuthVisitsUsed: undefined
+                              });
+                            }
+                          }}
+                          className="text-red-600 flex gap-1"
                         >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select insurance provider" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
+                          <Plus className="h-4 w-4" />
+                          <span>Switch to Enhanced Insurance Management</span>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Multiple Insurance Plans UI */}
+                  {insuranceInfo.fields.length > 0 && (
+                    <div className="space-y-6">
+                      {insuranceInfo.fields.map((insurance, index) => (
+                        <div 
+                          key={insurance.id} 
+                          className="border rounded-md overflow-hidden"
+                        >
+                          <div className={`p-4 flex justify-between items-center ${insurance.isPrimary ? 'bg-red-50' : 'bg-orange-50'}`}>
+                            <div className="flex items-center gap-2">
+                              {insurance.isPrimary ? (
+                                <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">Primary Insurance</Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">Secondary Insurance</Badge>
+                              )}
+                              <h3 className="font-medium text-gray-800">
+                                {form.getValues(`insuranceInformation.${index}.provider`) 
+                                  ? insuranceProviders.find(p => 
+                                      p.toLowerCase().replace(/\s+/g, '-') === form.getValues(`insuranceInformation.${index}.provider`)
+                                    ) || form.getValues(`insuranceInformation.${index}.provider`)
+                                  : 'New Insurance Plan'}
+                              </h3>
+                            </div>
+                            <div className="flex gap-2">
+                              {insuranceInfo.fields.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    // Update the primary status
+                                    if (!insurance.isPrimary) {
+                                      // Make this one primary
+                                      insuranceInfo.fields.forEach((_, i) => {
+                                        form.setValue(`insuranceInformation.${i}.isPrimary`, i === index);
+                                      });
+                                    }
+                                  }}
+                                  className="text-xs"
+                                  disabled={insurance.isPrimary}
+                                >
+                                  Make Primary
+                                </Button>
+                              )}
+                              
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => insuranceInfo.remove(index)}
+                                className="h-8 w-8 text-gray-500 hover:text-red-500"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name={`insuranceInformation.${index}.provider`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Insurance Provider</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    value={field.value || ""}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select insurance provider" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {insuranceProviders.map((provider) => (
+                                        <SelectItem key={provider} value={provider.toLowerCase().replace(/\s+/g, '-')}>
+                                          {provider}
+                                        </SelectItem>
+                                      ))}
+                                      <SelectItem value="self-pay">Self-Pay</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
                             
-                            <SelectItem value="aetna">Aetna</SelectItem>
-                            <SelectItem value="anthem">Anthem</SelectItem>
-                            <SelectItem value="bcbs">Blue Cross Blue Shield</SelectItem>
-                            <SelectItem value="cigna">Cigna</SelectItem>
-                            <SelectItem value="humana">Humana</SelectItem>
-                            <SelectItem value="kaiser">Kaiser Permanente</SelectItem>
-                            <SelectItem value="medicare">Medicare</SelectItem>
-                            <SelectItem value="medicaid">Medicaid</SelectItem>
-                            <SelectItem value="tricare">Tricare</SelectItem>
-                            <SelectItem value="uhc">UnitedHealthcare</SelectItem>
-                            <SelectItem value="optum">Optum</SelectItem>
-                            <SelectItem value="magellan">Magellan</SelectItem>
-                            <SelectItem value="beacon">Beacon Health Options</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                            <SelectItem value="self-pay">Self-Pay</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          Select "Self-Pay" if the client is not using insurance
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                            <FormField
+                              control={form.control}
+                              name={`insuranceInformation.${index}.policyNumber`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Policy Number</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Policy #" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`insuranceInformation.${index}.groupNumber`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Group Number</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Group #" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <FormField
+                                control={form.control}
+                                name={`insuranceInformation.${index}.copay`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Copay</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="$25" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`insuranceInformation.${index}.deductible`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Deductible</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="$1,000" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            
+                            <div className="md:col-span-2 mt-3 border-t pt-3">
+                              <Accordion type="single" collapsible className="w-full">
+                                <AccordionItem value="prior-auth">
+                                  <AccordionTrigger className="py-2 text-sm font-medium">
+                                    <div className="flex items-center gap-2">
+                                      <Shield className="h-4 w-4 text-amber-500" />
+                                      Prior Authorization
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 py-2">
+                                      <FormField
+                                        control={form.control}
+                                        name={`insuranceInformation.${index}.priorAuthNumber`}
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>Auth Number</FormLabel>
+                                            <FormControl>
+                                              <Input placeholder="Authorization #" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                      
+                                      <FormField
+                                        control={form.control}
+                                        name={`insuranceInformation.${index}.priorAuthVisitsApproved`}
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>Visits Approved</FormLabel>
+                                            <FormControl>
+                                              <Input 
+                                                type="number" 
+                                                placeholder="12" 
+                                                {...field} 
+                                                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                      
+                                      <FormField
+                                        control={form.control}
+                                        name={`insuranceInformation.${index}.priorAuthVisitsUsed`}
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>Visits Used</FormLabel>
+                                            <FormControl>
+                                              <Input 
+                                                type="number" 
+                                                placeholder="3" 
+                                                {...field} 
+                                                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    </div>
+                                    
+                                    {form.getValues(`insuranceInformation.${index}.priorAuthVisitsApproved`) && 
+                                     form.getValues(`insuranceInformation.${index}.priorAuthVisitsUsed`) && (
+                                      <div className="mt-3">
+                                        <p className="text-sm text-gray-600">
+                                          Prior Authorization Status: {' '}
+                                          <span className="font-medium text-blue-700">
+                                            {form.getValues(`insuranceInformation.${index}.priorAuthVisitsUsed`)} of {form.getValues(`insuranceInformation.${index}.priorAuthVisitsApproved`)} visits used
+                                          </span>
+                                        </p>
+                                        <Progress 
+                                          value={(form.getValues(`insuranceInformation.${index}.priorAuthVisitsUsed`) / form.getValues(`insuranceInformation.${index}.priorAuthVisitsApproved`)) * 100} 
+                                          className="h-2 mt-1"
+                                        />
+                                      </div>
+                                    )}
+                                  </AccordionContent>
+                                </AccordionItem>
+                              </Accordion>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          // If adding additional insurance, set as non-primary by default
+                          const isPrimary = insuranceInfo.fields.length === 0;
+                          insuranceInfo.append({
+                            provider: undefined,
+                            policyNumber: "",
+                            groupNumber: "",
+                            copay: "",
+                            deductible: "",
+                            isPrimary,
+                            priorAuthNumber: "",
+                            priorAuthVisitsApproved: undefined,
+                            priorAuthVisitsUsed: undefined
+                          });
+                        }}
+                        className="mt-2 text-red-600 flex gap-1"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Add Insurance Plan</span>
+                      </Button>
+                    </div>
+                  )}
                   
                   <FormField
                     control={form.control}
