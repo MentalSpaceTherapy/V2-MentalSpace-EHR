@@ -8,7 +8,7 @@ import {
   MessageSquare, DollarSign, BarChart2, Building, 
   MoreVertical, ChevronRight, Brain, Sparkles,
   FileSignature, ClipboardCheck, FilePlus, FileClock,
-  FileSpreadsheet, Phone, FileQuestion, ChevronDown
+  FileSpreadsheet, Phone, FileQuestion, ChevronDown, Plus
 } from "lucide-react";
 import {
   Collapsible,
@@ -158,30 +158,40 @@ export function Sidebar({ className }: SidebarProps) {
                               
                               return (
                                 <li key={docType.name} className="py-0.5">
-                                  <Link href={docType.href}>
-                                    <a
-                                      className={cn(
-                                        "flex items-center px-3 py-2 rounded-lg transition-all duration-200 text-sm",
-                                        "hover:bg-primary-50 group",
-                                        isDocActive 
-                                          ? "bg-primary-50 text-primary-700 shadow-sm" 
-                                          : "text-neutral-500"
-                                      )}
-                                    >
-                                      <DocIcon className={cn(
-                                        "h-4 w-4 mr-2",
-                                        isDocActive ? "text-primary-600" : "text-neutral-400 group-hover:text-primary-500"
-                                      )} />
-                                      <span className={cn(
-                                        isDocActive ? "font-medium" : "font-normal"
-                                      )}>
-                                        {docType.name}
-                                      </span>
-                                      {isDocActive && (
-                                        <div className="ml-auto h-2 w-2 rounded-full bg-primary-500"></div>
-                                      )}
-                                    </a>
-                                  </Link>
+                                  <div className="flex items-center space-x-2">
+                                    <Link href={docType.href}>
+                                      <a
+                                        className={cn(
+                                          "flex items-center px-3 py-2 rounded-lg transition-all duration-200 text-sm flex-1",
+                                          "hover:bg-primary-50 group",
+                                          isDocActive 
+                                            ? "bg-primary-50 text-primary-700 shadow-sm" 
+                                            : "text-neutral-500"
+                                        )}
+                                      >
+                                        <DocIcon className={cn(
+                                          "h-4 w-4 mr-2",
+                                          isDocActive ? "text-primary-600" : "text-neutral-400 group-hover:text-primary-500"
+                                        )} />
+                                        <span className={cn(
+                                          isDocActive ? "font-medium" : "font-normal"
+                                        )}>
+                                          {docType.name}
+                                        </span>
+                                        {isDocActive && (
+                                          <div className="ml-auto h-2 w-2 rounded-full bg-primary-500"></div>
+                                        )}
+                                      </a>
+                                    </Link>
+                                    <Link href={`${docType.href}?new=true`}>
+                                      <a
+                                        className="p-1.5 rounded-md text-neutral-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                                        title={`Create New ${docType.name}`}
+                                      >
+                                        <Plus className="h-3.5 w-3.5" />
+                                      </a>
+                                    </Link>
+                                  </div>
                                 </li>
                               );
                             })}

@@ -140,8 +140,17 @@ export default function Documentation({ formType }: DocumentationProps) {
   // Initialize with formType if provided
   useEffect(() => {
     if (formType) {
-      setViewMode('form');
-      setCurrentForm(formType);
+      // Check if we should open a form or show filtered dashboard
+      const shouldShowForm = new URLSearchParams(window.location.search).get('new') === 'true';
+      
+      if (shouldShowForm) {
+        setViewMode('form');
+        setCurrentForm(formType);
+      } else {
+        // Show dashboard with type filter applied
+        setViewMode('list');
+        setTypeFilter(formType);
+      }
     }
   }, [formType]);
 
@@ -269,7 +278,7 @@ export default function Documentation({ formType }: DocumentationProps) {
       <Sidebar />
       
       <div className="flex-1 ml-64">
-        <TopBar title="Session Documentation" />
+        <TopBar title={formType && typeFilter !== 'all' ? `${typeFilter} Documentation` : "Session Documentation"} />
         
         <div className="p-6 bg-neutral-50 min-h-screen">
           {viewMode === 'list' ? (
@@ -277,9 +286,11 @@ export default function Documentation({ formType }: DocumentationProps) {
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>Documentation</CardTitle>
+                    <CardTitle>{typeFilter !== 'all' ? `${typeFilter} Documentation` : 'Documentation'}</CardTitle>
                     <CardDescription className="mt-1">
-                      Manage clinical notes, assessments, and treatment plans
+                      {typeFilter !== 'all' 
+                        ? `Manage ${typeFilter.toLowerCase()} documents` 
+                        : 'Manage clinical notes, assessments, and treatment plans'}
                     </CardDescription>
                   </div>
                   <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

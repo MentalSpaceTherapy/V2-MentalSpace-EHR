@@ -18,7 +18,7 @@ import { IntakeForm } from "@/components/forms/IntakeForm";
 // Component to handle the documentation routes and pass the formType
 const DocumentationRoute = () => {
   const [location] = useLocation();
-  let formType = null;
+  let formType: string | undefined = undefined;
   
   // Extract form type from URL
   if (location.includes("/intake")) {
