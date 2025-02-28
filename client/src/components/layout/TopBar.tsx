@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { Bell, HelpCircle, Settings, Search, Zap, Calendar, Sun, LogOut, UserCog } from "lucide-react";
+import { 
+  Bell, HelpCircle, Settings, Search, Zap, Calendar, Sun, LogOut, 
+  UserCog, Users, FileText, DollarSign 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -89,41 +92,145 @@ export function TopBar({ title, notificationCount = 0 }: TopBarProps) {
           </div>
           
           {/* Quick Actions Button */}
-          <Button 
-            variant="outline" 
-            className={`rounded-xl border border-primary-200 text-primary-700 hover:bg-primary-50 hover:text-primary-800 transition-all ${mounted ? "animate-slide-up" : "opacity-0"}`}
-            style={{ animationDelay: '200ms' }}
-          >
-            <Zap className="h-4 w-4 mr-2 text-primary-500" />
-            Quick Actions
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className={`rounded-xl border border-primary-200 text-primary-700 hover:bg-primary-50 hover:text-primary-800 transition-all ${mounted ? "animate-slide-up" : "opacity-0"}`}
+                style={{ animationDelay: '200ms' }}
+              >
+                <Zap className="h-4 w-4 mr-2 text-primary-500" />
+                Quick Actions
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setLocation("/clients")}>
+                <Users className="h-4 w-4 mr-2" />
+                New Client
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation("/scheduling")}>
+                <Calendar className="h-4 w-4 mr-2" />
+                Schedule Session
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation("/documentation")}>
+                <FileText className="h-4 w-4 mr-2" />
+                Create Documentation
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation("/billing")}>
+                <DollarSign className="h-4 w-4 mr-2" />
+                Create Invoice
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           {/* Notifications */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className={`relative rounded-full hover:bg-primary-100 hover:text-primary-700 transition-transform hover:scale-110 ${mounted ? "animate-slide-up" : "opacity-0"}`}
-            style={{ animationDelay: '300ms' }}
-          >
-            <Bell className="h-5 w-5 text-neutral-600" />
-            {notificationCount > 0 && (
-              <Badge 
-                className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-gradient-purple animate-pulse-subtle shadow-md shadow-purple-200"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={`relative rounded-full hover:bg-primary-100 hover:text-primary-700 transition-transform hover:scale-110 ${mounted ? "animate-slide-up" : "opacity-0"}`}
+                style={{ animationDelay: '300ms' }}
               >
-                {notificationCount}
-              </Badge>
-            )}
-          </Button>
+                <Bell className="h-5 w-5 text-neutral-600" />
+                {notificationCount > 0 && (
+                  <Badge 
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-gradient-purple animate-pulse-subtle shadow-md shadow-purple-200"
+                  >
+                    {notificationCount}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-80" align="end">
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="max-h-[300px] overflow-y-auto">
+                <DropdownMenuItem>
+                  <div className="flex items-start">
+                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-2 flex-shrink-0">
+                      <FileText className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">New intake form submitted</p>
+                      <p className="text-xs text-neutral-500 mt-1">Jamie Rodriguez has completed their intake assessment.</p>
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <div className="flex items-start">
+                    <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center mr-2 flex-shrink-0">
+                      <Calendar className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Session rescheduled</p>
+                      <p className="text-xs text-neutral-500 mt-1">Michael Chen rescheduled from 7/26 to 7/28 at 10:00 AM.</p>
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/billing")}>
+                  <div className="flex items-start">
+                    <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center mr-2 flex-shrink-0">
+                      <DollarSign className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Payment received</p>
+                      <p className="text-xs text-neutral-500 mt-1">Emma Wilson has paid their invoice #INV-2023-078.</p>
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="justify-center text-xs text-primary-600 font-medium">
+                View all notifications
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           {/* Help */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className={`rounded-full hover:bg-primary-100 hover:text-primary-700 transition-transform hover:scale-110 ${mounted ? "animate-slide-up" : "opacity-0"}`}
-            style={{ animationDelay: '400ms' }}
-          >
-            <HelpCircle className="h-5 w-5 text-neutral-600" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={`rounded-full hover:bg-primary-100 hover:text-primary-700 transition-transform hover:scale-110 ${mounted ? "animate-slide-up" : "opacity-0"}`}
+                style={{ animationDelay: '400ms' }}
+              >
+                <HelpCircle className="h-5 w-5 text-neutral-600" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Help & Resources</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <div className="flex flex-col">
+                  <span className="font-medium">User Guide</span>
+                  <span className="text-xs text-neutral-500">Learn how to use MentalSpace EHR</span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <div className="flex flex-col">
+                  <span className="font-medium">Video Tutorials</span>
+                  <span className="text-xs text-neutral-500">Watch step-by-step guides</span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <div className="flex flex-col">
+                  <span className="font-medium">Support Center</span>
+                  <span className="text-xs text-neutral-500">Contact our support team</span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <div className="flex flex-col">
+                  <span className="font-medium text-primary-600">What's New</span>
+                  <span className="text-xs text-neutral-500">See latest features and updates</span>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           {/* Settings */}
           <Button 
@@ -131,6 +238,7 @@ export function TopBar({ title, notificationCount = 0 }: TopBarProps) {
             size="icon" 
             className={`rounded-full hover:bg-primary-100 hover:text-primary-700 transition-transform hover:scale-110 ${mounted ? "animate-slide-up" : "opacity-0"}`}
             style={{ animationDelay: '500ms' }}
+            onClick={() => setLocation("/practice")}
           >
             <Settings className="h-5 w-5 text-neutral-600" />
           </Button>

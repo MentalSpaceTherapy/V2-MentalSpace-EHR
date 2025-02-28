@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -35,6 +36,37 @@ interface NotificationsProps {
 export function Notifications({ notifications, className, onMarkAllAsRead, onViewNotification }: NotificationsProps) {
   const { toast } = useToast();
   const [hoveredNotification, setHoveredNotification] = useState<number | null>(null);
+  const [_, setLocation] = useLocation();
+
+  // Handle navigation based on notification type
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark as read
+    onViewNotification(notification.id);
+    
+    // Navigate to appropriate page based on notification type
+    let path = "/";
+    switch(notification.icon) {
+      case "document":
+        path = "/documentation";
+        break;
+      case "schedule":
+        path = "/scheduling";
+        break;
+      case "payment":
+        path = "/billing";
+        break;
+      case "message":
+        path = "/messages";
+        break;
+    }
+    
+    // Show toast and navigate
+    toast({
+      title: "Opening",
+      description: notification.title,
+    });
+    setLocation(path);
+  };
 
   const handleMarkAllAsRead = () => {
     onMarkAllAsRead();

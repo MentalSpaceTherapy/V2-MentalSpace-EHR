@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -37,12 +38,29 @@ export function DocumentationTasks({ tasks, className }: DocumentationTasksProps
   const [sortBy, setSortBy] = useState<string>("dueDate");
   const { toast } = useToast();
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+  const [_, setLocation] = useLocation();
+
+  // Function to get the documentation route based on document type
+  const getDocumentationRoute = (type: string): string => {
+    switch(type) {
+      case "Progress Note":
+        return "/documentation/progress-notes";
+      case "Treatment Plan":
+        return "/documentation/treatment-plans";
+      case "Assessment":
+        return "/documentation/intake";
+      default:
+        return "/documentation";
+    }
+  };
 
   const handleCompleteTask = (task: DocumentationTask) => {
     toast({
       title: `Completing ${task.type}`,
       description: `Opening documentation for ${task.clientName}...`,
     });
+    // Navigate to the appropriate documentation form based on type
+    setLocation(getDocumentationRoute(task.type));
   };
 
   const handleContinueTask = (task: DocumentationTask) => {
@@ -50,6 +68,8 @@ export function DocumentationTasks({ tasks, className }: DocumentationTasksProps
       title: `Continuing ${task.type}`,
       description: `Opening documentation for ${task.clientName}...`,
     });
+    // Navigate to the appropriate documentation form
+    setLocation(getDocumentationRoute(task.type));
   };
 
   const sortedTasks = [...tasks].sort((a, b) => {
