@@ -12,7 +12,7 @@ import Messages from "@/pages/messages";
 import Billing from "@/pages/billing";
 import Reports from "@/pages/reports";
 import Practice from "@/pages/practice";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider } from "@/hooks/useAuth";
 import { ProgressNoteForm } from "@/components/forms/ProgressNoteForm";
 import { IntakeForm } from "@/components/forms/IntakeForm";
 
