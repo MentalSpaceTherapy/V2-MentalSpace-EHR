@@ -53,7 +53,7 @@ export const DOCUMENTATION_TYPES = [
   "Progress Note",
   "Treatment Plan", 
   "Contact Note",
-  "Absence Note",
+  "Cancellation/Missed Appointment",
   "Consultation",
   "Miscellaneous",
 ];

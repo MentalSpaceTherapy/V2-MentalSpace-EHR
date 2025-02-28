@@ -7,7 +7,7 @@ import { ProgressNoteForm } from "@/components/forms/ProgressNoteForm";
 import { IntakeForm } from "@/components/forms/IntakeForm";
 import { TreatmentPlanForm } from "@/components/forms/TreatmentPlanForm";
 import { ContactNoteForm } from "@/components/forms/ContactNoteForm";
-import { AbsenceNoteForm } from "@/components/forms/AbsenceNoteForm";
+import { CancellationMissedForm } from "@/components/forms/CancellationMissedForm";
 import { ConsultationForm } from "@/components/forms/ConsultationForm";
 import { MiscellaneousForm } from "@/components/forms/MiscellaneousForm";
 import { 
@@ -214,7 +214,7 @@ export default function Documentation({ formType }: DocumentationProps) {
         return <FileEdit className="h-5 w-5 text-green-500" />;
       case "Contact Note":
         return <Phone className="h-5 w-5 text-indigo-500" />;
-      case "Absence Note":
+      case "Cancellation/Missed Appointment":
         return <FileClock className="h-5 w-5 text-amber-500" />;
       case "Consultation":
         return <FileSpreadsheet className="h-5 w-5 text-teal-500" />;
@@ -274,8 +274,8 @@ export default function Documentation({ formType }: DocumentationProps) {
         return <TreatmentPlanForm />;
       case "Contact Note":
         return <ContactNoteForm />;
-      case "Absence Note":
-        return <AbsenceNoteForm />;
+      case "Cancellation/Missed Appointment":
+        return <CancellationMissedForm />;
       case "Consultation":
         return <ConsultationForm />;
       case "Miscellaneous":
@@ -346,7 +346,7 @@ export default function Documentation({ formType }: DocumentationProps) {
                                 return "from-green-500 to-emerald-500 shadow-green-200";
                               case "Contact Note":
                                 return "from-indigo-500 to-blue-500 shadow-indigo-200";
-                              case "Absence Note":
+                              case "Cancellation/Missed Appointment":
                                 return "from-amber-500 to-yellow-500 shadow-amber-200";
                               case "Consultation":
                                 return "from-teal-500 to-cyan-500 shadow-teal-200";
