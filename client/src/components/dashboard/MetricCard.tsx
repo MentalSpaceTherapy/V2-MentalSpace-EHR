@@ -18,7 +18,7 @@ export function MetricCard({ title, value, change, icon, className }: MetricCard
   const hasGradient = className?.includes('bg-gradient');
   
   return (
-    <Card className={cn("overflow-hidden transition-all duration-300 border-none", className)}>
+    <Card className={cn("overflow-hidden transition-all duration-300 border-none dashboard-card metric-card", className)}>
       <CardContent className="p-6 relative">
         {/* Floating sparkles for visual interest */}
         {hasGradient && (

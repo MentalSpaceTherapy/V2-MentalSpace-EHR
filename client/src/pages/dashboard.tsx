@@ -25,11 +25,8 @@ import { addDays, subDays } from "date-fns";
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Initialize as true to ensure content is visible from the start
+  const [mounted, setMounted] = useState(true);
   
   // Mock data for the dashboard
   const [sessions, setSessions] = useState([
@@ -238,10 +235,10 @@ export default function Dashboard() {
           notificationCount={notifications.filter(n => !n.read).length}
         />
         
-        <div className="p-8 bg-gradient-to-br from-neutral-50 to-white min-h-screen">
+        <div className="p-8 bg-gradient-to-br from-neutral-50 to-white min-h-screen dashboard-content">
           {/* Welcome Banner */}
           <div 
-            className={`mb-8 p-6 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-500 text-white shadow-xl relative overflow-hidden ${mounted ? 'animate-fade-in' : ''}`}
+            className={`mb-8 p-6 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-500 text-white shadow-xl relative overflow-hidden welcome-banner ${mounted ? 'animate-fade-in' : ''}`}
             style={{ animationDelay: '100ms' }}
           >
             <div className="absolute top-0 right-0 opacity-10">
@@ -305,18 +302,18 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column (2/3 width) */}
             <div className="lg:col-span-2 space-y-8">
-              <div className={`${mounted ? 'animate-scale' : 'opacity-0'}`} style={{ animationDelay: '500ms' }}>
+              <div className={mounted ? 'animate-scale' : ''} style={{ animationDelay: '500ms' }}>
                 <UpcomingSessions sessions={sessions} />
               </div>
               
-              <div className={`${mounted ? 'animate-scale' : 'opacity-0'}`} style={{ animationDelay: '600ms' }}>
+              <div className={mounted ? 'animate-scale' : ''} style={{ animationDelay: '600ms' }}>
                 <DocumentationTasks tasks={documentationTasks} />
               </div>
             </div>
             
             {/* Right Column (1/3 width) */}
             <div className="space-y-8">
-              <div className={`${mounted ? 'animate-scale' : 'opacity-0'}`} style={{ animationDelay: '700ms' }}>
+              <div className={mounted ? 'animate-scale' : ''} style={{ animationDelay: '700ms' }}>
                 <Notifications 
                   notifications={notifications}
                   onMarkAllAsRead={handleMarkAllAsRead}
@@ -325,11 +322,11 @@ export default function Dashboard() {
                 />
               </div>
               
-              <div className={`${mounted ? 'animate-scale' : 'opacity-0'}`} style={{ animationDelay: '800ms' }}>
+              <div className={mounted ? 'animate-scale' : ''} style={{ animationDelay: '800ms' }}>
                 <PerformanceMetrics metrics={performanceMetrics} />
               </div>
               
-              <div className={`${mounted ? 'animate-scale' : 'opacity-0'}`} style={{ animationDelay: '900ms' }}>
+              <div className={mounted ? 'animate-scale' : ''} style={{ animationDelay: '900ms' }}>
                 <QuickActions actions={quickActions} />
               </div>
             </div>

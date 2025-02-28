@@ -30,7 +30,7 @@ export function TopBar({ title, notificationCount = 0 }: TopBarProps) {
   return (
     <header className={`bg-white shadow-lg z-10 animate-fade-in backdrop-blur-sm bg-opacity-90 transition-all duration-300`}>
       <div className="flex justify-between items-center px-6 py-4">
-        <div className={mounted ? "animate-slide-up" : "opacity-0"}>
+        <div className="animate-slide-up">
           <h1 className="text-2xl font-bold gradient-text">{title}</h1>
           <div className="flex items-center text-sm text-neutral-500 mt-1">
             <Calendar className="h-3.5 w-3.5 mr-1.5 text-primary-500" />
