@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -27,12 +28,16 @@ interface UpcomingSessionsProps {
 export function UpcomingSessions({ sessions, className }: UpcomingSessionsProps) {
   const [timeFilter, setTimeFilter] = useState<"Today" | "Week">("Today");
   const { toast } = useToast();
+  const [_, setLocation] = useLocation();
 
   const handleStartSession = (session: Session) => {
     toast({
       title: "Starting session",
       description: `Connecting to session with ${session.clientName}...`,
     });
+    // In a real implementation, this would launch the telehealth interface
+    // For now we'll navigate to the client page
+    setLocation("/clients");
   };
 
   const handleViewChart = (session: Session) => {
@@ -40,6 +45,21 @@ export function UpcomingSessions({ sessions, className }: UpcomingSessionsProps)
       title: "Viewing client chart",
       description: `Opening chart for ${session.clientName}...`,
     });
+    // Navigate to clients page - in a real implementation we would pass the client ID
+    setLocation("/clients");
+  };
+
+  const handlePrepareNotes = (session: Session) => {
+    toast({
+      title: "Preparing session notes",
+      description: `Opening documentation for ${session.clientName}...`,
+    });
+    // Navigate to the progress notes section
+    setLocation("/documentation/progress-notes");
+  };
+
+  const handleViewFullSchedule = () => {
+    setLocation("/scheduling");
   };
 
   const filteredSessions = sessions.filter(session => 
@@ -204,6 +224,7 @@ export function UpcomingSessions({ sessions, className }: UpcomingSessionsProps)
                     variant="outline" 
                     size="sm"
                     className="text-neutral-600 border-neutral-200 hover:bg-neutral-50"
+                    onClick={() => handlePrepareNotes(session)}
                   >
                     <Zap className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
                     Prepare Notes
@@ -219,6 +240,7 @@ export function UpcomingSessions({ sessions, className }: UpcomingSessionsProps)
         <Button 
           variant="link" 
           className="p-0 h-auto text-primary-600 hover:text-primary-700 font-medium transition-transform hover:translate-x-1"
+          onClick={handleViewFullSchedule}
         >
           <span>View full schedule</span>
           <ArrowRight className="h-4 w-4 ml-1.5" />
