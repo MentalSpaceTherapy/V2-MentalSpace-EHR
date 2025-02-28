@@ -166,7 +166,7 @@ export function Notifications({ notifications, className, onMarkAllAsRead, onVie
                     "shadow-sm": hoveredNotification === notification.id
                   }
                 )}
-                onClick={() => onViewNotification(notification.id)}
+                onClick={() => handleNotificationClick(notification)}
                 onMouseEnter={() => setHoveredNotification(notification.id)}
                 onMouseLeave={() => setHoveredNotification(null)}
               >
@@ -231,6 +231,13 @@ export function Notifications({ notifications, className, onMarkAllAsRead, onVie
         <Button 
           variant="link" 
           className="p-0 h-auto text-primary-600 hover:text-primary-700 font-medium transition-transform hover:translate-x-1"
+          onClick={() => {
+            toast({
+              title: "Opening notifications center",
+              description: "Viewing all notifications",
+            });
+            setLocation("/notifications");
+          }}
         >
           <span>View notification center</span>
           <ArrowRight className="h-4 w-4 ml-1.5" />
