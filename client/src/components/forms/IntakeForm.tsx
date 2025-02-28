@@ -65,7 +65,8 @@ import {
   PenLine,
   UserCheck,
   TimerReset,
-  ShieldAlert
+  ShieldAlert,
+  ClipboardCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
