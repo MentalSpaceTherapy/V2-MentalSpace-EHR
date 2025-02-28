@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,87 +6,70 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { BrainCircuit, Lock, AtSign, ArrowRight, UserPlus, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function AuthPage() {
   const [_, setLocation] = useLocation();
-  const { login, user } = useAuth();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Redirect if already logged in
-  if (user) {
-    setLocation("/");
-    return null;
-  }
+  const { user, loginMutation, registerMutation, isLoading: authLoading } = useAuth();
   
   // Login form state
-  const [loginEmail, setLoginEmail] = useState("therapist@mentalspace.com");
+  const [loginUsername, setLoginUsername] = useState("therapist@mentalspace.com");
   const [loginPassword, setLoginPassword] = useState("password123");
   
   // Registration form state
   const [registerFirstName, setRegisterFirstName] = useState("");
   const [registerLastName, setRegisterLastName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
+  const [registerUsername, setRegisterUsername] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
+  const [registerRole, setRegisterRole] = useState("Therapist");
+  const [registerLicenseType, setRegisterLicenseType] = useState("");
+  
+  // Check if user is authenticated
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
   
   // Handle login submission
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      const success = await login(loginEmail, loginPassword);
-      if (success) {
-        toast({
-          title: "Login successful",
-          description: "Welcome back to MentalSpace EHR!",
-        });
+    loginMutation.mutate({
+      username: loginUsername,
+      password: loginPassword
+    }, {
+      onSuccess: () => {
         setLocation("/");
-      } else {
-        toast({
-          title: "Login failed",
-          description: "Invalid email or password. Please try again.",
-          variant: "destructive",
-        });
       }
-    } catch (error) {
-      toast({
-        title: "Login error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
   
   // Handle registration submission
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
     // Validate passwords match
     if (registerPassword !== registerConfirmPassword) {
-      toast({
-        title: "Registration error",
-        description: "Passwords do not match. Please try again.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
       return;
     }
     
-    // In a real app, this would make an API call to register the user
-    setTimeout(() => {
-      toast({
-        title: "Registration successful",
-        description: "Please contact your administrator to activate your account.",
-      });
-      setIsLoading(false);
-    }, 1500);
+    registerMutation.mutate({
+      username: registerUsername || registerEmail, // Use email as username if not provided
+      password: registerPassword,
+      firstName: registerFirstName,
+      lastName: registerLastName,
+      email: registerEmail,
+      role: registerRole,
+      licenseType: registerLicenseType || undefined
+    }, {
+      onSuccess: () => {
+        setLocation("/");
+      }
+    });
   };
   
   return (
@@ -119,8 +102,8 @@ export default function AuthPage() {
                         type="email" 
                         placeholder="you@example.com" 
                         className="pl-10"
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
+                        value={loginUsername}
+                        onChange={(e) => setLoginUsername(e.target.value)}
                         required
                       />
                     </div>
@@ -149,10 +132,10 @@ export default function AuthPage() {
                   <Button 
                     type="submit" 
                     className="w-full bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all font-medium text-white"
-                    disabled={isLoading}
+                    disabled={loginMutation.isPending || authLoading}
                   >
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isLoading ? "Signing in..." : "Sign In"}
+                    {loginMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {loginMutation.isPending ? "Signing in..." : "Sign In"}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </CardFooter>
@@ -204,6 +187,16 @@ export default function AuthPage() {
                       />
                     </div>
                   </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="register-username">Username</Label>
+                    <Input 
+                      id="register-username" 
+                      placeholder="Choose a username (or leave empty to use email)"
+                      value={registerUsername}
+                      onChange={(e) => setRegisterUsername(e.target.value)}
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="register-password">Password</Label>
                     <div className="relative">
@@ -232,15 +225,54 @@ export default function AuthPage() {
                       />
                     </div>
                   </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Role</Label>
+                    <Select
+                      value={registerRole}
+                      onValueChange={setRegisterRole}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Therapist">Therapist</SelectItem>
+                        <SelectItem value="Administrator">Administrator</SelectItem>
+                        <SelectItem value="Office Staff">Office Staff</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {registerRole === "Therapist" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="license-type">License Type</Label>
+                      <Select
+                        value={registerLicenseType}
+                        onValueChange={setRegisterLicenseType}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select license type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="LPC, LMHC">Licensed Professional Counselor (LPC/LMHC)</SelectItem>
+                          <SelectItem value="LCSW">Licensed Clinical Social Worker (LCSW)</SelectItem>
+                          <SelectItem value="Psychologist">Psychologist (PhD/PsyD)</SelectItem>
+                          <SelectItem value="Psychiatrist">Psychiatrist (MD)</SelectItem>
+                          <SelectItem value="LMFT">Licensed Marriage and Family Therapist (LMFT)</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter>
                   <Button 
                     type="submit" 
                     className="w-full bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all font-medium text-white"
-                    disabled={isLoading}
+                    disabled={registerMutation.isPending || authLoading}
                   >
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isLoading ? "Creating account..." : "Create Account"}
+                    {registerMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {registerMutation.isPending ? "Creating account..." : "Create Account"}
                     <UserPlus className="ml-2 h-4 w-4" />
                   </Button>
                 </CardFooter>
