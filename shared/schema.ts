@@ -2,6 +2,38 @@ import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Custom Zod schemas for complex nested data
+export const emergencyContactSchema = z.object({
+  name: z.string().optional(),
+  phone: z.string().optional(),
+  relationship: z.string().optional()
+});
+
+export const insuranceInfoSchema = z.object({
+  provider: z.string().optional(),
+  policyNumber: z.string().optional(),
+  groupNumber: z.string().optional(),
+  copay: z.string().optional(),
+  deductible: z.string().optional(),
+  isPrimary: z.boolean().default(false),
+  priorAuthNumber: z.string().optional(),
+  priorAuthStartDate: z.date().optional(),
+  priorAuthEndDate: z.date().optional(),
+  priorAuthVisitsApproved: z.number().optional(),
+  priorAuthVisitsUsed: z.number().optional()
+});
+
+export const paymentCardSchema = z.object({
+  cardholderName: z.string().optional(),
+  cardType: z.string().optional(),
+  lastFourDigits: z.string().optional(),
+  expiryMonth: z.string().optional(),
+  expiryYear: z.string().optional(),
+  isDefault: z.boolean().default(false),
+  billingAddress: z.string().optional(),
+  billingZip: z.string().optional()
+});
+
 // User model for therapists, admin staff, billing staff, etc.
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -126,12 +158,82 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
   link: true,
 });
 
+// Extended client schema with additional fields
+export const extendedClientSchema = insertClientSchema.extend({
+  // Personal information
+  middleName: z.string().optional(),
+  preferredName: z.string().optional(),
+  administrativeSex: z.enum(["male", "female", "unknown"]).optional(),
+  genderIdentity: z.string().optional(),
+  sexualOrientation: z.string().optional(),
+  preferredPronouns: z.string().optional(),
+  race: z.string().optional(),
+  ethnicity: z.string().optional(),
+  language: z.string().optional(),
+  maritalStatus: z.string().optional(),
+  
+  // Contact information
+  mobilePhone: z.string().optional(),
+  homePhone: z.string().optional(),
+  workPhone: z.string().optional(),
+  otherPhone: z.string().optional(),
+  address1: z.string().optional(),
+  address2: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
+  timeZone: z.string().optional(),
+  
+  // Employment/referral
+  employment: z.string().optional(),
+  referralSource: z.string().optional(),
+  
+  // Emergency contacts - array of contacts
+  emergencyContacts: z.array(emergencyContactSchema).optional(),
+  
+  // Legacy single emergency contact fields (for backwards compatibility)
+  emergencyContactName: z.string().optional(),
+  emergencyContactPhone: z.string().optional(),
+  emergencyContactRelationship: z.string().optional(),
+  
+  // Insurance information - array of insurance plans
+  insuranceInformation: z.array(insuranceInfoSchema).optional(),
+  
+  // Legacy single insurance fields (for backwards compatibility)
+  insuranceProvider: z.string().optional(),
+  insurancePolicyNumber: z.string().optional(),
+  insuranceGroupNumber: z.string().optional(),
+  insuranceCopay: z.string().optional(),
+  insuranceDeductible: z.string().optional(),
+  responsibleParty: z.string().optional(),
+  
+  // Payment methods
+  paymentCards: z.array(paymentCardSchema).optional(),
+  
+  // Clinical information
+  diagnosisCodes: z.array(z.string()).optional(),
+  medicationList: z.string().optional(),
+  allergies: z.string().optional(),
+  smokingStatus: z.string().optional(),
+  
+  // Consent & privacy
+  hipaaConsentSigned: z.boolean().optional(),
+  consentForTreatmentSigned: z.boolean().optional(),
+  consentForCommunication: z.array(z.string()).optional(),
+  
+  // Notes
+  notes: z.string().optional(),
+  billingNotes: z.string().optional(),
+  privateNotes: z.string().optional(),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
+export type ExtendedClient = z.infer<typeof extendedClientSchema>;
 
 export type Session = typeof sessions.$inferSelect;
 export type InsertSession = z.infer<typeof insertSessionSchema>;
@@ -141,3 +243,7 @@ export type InsertDocumentation = z.infer<typeof insertDocumentationSchema>;
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+export type EmergencyContact = z.infer<typeof emergencyContactSchema>;
+export type InsuranceInfo = z.infer<typeof insuranceInfoSchema>;
+export type PaymentCard = z.infer<typeof paymentCardSchema>;

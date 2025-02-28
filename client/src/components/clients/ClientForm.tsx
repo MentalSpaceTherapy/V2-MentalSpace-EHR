@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,12 @@ import {
   CheckCircle2,
   AlertTriangle,
   CheckSquare,
+  Trash2,
+  PlusCircle,
+  Clock,
+  Shield,
+  BadgeCheck,
+  ShieldAlert,
 } from "lucide-react";
 import { 
   Card, 
@@ -67,7 +73,17 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { InsertClient } from "@shared/schema";
+import { Badge } from "@/components/ui/badge";
+import { 
+  InsertClient, 
+  EmergencyContact, 
+  InsuranceInfo, 
+  PaymentCard,
+  emergencyContactSchema,
+  insuranceInfoSchema,
+  paymentCardSchema,
+  ExtendedClient
+} from "@shared/schema";
 
 // Enhanced schema with additional validations
 const clientSchema = z.object({
@@ -105,18 +121,27 @@ const clientSchema = z.object({
   referralSource: z.string().optional().or(z.literal("")),
   employment: z.string().optional().or(z.literal("")),
   
-  // Emergency Contact
+  // Emergency Contacts - New Array format
+  emergencyContacts: z.array(emergencyContactSchema).optional().default([]),
+  
+  // Legacy emergency contact (for backward compatibility)
   emergencyContactName: z.string().optional().or(z.literal("")),
   emergencyContactPhone: z.string().optional().or(z.literal("")),
   emergencyContactRelationship: z.string().optional().or(z.literal("")),
   
-  // Insurance Information
+  // Insurance Information - New Array format
+  insuranceInformation: z.array(insuranceInfoSchema).optional().default([]),
+  
+  // Legacy insurance (for backward compatibility)
   insuranceProvider: z.string().optional().or(z.literal("")),
   insurancePolicyNumber: z.string().optional().or(z.literal("")),
   insuranceGroupNumber: z.string().optional().or(z.literal("")),
   insuranceCopay: z.string().optional().or(z.literal("")),
   insuranceDeductible: z.string().optional().or(z.literal("")),
   responsibleParty: z.string().optional().or(z.literal("self")),
+  
+  // Payment Methods
+  paymentCards: z.array(paymentCardSchema).optional().default([]),
   
   // Clinical Information 
   diagnosisCodes: z.array(z.string()).optional(),
