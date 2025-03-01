@@ -184,7 +184,7 @@ export function Sidebar({ className }: SidebarProps) {
                                         )}
                                       </a>
                                     </Link>
-                                    <Link href={`${docType.href}?new=true`}>
+                                    <Link href={`${docType.href}?create=true`}>
                                       <a
                                         className="p-1.5 rounded-md text-neutral-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
                                         title={`Create New ${docType.name}`}
