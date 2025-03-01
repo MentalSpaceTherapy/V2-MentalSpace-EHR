@@ -8,7 +8,7 @@ import { Notifications } from "@/components/dashboard/Notifications";
 import { PerformanceMetrics } from "@/components/dashboard/PerformanceMetrics";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { LoginForm } from "@/components/auth/LoginForm";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { 

@@ -8,7 +8,7 @@ import { UpcomingSessions } from "@/components/dashboard/UpcomingSessions";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { PerformanceMetrics } from "@/components/dashboard/PerformanceMetrics";
 import { QuickActions } from "@/components/dashboard/QuickActions";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Calendar, 

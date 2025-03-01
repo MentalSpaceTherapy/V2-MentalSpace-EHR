@@ -15,7 +15,7 @@ import Reports from "@/pages/reports";
 import Practice from "@/pages/practice";
 import { AuthProvider } from "@/hooks/use-auth";
 // Old mock auth provider - we're not using this anymore
-// import { AuthProvider as MockAuthProvider } from "@/hooks/useAuth";
+// import { AuthProvider as MockAuthProvider } from "@/hooks/use-auth";
 import { ProgressNoteForm } from "@/components/forms/ProgressNoteForm";
 import { IntakeForm } from "@/components/forms/IntakeForm";
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { LoginForm } from "@/components/auth/LoginForm";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { 
   Card, 
   CardContent, 
