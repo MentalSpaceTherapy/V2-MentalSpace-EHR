@@ -7,6 +7,7 @@ import Dashboard from "@/pages/dashboard"; // Using our updated dashboard
 import AuthPage from "@/pages/auth-page";
 import Clients from "@/pages/clients";
 import Documentation from "@/pages/documentation";
+import DocumentationDashboard from "@/pages/documentation-dashboard";
 import Scheduling from "@/pages/scheduling";
 import Messages from "@/pages/messages";
 import Billing from "@/pages/billing";
@@ -22,7 +23,9 @@ const DocumentationRoute = () => {
   let formType: string | undefined = undefined;
   
   // Extract form type from URL
-  if (location.includes("/intake")) {
+  if (location.includes("/dashboard")) {
+    return <DocumentationDashboard />;
+  } else if (location.includes("/intake")) {
     formType = "Intake Form";
   } else if (location.includes("/progress-notes")) {
     formType = "Progress Note";
