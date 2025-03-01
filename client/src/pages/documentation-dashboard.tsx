@@ -41,7 +41,8 @@ import {
   Clock,
   Calendar,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Plus
 } from "lucide-react";
 
 // Mock documentation data
@@ -132,6 +133,7 @@ const mockDocuments = [
 export default function DocumentationDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [_, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -231,6 +233,15 @@ export default function DocumentationDashboard() {
                   </CardDescription>
                 </div>
                 <div className="flex space-x-2">
+                  <Button 
+                    variant="default"
+                    onClick={() => setLocation('/documentation?create=true')}
+                    className="bg-gradient-to-r from-indigo-600 to-purple-700 hover:shadow-md mr-4"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Document
+                  </Button>
+                  
                   <Button 
                     variant={viewMode === 'card' ? 'default' : 'outline'} 
                     size="sm"

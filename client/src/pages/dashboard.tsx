@@ -288,10 +288,10 @@ export default function Dashboard() {
         });
         break;
       case "Create Note":
-        setLocation("/documentation");
+        setLocation("/documentation?create=true");
         toast({
           title: actionName,
-          description: "Navigating to documentation...",
+          description: "Opening document creation...",
         });
         break;
       case "Create Invoice":

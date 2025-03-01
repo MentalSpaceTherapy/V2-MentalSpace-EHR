@@ -127,7 +127,8 @@ interface DocumentationProps {
 
 export default function Documentation({ formType }: DocumentationProps) {
   const [location] = useLocation();
-  const isDocumentationPage = location === '/documentation';
+  const isDocumentationPage = location.startsWith('/documentation');
+  const shouldOpenCreateDialog = location.includes('create=true');
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
@@ -141,6 +142,13 @@ export default function Documentation({ formType }: DocumentationProps) {
   const [activeDocument, setActiveDocument] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'form'>(formType ? 'list' : 'list');
   const [currentForm, setCurrentForm] = useState<string | undefined>(undefined);
+  
+  // Effect to automatically open create dialog when navigated with create=true parameter
+  useEffect(() => {
+    if (shouldOpenCreateDialog) {
+      setIsCreateDialogOpen(true);
+    }
+  }, [shouldOpenCreateDialog]);
   
   // Filter documents based on search query, status filter, and type filter
   const filteredDocuments = documents.filter(doc => {
