@@ -5,6 +5,8 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { type Client } from "@shared/schema";
 
 import {
   Form,
@@ -34,22 +36,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Loader2 } from "lucide-react";
 import { SESSION_TYPES, SESSION_MEDIUMS, SESSION_STATUS } from "@/lib/constants";
-
-// Mock client data
-const mockClients = [
-  { id: 1, name: "Emma Wilson" },
-  { id: 2, name: "Michael Chen" },
-  { id: 3, name: "Sophie Garcia" },
-  { id: 4, name: "Alex Johnson" },
-  { id: 5, name: "Jamie Rodriguez" },
-  { id: 6, name: "Robert Miller" },
-  { id: 7, name: "Maria Lopez" },
-  { id: 8, name: "David Thompson" },
-  { id: 9, name: "Rebecca Taylor" },
-  { id: 10, name: "John Smith" },
-];
 
 // Mock service codes
 const mockServiceCodes = [
@@ -112,6 +100,18 @@ export function AppointmentForm({ open, onOpenChange, onSubmit, initialDate, ini
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Fetch clients from API
+  const { data: clients = [], isLoading: isLoadingClients } = useQuery<Client[]>({
+    queryKey: ['/api/clients'],
+    queryFn: async () => {
+      const response = await fetch('/api/clients');
+      if (!response.ok) {
+        throw new Error('Failed to fetch clients');
+      }
+      return response.json();
+    },
+  });
 
   // Convert 24-hour format time to 12-hour format with AM/PM for display
   const formatTimeFor12Hour = (time: string) => {
@@ -169,9 +169,12 @@ export function AppointmentForm({ open, onOpenChange, onSubmit, initialDate, ini
       // Process the data, in a real app we would submit to the backend
       onSubmit(formattedData);
       
+      const client = clients.find(c => c.id.toString() === data.patientId);
+      const clientName = client ? `${client.firstName} ${client.lastName}` : "Patient";
+        
       toast({
         title: "Appointment scheduled",
-        description: `${data.appointmentType} with ${mockClients.find(c => c.id.toString() === data.patientId)?.name || "Patient"} on ${data.scheduledDate} at ${data.scheduledTime}`,
+        description: `${data.appointmentType} with ${clientName} on ${data.scheduledDate} at ${data.scheduledTime}`,
       });
       
       onOpenChange(false);
@@ -240,11 +243,22 @@ export function AppointmentForm({ open, onOpenChange, onSubmit, initialDate, ini
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {mockClients.map(client => (
-                          <SelectItem key={client.id} value={client.id.toString()}>
-                            {client.name}
-                          </SelectItem>
-                        ))}
+                        {isLoadingClients ? (
+                          <div className="flex items-center justify-center p-4">
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <span>Loading clients...</span>
+                          </div>
+                        ) : clients.length > 0 ? (
+                          clients.map(client => (
+                            <SelectItem key={client.id} value={client.id.toString()}>
+                              {client.firstName} {client.lastName}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="p-2 text-center text-neutral-500">
+                            No clients found
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                     <Button type="button" className="bg-blue-500 hover:bg-blue-600">

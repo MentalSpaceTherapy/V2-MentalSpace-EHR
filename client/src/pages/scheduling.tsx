@@ -19,20 +19,8 @@ import { Badge } from "@/components/ui/badge";
 import { AppointmentForm } from "@/components/scheduling/AppointmentForm";
 import { SetCalendarViewDialog, type CalendarViewSettings } from "@/components/scheduling/SetCalendarViewDialog";
 import { AppointmentDetailsDialog } from "@/components/scheduling/AppointmentDetailsDialog";
-
-// Mock client data
-const mockClients = [
-  { id: 1, name: "Emma Wilson" },
-  { id: 2, name: "Michael Chen" },
-  { id: 3, name: "Sophie Garcia" },
-  { id: 4, name: "Alex Johnson" },
-  { id: 5, name: "Jamie Rodriguez" },
-  { id: 6, name: "Robert Miller" },
-  { id: 7, name: "Maria Lopez" },
-  { id: 8, name: "David Thompson" },
-  { id: 9, name: "Rebecca Taylor" },
-  { id: 10, name: "John Smith" },
-];
+import { useQuery } from "@tanstack/react-query";
+import { type Client } from "@shared/schema";
 
 // Mock appointment data
 const mockAppointments = [
@@ -138,6 +126,18 @@ export default function Scheduling() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [appointments, setAppointments] = useState(mockAppointments);
+  
+  // Fetch clients from API
+  const { data: clients = [], isLoading: isLoadingClients } = useQuery<Client[]>({
+    queryKey: ['/api/clients'],
+    queryFn: async () => {
+      const response = await fetch('/api/clients');
+      if (!response.ok) {
+        throw new Error('Failed to fetch clients');
+      }
+      return response.json();
+    },
+  });
 
   // Generate time slots for the schedule
   const timeSlots = Array.from({ length: 12 }, (_, i) => {
@@ -280,9 +280,12 @@ export default function Scheduling() {
     const endTimeFormatted = format(endDate, "h:mm a").toUpperCase();
     
     // Create the new appointment object
+    const client = clients.find(c => c.id.toString() === formData.clientId);
+    const clientName = client ? `${client.firstName} ${client.lastName}` : "Unknown Client";
+    
     const newAppointment = {
       id: newId,
-      clientName: mockClients.find(c => c.id.toString() === formData.clientId)?.name || "Unknown Client",
+      clientName,
       date: formData.date,
       startTime: startTimeFormatted,
       endTime: endTimeFormatted,
