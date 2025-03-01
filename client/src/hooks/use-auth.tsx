@@ -35,10 +35,8 @@ type RegisterData = {
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  
   const {
     data: user,
     error,
@@ -57,13 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Login successful",
-        description: "Welcome back to MentalSpace EHR!",
+        description: `Welcome back, ${user.firstName}!`,
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Login failed",
-        description: error.message || "Invalid username or password. Please try again.",
+        description: error.message || "Invalid username or password",
         variant: "destructive",
       });
     },
@@ -78,13 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Registration successful",
-        description: "Your account has been created successfully!",
+        description: `Welcome to MentalSpace, ${user.firstName}!`,
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Registration failed",
-        description: error.message || "Could not create your account. Please try again.",
+        description: error.message || "Could not create account",
         variant: "destructive",
       });
     },
@@ -98,13 +96,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], null);
       toast({
         title: "Logged out",
-        description: "You have been successfully logged out.",
+        description: "You have been successfully logged out",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Logout failed",
-        description: error.message || "Could not log you out. Please try again.",
+        description: error.message,
         variant: "destructive",
       });
     },

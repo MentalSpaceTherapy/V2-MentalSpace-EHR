@@ -6,19 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { BrainCircuit, Lock, AtSign, ArrowRight, UserPlus, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function AuthPage() {
   const [_, setLocation] = useLocation();
-  const { user, login, isLoading } = useAuth();
+  const { user, loginMutation, registerMutation, isLoading } = useAuth();
   const { toast } = useToast();
   
   // Login form state
   const [loginUsername, setLoginUsername] = useState("therapist@mentalspace.com");
   const [loginPassword, setLoginPassword] = useState("password123");
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
   
   // Registration form state
   const [registerFirstName, setRegisterFirstName] = useState("");
@@ -29,7 +28,6 @@ export default function AuthPage() {
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
   const [registerRole, setRegisterRole] = useState("Therapist");
   const [registerLicenseType, setRegisterLicenseType] = useState("");
-  const [isRegistering, setIsRegistering] = useState(false);
   
   // Check if user is authenticated
   useEffect(() => {
@@ -41,28 +39,15 @@ export default function AuthPage() {
   // Handle login submission
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoggingIn(true);
     
-    try {
-      const success = await login(loginUsername, loginPassword);
-      if (success) {
+    loginMutation.mutate({
+      username: loginUsername,
+      password: loginPassword
+    }, {
+      onSuccess: () => {
         setLocation("/");
-      } else {
-        toast({
-          title: "Login failed",
-          description: "Invalid email or password",
-          variant: "destructive"
-        });
       }
-    } catch (error) {
-      toast({
-        title: "Login failed",
-        description: "An error occurred during login",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoggingIn(false);
-    }
+    });
   };
   
   // Handle registration submission
@@ -79,33 +64,22 @@ export default function AuthPage() {
       return;
     }
     
-    setIsRegistering(true);
+    // Use username or email if username is empty
+    const username = registerUsername || registerEmail;
     
-    // In a real app, we would register the user here
-    // For now, simulate a successful registration and use the login function
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, automatically log in after registration
-      const success = await login(registerEmail, registerPassword);
-      if (success) {
-        toast({
-          title: "Registration successful",
-          description: "Your account has been created",
-          variant: "default"
-        });
+    registerMutation.mutate({
+      username,
+      password: registerPassword,
+      firstName: registerFirstName,
+      lastName: registerLastName,
+      email: registerEmail,
+      role: registerRole,
+      licenseType: registerRole === "Therapist" ? registerLicenseType : undefined
+    }, {
+      onSuccess: () => {
         setLocation("/");
       }
-    } catch (error) {
-      toast({
-        title: "Registration failed",
-        description: "An error occurred during registration",
-        variant: "destructive"
-      });
-    } finally {
-      setIsRegistering(false);
-    }
+    });
   };
   
   return (
@@ -168,10 +142,10 @@ export default function AuthPage() {
                   <Button 
                     type="submit" 
                     className="w-full bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all font-medium text-white"
-                    disabled={isLoggingIn || isLoading}
+                    disabled={loginMutation.isPending || isLoading}
                   >
-                    {isLoggingIn ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isLoggingIn ? "Signing in..." : "Sign In"}
+                    {loginMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {loginMutation.isPending ? "Signing in..." : "Sign In"}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </CardFooter>
@@ -305,10 +279,10 @@ export default function AuthPage() {
                   <Button 
                     type="submit" 
                     className="w-full bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all font-medium text-white"
-                    disabled={isRegistering || isLoading}
+                    disabled={registerMutation.isPending || isLoading}
                   >
-                    {isRegistering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isRegistering ? "Creating account..." : "Create Account"}
+                    {registerMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {registerMutation.isPending ? "Creating account..." : "Create Account"}
                     <UserPlus className="ml-2 h-4 w-4" />
                   </Button>
                 </CardFooter>

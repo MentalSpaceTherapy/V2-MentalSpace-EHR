@@ -13,6 +13,12 @@ declare global {
   }
 }
 
+// Make sure SESSION_SECRET is available
+if (!process.env.SESSION_SECRET) {
+  process.env.SESSION_SECRET = "mentalspace-development-secret-key";
+  console.warn("Warning: Using default session secret. Set SESSION_SECRET environment variable in production.");
+}
+
 const scryptAsync = promisify(scrypt);
 
 async function hashPassword(password: string) {

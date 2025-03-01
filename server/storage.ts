@@ -10,7 +10,6 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 
 // Storage interface with comprehensive CRUD methods for our EHR application
-
 export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
@@ -54,8 +53,11 @@ export interface IStorage {
   markNotificationAsRead(id: number): Promise<Notification | undefined>;
   
   // Session store for auth
-  sessionStore: any; // Using any to avoid typescript errors
+  sessionStore: session.Store;
 }
+
+// Create a MemoryStore constructor by passing the session object
+const MemoryStore = createMemoryStore(session);
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
@@ -68,7 +70,7 @@ export class MemStorage implements IStorage {
   private documentId: number;
   private notificationId: number;
   currentId: number; // For user IDs
-  sessionStore: any; // Using any to avoid typescript errors
+  sessionStore: session.Store;
 
   constructor() {
     this.users = new Map();
@@ -83,7 +85,6 @@ export class MemStorage implements IStorage {
     this.notificationId = 1;
     
     // Setup in-memory session store
-    const MemoryStore = createMemoryStore(session);
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // prune expired entries every 24h
     });
