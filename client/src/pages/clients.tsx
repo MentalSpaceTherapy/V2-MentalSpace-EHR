@@ -183,10 +183,21 @@ export default function Clients() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [selectedClient, setSelectedClient] = useState<ExtendedClientData | null>(null);
+  
+  // Define a more flexible client type to handle properties that might not exist in the database schema
+  interface ExtendedClientData extends Client {
+    // Additional properties that might be returned from the API but aren't in the DB schema
+    lastSession?: Date | string | null;
+    nextSession?: Date | string | null;
+    balance?: number;
+    therapistName?: string;
+    sessionsAttended?: number;
+    // Add any other fields that might be used in the UI
+  }
   
   // Fetch clients from API
-  const { data: clients = [], isLoading: isLoadingClients, error: clientsError } = useQuery<Client[]>({
+  const { data: clients = [], isLoading: isLoadingClients, error: clientsError } = useQuery<ExtendedClientData[]>({
     queryKey: ['/api/clients'],
     queryFn: async () => {
       const response = await fetch('/api/clients');
@@ -241,8 +252,8 @@ export default function Clients() {
     const matchesSearch = 
       client.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.phone.includes(searchQuery);
+      (client.email && client.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (client.phone && client.phone.includes(searchQuery));
     
     const matchesStatus = 
       statusFilter === "all" || 
@@ -493,9 +504,11 @@ export default function Clients() {
                             {client.email && <div className="text-sm text-neutral-500">{client.email}</div>}
                           </TableCell>
                           <TableCell>
+                            {/* Safely access lastSession if it exists in the object */}
                             {client.lastSession ? format(new Date(client.lastSession), "MMM d, yyyy") : "N/A"}
                           </TableCell>
                           <TableCell>
+                            {/* Safely access nextSession if it exists in the object */}
                             {client.nextSession ? format(new Date(client.nextSession), "MMM d, yyyy") : "Not scheduled"}
                           </TableCell>
                           <TableCell>
@@ -514,6 +527,7 @@ export default function Clients() {
                             </Badge>
                           </TableCell>
                           <TableCell>
+                            {/* Safely access balance, providing a default if it doesn't exist */}
                             {typeof client.balance !== 'undefined' ? (
                               client.balance > 0 
                                 ? <span className="text-error-500">${client.balance.toFixed(2)}</span> 
