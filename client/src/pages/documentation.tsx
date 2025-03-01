@@ -297,7 +297,7 @@ export default function Documentation({ formType }: DocumentationProps) {
                   </div>
                   
                   {/* Create Document Button */}
-                  {!formType && location === '/documentation' ? (
+                  {!formType && isDocumentationPage ? (
                     <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                       <DialogTrigger asChild>
                         <Button className="bg-gradient-to-r from-indigo-600 to-purple-700 hover:shadow-md">
