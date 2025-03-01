@@ -362,29 +362,44 @@ export function ClientDetails(props: ClientDetailProps) {
   const handleCreateDocument = () => {
     setIsSubmitting(true);
     
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setShowCreateNoteDialog(false);
-      
-      toast({
-        title: "Document Created",
-        description: `New ${documentType === "progress" ? "Progress Note" : documentType === "treatment" ? "Treatment Plan" : "Intake Assessment"} has been created.`,
-      });
-    }, 1500);
+    // Get the form type based on selection
+    let formType = "";
+    switch(documentType) {
+      case "progress":
+        formType = "progressNote";
+        break;
+      case "treatment":
+        formType = "treatmentPlan";
+        break;
+      case "intake": 
+        formType = "intake";
+        break;
+      case "consultation":
+        formType = "consultation";
+        break;
+      case "discharge":
+        formType = "discharge";
+        break;
+      default:
+        formType = "progressNote";
+    }
+    
+    // Close dialog and navigate to documentation page with client context
+    setIsSubmitting(false);
+    setShowCreateNoteDialog(false);
+    
+    navigate(`/documentation?formType=${formType}&clientId=${props.id}&clientName=${props.firstName} ${props.lastName}`);
   };
 
   const handleUploadDocument = () => {
     setIsSubmitting(true);
     
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setShowUploadDocumentDialog(false);
-      
-      toast({
-        title: "Document Uploaded",
-        description: "Document has been uploaded and attached to the client's record.",
-      });
-    }, 1500);
+    // Close dialog and navigate to document upload page with client context
+    setIsSubmitting(false);
+    setShowUploadDocumentDialog(false);
+    
+    // Navigate to document upload page with client context
+    navigate(`/documentation/upload?clientId=${props.id}&clientName=${props.firstName} ${props.lastName}`);
   };
 
   const handlePortalToggle = (value: boolean) => {
@@ -511,6 +526,7 @@ export function ClientDetails(props: ClientDetailProps) {
                 <Button 
                   variant="outline"
                   size="sm"
+                  onClick={() => navigate(`/billing?clientId=${props.id}&clientName=${props.firstName} ${props.lastName}`)}
                   className="gap-1 hover:bg-amber-50 hover:text-amber-600 transition-colors"
                 >
                   <CreditCard className="h-4 w-4" />
