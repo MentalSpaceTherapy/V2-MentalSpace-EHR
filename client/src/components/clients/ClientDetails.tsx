@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
+import { useLocation } from "wouter";
 import { 
   Card, 
   CardContent, 
@@ -322,6 +323,7 @@ const mockPayments: PaymentData[] = [
 
 export function ClientDetails(props: ClientDetailProps) {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
   const [isEditing, setIsEditing] = useState(false);
   const [clientData, setClientData] = useState(props);
@@ -471,6 +473,7 @@ export function ClientDetails(props: ClientDetailProps) {
                 <Button 
                   variant="outline"
                   size="sm"
+                  onClick={() => navigate(`/documentation/progress-notes?create=true&clientId=${props.id}&clientName=${props.firstName} ${props.lastName}`)}
                   className="gap-1 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                 >
                   <FileSignature className="h-4 w-4" />
@@ -489,6 +492,7 @@ export function ClientDetails(props: ClientDetailProps) {
                 <Button 
                   variant="outline"
                   size="sm"
+                  onClick={() => navigate(`/scheduling?clientId=${props.id}&clientName=${props.firstName} ${props.lastName}`)}
                   className="gap-1 hover:bg-green-50 hover:text-green-600 transition-colors"
                 >
                   <Calendar className="h-4 w-4" />
