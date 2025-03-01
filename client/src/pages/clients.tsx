@@ -21,7 +21,8 @@ import {
   MoreHorizontal, 
   ChevronDown,
   UserPlus,
-  CircleX
+  CircleX,
+  Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 import { 
@@ -47,6 +48,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { ClientDetails } from "@/components/clients/ClientDetails";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { type Client, type ExtendedClient } from "@shared/schema";
 
 // Extended mock client data
 const mockClients = [
@@ -177,10 +181,60 @@ export default function Clients() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [clients, setClients] = useState(mockClients);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
+  
+  // Fetch clients from API
+  const { data: clients = [], isLoading: isLoadingClients, error: clientsError } = useQuery<Client[]>({
+    queryKey: ['/api/clients'],
+    queryFn: async () => {
+      const response = await fetch('/api/clients');
+      if (!response.ok) {
+        throw new Error('Failed to fetch clients');
+      }
+      return response.json();
+    },
+  });
+  
+  // Add client mutation
+  const createClientMutation = useMutation({
+    mutationFn: async (clientData: ExtendedClient) => {
+      const response = await apiRequest('POST', '/api/clients', clientData);
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate clients query to refetch the updated list
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      setIsFormOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error Adding Client",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Update client mutation
+  const updateClientMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<ExtendedClient> }) => {
+      const response = await apiRequest('PATCH', `/api/clients/${id}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      setIsFormOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error Updating Client",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
   // Filter clients based on search query and status filter
   const filteredClients = clients.filter(client => {
@@ -228,56 +282,42 @@ export default function Clients() {
 
   const handleClientFormSubmit = (data: any) => {
     if (selectedClient) {
-      // Update existing client
-      setClients(prevClients => 
-        prevClients.map(client => 
-          client.id === selectedClient.id 
-            ? { ...client, ...data, id: selectedClient.id } 
-            : client
-        )
-      );
+      // Update existing client using mutation
+      updateClientMutation.mutate({
+        id: selectedClient.id,
+        data: data
+      });
       
       toast({
         title: "Client Updated",
         description: `${data.firstName} ${data.lastName}'s information has been updated.`,
       });
     } else {
-      // Add new client
+      // Add new client using mutation
       const newClient = {
         ...data,
-        id: clients.length + 1,
-        createdAt: new Date(),
-        lastSession: null,
-        nextSession: null,
-        balance: 0,
-        sessionsAttended: 0,
         therapistId: user?.id || 1,
-        therapistName: `${user?.firstName} ${user?.lastName}` || "Dr. Emma Johnson",
+        // Other fields will be set by the server
       };
       
-      setClients(prevClients => [...prevClients, newClient]);
+      createClientMutation.mutate(newClient as ExtendedClient);
       
       toast({
         title: "Client Added",
         description: `${data.firstName} ${data.lastName} has been added to your client list.`,
       });
     }
-    
-    setIsFormOpen(false);
   };
 
   const handleClientUpdate = (data: any) => {
     if (selectedClient) {
-      // Update existing client
-      setClients(prevClients => 
-        prevClients.map(client => 
-          client.id === selectedClient.id 
-            ? { ...client, ...data } 
-            : client
-        )
-      );
+      // Update existing client using mutation
+      updateClientMutation.mutate({
+        id: selectedClient.id,
+        data: data
+      });
       
-      // Update the selected client state as well
+      // Update the selected client state as well for immediate UI update
       setSelectedClient({
         ...selectedClient,
         ...data
@@ -403,7 +443,34 @@ export default function Clients() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredClients.length > 0 ? (
+                    {isLoadingClients ? (
+                      // Loading state
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          <div className="flex flex-col items-center">
+                            <Loader2 className="h-8 w-8 text-blue-500 animate-spin mb-2" />
+                            <p>Loading clients...</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : clientsError ? (
+                      // Error state
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-red-500">
+                          <div className="flex flex-col items-center">
+                            <p>Error loading clients: {clientsError.message}</p>
+                            <Button 
+                              variant="link" 
+                              className="mt-2" 
+                              onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/clients'] })}
+                            >
+                              Try again
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredClients.length > 0 ? (
+                      // Clients data
                       filteredClients.map((client) => (
                         <TableRow 
                           key={client.id} 
@@ -413,20 +480,23 @@ export default function Clients() {
                           <TableCell>
                             <div>
                               <div className="font-medium">{client.firstName} {client.lastName}</div>
-                              <div className="text-sm text-neutral-500">
-                                {format(client.dateOfBirth, "MMM d, yyyy")} ({new Date().getFullYear() - client.dateOfBirth.getFullYear()} years)
-                              </div>
+                              {client.dateOfBirth && (
+                                <div className="text-sm text-neutral-500">
+                                  {format(new Date(client.dateOfBirth), "MMM d, yyyy")} 
+                                  ({new Date().getFullYear() - new Date(client.dateOfBirth).getFullYear()} years)
+                                </div>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="text-sm">{client.phone}</div>
-                            <div className="text-sm text-neutral-500">{client.email}</div>
+                            {client.phone && <div className="text-sm">{client.phone}</div>}
+                            {client.email && <div className="text-sm text-neutral-500">{client.email}</div>}
                           </TableCell>
                           <TableCell>
-                            {client.lastSession ? format(client.lastSession, "MMM d, yyyy") : "N/A"}
+                            {client.lastSession ? format(new Date(client.lastSession), "MMM d, yyyy") : "N/A"}
                           </TableCell>
                           <TableCell>
-                            {client.nextSession ? format(client.nextSession, "MMM d, yyyy") : "Not scheduled"}
+                            {client.nextSession ? format(new Date(client.nextSession), "MMM d, yyyy") : "Not scheduled"}
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className={
@@ -444,10 +514,13 @@ export default function Clients() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {client.balance > 0 
-                              ? <span className="text-error-500">${client.balance.toFixed(2)}</span> 
-                              : <span>${client.balance.toFixed(2)}</span>
-                            }
+                            {typeof client.balance !== 'undefined' ? (
+                              client.balance > 0 
+                                ? <span className="text-error-500">${client.balance.toFixed(2)}</span> 
+                                : <span>${client.balance.toFixed(2)}</span>
+                            ) : (
+                              <span>$0.00</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                             <DropdownMenu>
@@ -472,6 +545,7 @@ export default function Clients() {
                         </TableRow>
                       ))
                     ) : (
+                      // No clients matching filter
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-8 text-neutral-500">
                           <div className="flex flex-col items-center">
