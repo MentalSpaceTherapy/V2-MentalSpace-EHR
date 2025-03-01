@@ -176,8 +176,9 @@ export default function Documentation({ formType }: DocumentationProps) {
       typeFilter === "all" || 
       doc.type === typeFilter;
     
-    // For the "pending" tab, include everything that's not Complete or Signed
+    // Tab filtering logic
     const matchesTab = 
+      (currentTab === "dashboard") || // Dashboard shows all with enhanced filtering
       (currentTab === "pending" && ['Draft', 'In Progress', 'Overdue', 'Due Today'].includes(doc.status)) ||
       (currentTab === "completed" && ['Complete', 'Signed'].includes(doc.status)) ||
       currentTab === "all";
@@ -387,8 +388,15 @@ export default function Documentation({ formType }: DocumentationProps) {
               </CardHeader>
               
               <CardContent>
-                <Tabs defaultValue="pending" onValueChange={setCurrentTab} className="mb-6">
+                <Tabs defaultValue="dashboard" onValueChange={setCurrentTab} className="mb-6">
                   <TabsList className="p-1 bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 rounded-xl">
+                    <TabsTrigger 
+                      value="dashboard" 
+                      className="flex items-center transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105"
+                    >
+                      <FileCheck className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:scale-110" />
+                      Dashboard
+                    </TabsTrigger>
                     <TabsTrigger 
                       value="pending" 
                       className="flex items-center transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105"
