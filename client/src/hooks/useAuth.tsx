@@ -1,3 +1,6 @@
+// This file is deprecated - we're now using use-auth.tsx instead
+// Keeping this file for reference but it's not used in the application
+
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { DEFAULT_AVATAR } from "@/lib/constants";
 
@@ -20,7 +23,7 @@ interface AuthContextType {
   changeRole: (role: string) => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const MockAuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Mock user for demonstration purposes
 const MOCK_USER: AuthUser = {
@@ -34,6 +37,7 @@ const MOCK_USER: AuthUser = {
   isAuthenticated: true,
 };
 
+// DEPRECATED: Use the AuthProvider from use-auth.tsx instead
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -82,14 +86,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, changeRole }}>
+    <MockAuthContext.Provider value={{ user, login, logout, isLoading, changeRole }}>
       {children}
-    </AuthContext.Provider>
+    </MockAuthContext.Provider>
   );
 }
 
+// DEPRECATED: Use the useAuth from use-auth.tsx instead
 export function useAuth() {
-  const context = useContext(AuthContext);
+  const context = useContext(MockAuthContext);
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
