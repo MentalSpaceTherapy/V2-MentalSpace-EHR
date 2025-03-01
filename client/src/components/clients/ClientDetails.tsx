@@ -333,8 +333,13 @@ export function ClientDetails(props: ClientDetailProps) {
   const [isPortalEnabled, setIsPortalEnabled] = useState(false);
   const [showUploadDocumentDialog, setShowUploadDocumentDialog] = useState(false);
   const [showCreateNoteDialog, setShowCreateNoteDialog] = useState(false);
+  const [showAddDiagnosisDialog, setShowAddDiagnosisDialog] = useState(false);
+  const [showAddMedicationDialog, setShowAddMedicationDialog] = useState(false);
   const [documentType, setDocumentType] = useState("progress");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [diagnosisCode, setDiagnosisCode] = useState("");
+  const [diagnosisDescription, setDiagnosisDescription] = useState("");
+  const [medication, setMedication] = useState("");
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -409,6 +414,63 @@ export function ClientDetails(props: ClientDetailProps) {
       title: value ? "Portal Access Enabled" : "Portal Access Disabled",
       description: value ? "Client portal access has been enabled." : "Client portal access has been disabled.",
     });
+  };
+  
+  const handleAddDiagnosis = () => {
+    setIsSubmitting(true);
+    
+    // In a real application, we would make an API call to save the diagnosis
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setShowAddDiagnosisDialog(false);
+      
+      // Update local state with the new diagnosis
+      if (diagnosisCode && diagnosisDescription) {
+        setClientData({
+          ...clientData,
+          diagnosisCodes: [...(clientData.diagnosisCodes || []), 
+            `${diagnosisCode}: ${diagnosisDescription}`]
+        });
+        
+        // Reset the form fields
+        setDiagnosisCode("");
+        setDiagnosisDescription("");
+        
+        toast({
+          title: "Diagnosis Added",
+          description: "The diagnosis has been added to the client's record.",
+        });
+      }
+    }, 1000);
+  };
+  
+  const handleAddMedication = () => {
+    setIsSubmitting(true);
+    
+    // In a real application, we would make an API call to save the medication
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setShowAddMedicationDialog(false);
+      
+      // Update local state with the new medication
+      if (medication) {
+        const currentMeds = clientData.medicationList || "";
+        const updatedMeds = currentMeds ? `${currentMeds}\n- ${medication}` : `- ${medication}`;
+        
+        setClientData({
+          ...clientData,
+          medicationList: updatedMeds
+        });
+        
+        // Reset the form field
+        setMedication("");
+        
+        toast({
+          title: "Medication Added",
+          description: "The medication has been added to the client's record.",
+        });
+      }
+    }, 1000);
   };
 
   const calculateAge = (dob?: Date) => {
@@ -1371,7 +1433,11 @@ export function ClientDetails(props: ClientDetailProps) {
               <div>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-medium text-gray-700">Diagnosis Information</h3>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowAddDiagnosisDialog(true)}
+                  >
                     <Plus className="h-4 w-4 mr-1" />
                     Add Diagnosis
                   </Button>
@@ -1409,7 +1475,11 @@ export function ClientDetails(props: ClientDetailProps) {
               <div>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-medium text-gray-700">Medication Information</h3>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowAddMedicationDialog(true)}
+                  >
                     <Plus className="h-4 w-4 mr-1" />
                     Add Medication
                   </Button>
