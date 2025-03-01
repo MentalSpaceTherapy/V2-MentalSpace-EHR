@@ -53,7 +53,10 @@ import {
   Edit,
   Phone,
   FileClock,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Clock,
+  Calendar,
+  CheckCircle
 } from "lucide-react";
 import { format, subDays, addDays } from "date-fns";
 import { 
@@ -421,127 +424,543 @@ export default function Documentation({ formType }: DocumentationProps) {
                       All Documents
                     </TabsTrigger>
                   </TabsList>
-                </Tabs>
                 
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                  <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                    <Input 
-                      placeholder="Search client or document type..." 
-                      className="pl-10"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center gap-3 w-full md:w-auto">
-                    <Select
-                      value={statusFilter}
-                      onValueChange={setStatusFilter}
-                    >
-                      <SelectTrigger className="w-full md:w-[180px]">
-                        <div className="flex items-center">
-                          <Filter className="h-4 w-4 mr-2" />
-                          <SelectValue placeholder="Filter by Status" />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        {DOCUMENTATION_STATUS.map(status => (
-                          <SelectItem key={status} value={status.toLowerCase()}>{status}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <TabsContent value="dashboard" className="mt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                      <Card className="bg-gradient-to-br from-indigo-50 to-white hover:shadow-md transition-all">
+                        <CardContent className="p-6">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-neutral-500 font-medium mb-1">Total Documents</p>
+                              <h3 className="text-2xl font-bold">{documents.length}</h3>
+                            </div>
+                            <div className="bg-gradient-to-br from-indigo-500 to-purple-500 p-3 rounded-xl text-white">
+                              <FileText className="h-6 w-6" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-gradient-to-br from-amber-50 to-white hover:shadow-md transition-all">
+                        <CardContent className="p-6">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-neutral-500 font-medium mb-1">Pending Review</p>
+                              <h3 className="text-2xl font-bold">{documents.filter(d => d.status === 'In Progress').length}</h3>
+                            </div>
+                            <div className="bg-gradient-to-br from-amber-500 to-yellow-500 p-3 rounded-xl text-white">
+                              <ClipboardList className="h-6 w-6" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-gradient-to-br from-red-50 to-white hover:shadow-md transition-all">
+                        <CardContent className="p-6">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-neutral-500 font-medium mb-1">Overdue</p>
+                              <h3 className="text-2xl font-bold">{documents.filter(d => d.status === 'Overdue').length}</h3>
+                            </div>
+                            <div className="bg-gradient-to-br from-red-500 to-rose-500 p-3 rounded-xl text-white animate-pulse">
+                              <Clock className="h-6 w-6" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-gradient-to-br from-green-50 to-white hover:shadow-md transition-all">
+                        <CardContent className="p-6">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-neutral-500 font-medium mb-1">Completed</p>
+                              <h3 className="text-2xl font-bold">{documents.filter(d => d.status === 'Complete' || d.status === 'Signed').length}</h3>
+                            </div>
+                            <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-3 rounded-xl text-white">
+                              <CheckCircle className="h-6 w-6" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
                     
-                    <Select
-                      value={typeFilter}
-                      onValueChange={setTypeFilter}
-                    >
-                      <SelectTrigger className="w-full md:w-[180px]">
-                        <div className="flex items-center">
-                          <FilePlus className="h-4 w-4 mr-2" />
-                          <SelectValue placeholder="Filter by Type" />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        {DOCUMENTATION_TYPES.map(type => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="border rounded-md overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-neutral-200">
-                      <thead className="bg-neutral-50">
-                        <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Client</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Session Date</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Created Date</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Due Date</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Type</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Status</th>
-                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-neutral-200">
-                        {filteredDocuments.length > 0 ? (
-                          filteredDocuments.map((doc) => (
-                            <tr key={doc.id} className="hover:bg-neutral-50">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-800">
-                                <div className="flex items-center">
-                                  <User className="h-4 w-4 mr-2 text-neutral-400" />
-                                  {doc.clientName}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
-                                {format(doc.sessionDate, "MMM d, yyyy")}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
-                                {format(doc.createdDate, "MMM d, yyyy")}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                <span className={doc.status === "Overdue" || doc.status === "Due Today" ? "text-error-500 font-medium" : ""}>
-                                  {format(doc.dueDate, "MMM d, yyyy")}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
-                                <div className="flex items-center">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                      <div className="relative w-full max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                        <Input 
+                          placeholder="Search client or document type..." 
+                          className="pl-10"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center gap-3 w-full md:w-auto">
+                        <Select
+                          value={statusFilter}
+                          onValueChange={setStatusFilter}
+                        >
+                          <SelectTrigger className="w-full md:w-[180px]">
+                            <div className="flex items-center">
+                              <Filter className="h-4 w-4 mr-2" />
+                              <SelectValue placeholder="Filter by Status" />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Statuses</SelectItem>
+                            {DOCUMENTATION_STATUS.map(status => (
+                              <SelectItem key={status} value={status.toLowerCase()}>{status}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        <Select
+                          value={typeFilter}
+                          onValueChange={setTypeFilter}
+                        >
+                          <SelectTrigger className="w-full md:w-[180px]">
+                            <div className="flex items-center">
+                              <FilePlus className="h-4 w-4 mr-2" />
+                              <SelectValue placeholder="Filter by Type" />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            {DOCUMENTATION_TYPES.map(type => (
+                              <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                      {filteredDocuments.map((doc) => (
+                        <Card key={doc.id} className="overflow-hidden hover:shadow-md transition-all duration-300 group cursor-pointer border-neutral-200 hover:border-primary-200" onClick={() => handleEditDocument(doc.id)}>
+                          <div className={`h-1.5 w-full ${doc.status === "Overdue" ? "bg-red-500" : 
+                            doc.status === "Due Today" ? "bg-amber-500" : 
+                            doc.status === "In Progress" ? "bg-blue-500" : 
+                            doc.status === "Complete" ? "bg-green-500" : 
+                            doc.status === "Signed" ? "bg-purple-500" : "bg-gray-500"}`}
+                          />
+                          <CardContent className="p-5">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <div className="flex items-center gap-2 mb-3">
                                   {getDocTypeIcon(doc.type)}
-                                  <span className="ml-2">{doc.type}</span>
+                                  <span className="text-sm font-medium text-neutral-600">{doc.type}</span>
                                 </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <Badge variant="outline" className={getStatusBadgeClass(doc.status)}>
-                                  {doc.status}
-                                </Badge>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <Button 
-                                  variant="link" 
-                                  className="text-primary-600 hover:text-primary-800"
-                                  onClick={() => handleEditDocument(doc.id)}
-                                >
+                                <h3 className="text-base font-semibold mb-1.5 text-neutral-800 group-hover:text-primary-700 transition-colors">{doc.clientName}</h3>
+                                <div className="flex items-center gap-2 text-xs text-neutral-500">
+                                  <Calendar className="h-3.5 w-3.5 text-neutral-400" />
+                                  <span>Session: {format(doc.sessionDate, "MMM d, yyyy")}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-neutral-500 mt-1">
+                                  <Clock className="h-3.5 w-3.5 text-neutral-400" />
+                                  <span className={doc.status === "Overdue" ? "text-red-500 font-medium" : ""}>
+                                    Due: {format(doc.dueDate, "MMM d, yyyy")}
+                                  </span>
+                                </div>
+                              </div>
+                              <Badge variant="outline" className={`${getStatusBadgeClass(doc.status)}`}>
+                                {doc.status}
+                              </Badge>
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-neutral-100 flex justify-between items-center">
+                              <span className="text-xs text-neutral-500">Created {format(doc.createdDate, "MMM d, yyyy")}</span>
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="sm" className="h-8 text-primary-600">
                                   {doc.status === "Complete" || doc.status === "Signed" ? "View" : 
-                                   doc.status === "In Progress" ? "Continue" : "Complete"}
+                                  doc.status === "In Progress" ? "Continue" : "Complete"}
                                 </Button>
-                              </td>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                      {filteredDocuments.length === 0 && (
+                        <div className="col-span-full p-10 text-center bg-white rounded-lg border border-dashed border-neutral-300">
+                          <FileQuestion className="h-12 w-12 mx-auto text-neutral-300 mb-3" />
+                          <h3 className="text-lg font-medium text-neutral-700 mb-1">No documents found</h3>
+                          <p className="text-neutral-500 mb-4">No documents match your current filters.</p>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setStatusFilter("all");
+                              setTypeFilter("all");
+                              setSearchQuery("");
+                            }}
+                          >
+                            Clear filters
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="pending" className="mt-4">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                      <div className="relative w-full max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                        <Input 
+                          placeholder="Search client or document type..." 
+                          className="pl-10"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center gap-3 w-full md:w-auto">
+                        <Select
+                          value={statusFilter}
+                          onValueChange={setStatusFilter}
+                        >
+                          <SelectTrigger className="w-full md:w-[180px]">
+                            <div className="flex items-center">
+                              <Filter className="h-4 w-4 mr-2" />
+                              <SelectValue placeholder="Filter by Status" />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Statuses</SelectItem>
+                            {DOCUMENTATION_STATUS.map(status => (
+                              <SelectItem key={status} value={status.toLowerCase()}>{status}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        <Select
+                          value={typeFilter}
+                          onValueChange={setTypeFilter}
+                        >
+                          <SelectTrigger className="w-full md:w-[180px]">
+                            <div className="flex items-center">
+                              <FilePlus className="h-4 w-4 mr-2" />
+                              <SelectValue placeholder="Filter by Type" />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            {DOCUMENTATION_TYPES.map(type => (
+                              <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-md overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-neutral-200">
+                          <thead className="bg-neutral-50">
+                            <tr>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Client</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Session Date</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Created Date</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Due Date</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Type</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Status</th>
+                              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">Actions</th>
                             </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={7} className="px-6 py-4 text-center text-sm text-neutral-500">
-                              No documents found matching the current filters.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-neutral-200">
+                            {filteredDocuments.length > 0 ? (
+                              filteredDocuments.map((doc) => (
+                                <tr key={doc.id} className="hover:bg-neutral-50">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-800">
+                                    <div className="flex items-center">
+                                      <User className="h-4 w-4 mr-2 text-neutral-400" />
+                                      {doc.clientName}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                                    {format(doc.sessionDate, "MMM d, yyyy")}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                                    {format(doc.createdDate, "MMM d, yyyy")}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span className={doc.status === "Overdue" || doc.status === "Due Today" ? "text-error-500 font-medium" : ""}>
+                                      {format(doc.dueDate, "MMM d, yyyy")}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                                    <div className="flex items-center">
+                                      {getDocTypeIcon(doc.type)}
+                                      <span className="ml-2">{doc.type}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <Badge variant="outline" className={getStatusBadgeClass(doc.status)}>
+                                      {doc.status}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <Button 
+                                      variant="link" 
+                                      className="text-primary-600 hover:text-primary-800"
+                                      onClick={() => handleEditDocument(doc.id)}
+                                    >
+                                      {doc.status === "Complete" || doc.status === "Signed" ? "View" : 
+                                      doc.status === "In Progress" ? "Continue" : "Complete"}
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={7} className="px-6 py-4 text-center text-sm text-neutral-500">
+                                  No documents found matching the current filters.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="completed" className="mt-4">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                      <div className="relative w-full max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                        <Input 
+                          placeholder="Search client or document type..." 
+                          className="pl-10"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center gap-3 w-full md:w-auto">
+                        <Select
+                          value={statusFilter}
+                          onValueChange={setStatusFilter}
+                        >
+                          <SelectTrigger className="w-full md:w-[180px]">
+                            <div className="flex items-center">
+                              <Filter className="h-4 w-4 mr-2" />
+                              <SelectValue placeholder="Filter by Status" />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Statuses</SelectItem>
+                            {DOCUMENTATION_STATUS.map(status => (
+                              <SelectItem key={status} value={status.toLowerCase()}>{status}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        <Select
+                          value={typeFilter}
+                          onValueChange={setTypeFilter}
+                        >
+                          <SelectTrigger className="w-full md:w-[180px]">
+                            <div className="flex items-center">
+                              <FilePlus className="h-4 w-4 mr-2" />
+                              <SelectValue placeholder="Filter by Type" />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            {DOCUMENTATION_TYPES.map(type => (
+                              <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-md overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-neutral-200">
+                          <thead className="bg-neutral-50">
+                            <tr>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Client</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Session Date</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Created Date</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Due Date</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Type</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Status</th>
+                              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-neutral-200">
+                            {filteredDocuments.length > 0 ? (
+                              filteredDocuments.map((doc) => (
+                                <tr key={doc.id} className="hover:bg-neutral-50">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-800">
+                                    <div className="flex items-center">
+                                      <User className="h-4 w-4 mr-2 text-neutral-400" />
+                                      {doc.clientName}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                                    {format(doc.sessionDate, "MMM d, yyyy")}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                                    {format(doc.createdDate, "MMM d, yyyy")}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span className={doc.status === "Overdue" || doc.status === "Due Today" ? "text-error-500 font-medium" : ""}>
+                                      {format(doc.dueDate, "MMM d, yyyy")}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                                    <div className="flex items-center">
+                                      {getDocTypeIcon(doc.type)}
+                                      <span className="ml-2">{doc.type}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <Badge variant="outline" className={getStatusBadgeClass(doc.status)}>
+                                      {doc.status}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <Button 
+                                      variant="link" 
+                                      className="text-primary-600 hover:text-primary-800"
+                                      onClick={() => handleEditDocument(doc.id)}
+                                    >
+                                      View
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={7} className="px-6 py-4 text-center text-sm text-neutral-500">
+                                  No documents found matching the current filters.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="all" className="mt-4">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                      <div className="relative w-full max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                        <Input 
+                          placeholder="Search client or document type..." 
+                          className="pl-10"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center gap-3 w-full md:w-auto">
+                        <Select
+                          value={statusFilter}
+                          onValueChange={setStatusFilter}
+                        >
+                          <SelectTrigger className="w-full md:w-[180px]">
+                            <div className="flex items-center">
+                              <Filter className="h-4 w-4 mr-2" />
+                              <SelectValue placeholder="Filter by Status" />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Statuses</SelectItem>
+                            {DOCUMENTATION_STATUS.map(status => (
+                              <SelectItem key={status} value={status.toLowerCase()}>{status}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        <Select
+                          value={typeFilter}
+                          onValueChange={setTypeFilter}
+                        >
+                          <SelectTrigger className="w-full md:w-[180px]">
+                            <div className="flex items-center">
+                              <FilePlus className="h-4 w-4 mr-2" />
+                              <SelectValue placeholder="Filter by Type" />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            {DOCUMENTATION_TYPES.map(type => (
+                              <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-md overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-neutral-200">
+                          <thead className="bg-neutral-50">
+                            <tr>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Client</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Session Date</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Created Date</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Due Date</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Type</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Status</th>
+                              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-neutral-200">
+                            {filteredDocuments.length > 0 ? (
+                              filteredDocuments.map((doc) => (
+                                <tr key={doc.id} className="hover:bg-neutral-50">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-800">
+                                    <div className="flex items-center">
+                                      <User className="h-4 w-4 mr-2 text-neutral-400" />
+                                      {doc.clientName}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                                    {format(doc.sessionDate, "MMM d, yyyy")}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                                    {format(doc.createdDate, "MMM d, yyyy")}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span className={doc.status === "Overdue" || doc.status === "Due Today" ? "text-error-500 font-medium" : ""}>
+                                      {format(doc.dueDate, "MMM d, yyyy")}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                                    <div className="flex items-center">
+                                      {getDocTypeIcon(doc.type)}
+                                      <span className="ml-2">{doc.type}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <Badge variant="outline" className={getStatusBadgeClass(doc.status)}>
+                                      {doc.status}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <Button 
+                                      variant="link" 
+                                      className="text-primary-600 hover:text-primary-800"
+                                      onClick={() => handleEditDocument(doc.id)}
+                                    >
+                                      {doc.status === "Complete" || doc.status === "Signed" ? "View" : 
+                                      doc.status === "In Progress" ? "Continue" : "Complete"}
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={7} className="px-6 py-4 text-center text-sm text-neutral-500">
+                                  No documents found matching the current filters.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           ) : (
