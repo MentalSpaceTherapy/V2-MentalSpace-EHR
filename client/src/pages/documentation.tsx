@@ -320,73 +320,87 @@ export default function Documentation({ formType }: DocumentationProps) {
                         : 'Manage clinical notes, assessments, and treatment plans'}
                     </CardDescription>
                   </div>
-                  <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                    <DialogTrigger asChild>
-                      <button 
-                        className="group relative inline-flex items-center overflow-hidden rounded-md bg-gradient-to-r from-indigo-600 to-purple-700 px-6 py-2 font-medium text-white shadow-lg transition-all duration-300 hover:shadow-indigo-500/25 hover:scale-105"
-                      >
-                        <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 transition duration-300 group-hover:opacity-100"></span>
-                        <Plus className="h-4 w-4 mr-2 relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-90" />
-                        <span className="relative z-10">Create Document</span>
-                        <span className="absolute -bottom-1 left-1/2 h-1 w-0 -translate-x-1/2 rounded-full bg-white opacity-70 transition-all duration-300 group-hover:w-1/2"></span>
-                      </button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-lg">
-                      <DialogHeader>
-                        <DialogTitle>Create New Document</DialogTitle>
-                        <DialogDescription>
-                          Select the type of document you want to create
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                        {DOCUMENTATION_TYPES.map((type) => {
-                          const getButtonStyle = () => {
-                            switch(type) {
-                              case "Progress Note":
-                                return "from-blue-500 to-indigo-500 shadow-blue-200";
-                              case "Intake Form":
-                                return "from-purple-500 to-pink-500 shadow-purple-200";
-                              case "Treatment Plan":
-                                return "from-green-500 to-emerald-500 shadow-green-200";
-                              case "Contact Note":
-                                return "from-indigo-500 to-blue-500 shadow-indigo-200";
-                              case "Cancellation/Missed Appointment":
-                                return "from-amber-500 to-yellow-500 shadow-amber-200";
-                              case "Consultation":
-                                return "from-teal-500 to-cyan-500 shadow-teal-200";
-                              case "Miscellaneous":
-                                return "from-gray-500 to-slate-500 shadow-gray-200";
-                              default:
-                                return "from-gray-500 to-slate-500 shadow-gray-200";
-                            }
-                          };
-                          
-                          return (
-                            <button
-                              key={type}
-                              className={cn(
-                                "group flex flex-col items-center p-4 border border-transparent rounded-lg transition-all duration-300",
-                                "hover:border-primary-300 hover:bg-white hover:shadow-xl hover:scale-105",
-                                "focus:outline-none focus:ring-2 focus:ring-primary-500"
-                              )}
-                              onClick={() => handleCreateDocument(type)}
-                            >
-                              <div className={`bg-gradient-to-r ${getButtonStyle()} p-3 rounded-full mb-3 shadow-lg transition-all duration-500 group-hover:shadow-2xl group-hover:scale-110`}>
-                                {getDocTypeIcon(type)}
-                              </div>
-                              <span className="text-sm font-medium text-gray-700 transition-all duration-300 group-hover:text-primary-700 group-hover:font-semibold">{type}</span>
-                              <div className="mt-2 h-0.5 w-0 bg-gradient-to-r from-transparent via-primary-500 to-transparent transition-all duration-300 group-hover:w-3/4 opacity-0 group-hover:opacity-100"></div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <DialogFooter>
-                        <DialogClose asChild>
-                          <Button variant="outline">Cancel</Button>
-                        </DialogClose>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                  
+                  {/* Conditional button based on formType */}
+                  {!formType ? (
+                    // Show Create Document button with dropdown for general documentation page
+                    <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                      <DialogTrigger asChild>
+                        <button 
+                          className="group relative inline-flex items-center overflow-hidden rounded-md bg-gradient-to-r from-indigo-600 to-purple-700 px-6 py-2 font-medium text-white shadow-lg transition-all duration-300 hover:shadow-indigo-500/25 hover:scale-105"
+                        >
+                          <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 transition duration-300 group-hover:opacity-100"></span>
+                          <Plus className="h-4 w-4 mr-2 relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-90" />
+                          <span className="relative z-10">Create Document</span>
+                          <span className="absolute -bottom-1 left-1/2 h-1 w-0 -translate-x-1/2 rounded-full bg-white opacity-70 transition-all duration-300 group-hover:w-1/2"></span>
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-lg">
+                        <DialogHeader>
+                          <DialogTitle>Create New Document</DialogTitle>
+                          <DialogDescription>
+                            Select the type of document you want to create
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                          {DOCUMENTATION_TYPES.map((type) => {
+                            const getButtonStyle = () => {
+                              switch(type) {
+                                case "Progress Note":
+                                  return "from-blue-500 to-indigo-500 shadow-blue-200";
+                                case "Intake Form":
+                                  return "from-purple-500 to-pink-500 shadow-purple-200";
+                                case "Treatment Plan":
+                                  return "from-green-500 to-emerald-500 shadow-green-200";
+                                case "Contact Note":
+                                  return "from-indigo-500 to-blue-500 shadow-indigo-200";
+                                case "Cancellation/Missed Appointment":
+                                  return "from-amber-500 to-yellow-500 shadow-amber-200";
+                                case "Consultation":
+                                  return "from-teal-500 to-cyan-500 shadow-teal-200";
+                                case "Miscellaneous":
+                                  return "from-gray-500 to-slate-500 shadow-gray-200";
+                                default:
+                                  return "from-gray-500 to-slate-500 shadow-gray-200";
+                              }
+                            };
+                            
+                            return (
+                              <button
+                                key={type}
+                                className={cn(
+                                  "group flex flex-col items-center p-4 border border-transparent rounded-lg transition-all duration-300",
+                                  "hover:border-primary-300 hover:bg-white hover:shadow-xl hover:scale-105",
+                                  "focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                )}
+                                onClick={() => handleCreateDocument(type)}
+                              >
+                                <div className={`bg-gradient-to-r ${getButtonStyle()} p-3 rounded-full mb-3 shadow-lg transition-all duration-500 group-hover:shadow-2xl group-hover:scale-110`}>
+                                  {getDocTypeIcon(type)}
+                                </div>
+                                <span className="text-sm font-medium text-gray-700 transition-all duration-300 group-hover:text-primary-700 group-hover:font-semibold">{type}</span>
+                                <div className="mt-2 h-0.5 w-0 bg-gradient-to-r from-transparent via-primary-500 to-transparent transition-all duration-300 group-hover:w-3/4 opacity-0 group-hover:opacity-100"></div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  ) : (
+                    // Show specific create button for the current formType
+                    <Button 
+                      onClick={() => handleCreateDocument(formType)}
+                      className="group relative inline-flex items-center overflow-hidden bg-primary-600 hover:bg-primary-700 text-white"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      <span>Create {formType}</span>
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               
