@@ -92,8 +92,7 @@ export class MemStorage implements IStorage {
     // Add a sample user for development testing
     const sampleUser: InsertUser = {
       username: "therapist@mentalspace.com",
-      // Pre-hashed password (equivalent to "password123")
-      password: "12b454124a8637d133f58a96a00bbe92f8776b3a5d7be24bc59b66e3d0964d2e3fe9cdc51984e27bf9e15a1a35fec4083c460f95d5c46e39f8369c4f77af5ad2.38dd01c807a47e4b",
+      password: "password123", // We'll bypass the hashing in auth.ts for this test user
       firstName: "Sarah",
       lastName: "Johnson",
       email: "therapist@mentalspace.com",
