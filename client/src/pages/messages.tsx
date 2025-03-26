@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Send, Paperclip, MoreVertical, Loader2 } from "lucide-react";
+import { Search, Send, Paperclip, MoreVertical, Loader2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,10 @@ import { Message, Client } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DEFAULT_AVATAR } from "@/lib/constants";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 // Client type with additional fields for UI
 interface MessageClient {
@@ -48,6 +52,12 @@ export default function Messages() {
   const [searchQuery, setSearchQuery] = useState("");
   const [messageText, setMessageText] = useState("");
   const [filterOption, setFilterOption] = useState<string>("all"); // "all", "unread", "unanswered"
+  const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
+  const [newMessageData, setNewMessageData] = useState({
+    clientId: "",
+    subject: "",
+    content: ""
+  });
   
   // Fetch therapist's clients
   const { data: clientsData, isLoading: clientsLoading } = useQuery<Client[]>({
@@ -63,6 +73,12 @@ export default function Messages() {
   // Fetch client-specific messages when a client is selected
   const { data: clientMessages, isLoading: clientMessagesLoading } = useQuery<Message[]>({
     queryKey: ['/api/clients', selectedClientId, 'messages'],
+    queryFn: async () => {
+      if (!selectedClientId) return [];
+      const res = await fetch(`/api/clients/${selectedClientId}/messages`);
+      if (!res.ok) throw new Error('Failed to fetch client messages');
+      return res.json();
+    },
     enabled: !!selectedClientId,
   });
   
@@ -295,14 +311,23 @@ export default function Messages() {
             {/* Client List Sidebar */}
             <div className="w-80 border-r bg-white">
               <div className="p-4 border-b">
-                <div className="relative mb-2">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                  <Input 
-                    placeholder="Search conversations..." 
-                    className="pl-10"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+                <div className="flex gap-2 mb-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                    <Input 
+                      placeholder="Search conversations..." 
+                      className="pl-10"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <Button 
+                    size="icon" 
+                    className="h-10 w-10"
+                    onClick={() => setNewMessageDialogOpen(true)}
+                  >
+                    <Plus className="h-5 w-5" />
+                  </Button>
                 </div>
                 <div className="flex space-x-2 mt-3">
                   <Button 
