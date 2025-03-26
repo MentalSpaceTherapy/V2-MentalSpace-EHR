@@ -27,6 +27,7 @@ interface MessageClient {
   lastMessage: string;
   lastMessageTime: Date;
   unread: boolean;
+  unanswered?: boolean;
   dateOfBirth?: Date | null;
   phone?: string | null;
 }
@@ -46,6 +47,7 @@ export default function Messages() {
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [messageText, setMessageText] = useState("");
+  const [filterOption, setFilterOption] = useState<string>("all"); // "all", "unread", "unanswered"
   
   // Fetch therapist's clients
   const { data: clientsData, isLoading: clientsLoading } = useQuery<Client[]>({
@@ -132,6 +134,8 @@ export default function Messages() {
         const latestMessage = clientMessages[0];
         const unreadMessages = clientMessages.filter(m => !m.isRead && m.sender === "client");
         
+        const unanswered = latestMessage ? latestMessage.sender === "client" : false;
+        
         return {
           id: client.id,
           name: `${client.firstName} ${client.lastName}`,
@@ -141,6 +145,7 @@ export default function Messages() {
           lastMessage: latestMessage ? latestMessage.content : "No messages yet",
           lastMessageTime: latestMessage ? new Date(latestMessage.createdAt) : new Date(),
           unread: unreadMessages.length > 0,
+          unanswered,
           dateOfBirth: client.dateOfBirth ? new Date(client.dateOfBirth) : null,
           phone: client.phone
         };
@@ -197,10 +202,31 @@ export default function Messages() {
   // Find the selected client
   const selectedClient = clients.find(c => c.id === selectedClientId);
   
-  // Filter clients based on search
-  const filteredClients = clients.filter(client => 
-    client.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Determine if a client has unanswered messages
+  const getUnansweredStatus = (clientId: number): boolean => {
+    const clientMsgs = messagesData ? (messagesData as Message[]).filter(m => m.clientId === clientId) : [];
+    if (clientMsgs.length === 0) return false;
+    
+    // Sort by time, newest first
+    clientMsgs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    // If latest message is from client, it's unanswered
+    return clientMsgs[0].sender === "client";
+  };
+
+  // Filter clients based on search and filter option
+  const filteredClients = clients.filter(client => {
+    // First apply search filter
+    const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+    
+    // Then apply type filter
+    if (filterOption === "all") return true;
+    if (filterOption === "unread" && client.unread) return true;
+    if (filterOption === "unanswered" && client.unanswered) return true;
+    
+    return filterOption === "all";
+  });
   
   // Handle client selection
   const handleSelectClient = (clientId: number) => {
@@ -269,7 +295,7 @@ export default function Messages() {
             {/* Client List Sidebar */}
             <div className="w-80 border-r bg-white">
               <div className="p-4 border-b">
-                <div className="relative">
+                <div className="relative mb-2">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                   <Input 
                     placeholder="Search conversations..." 
@@ -277,6 +303,35 @@ export default function Messages() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
+                </div>
+                <div className="flex space-x-2 mt-3">
+                  <Button 
+                    size="sm" 
+                    variant={filterOption === "all" ? "default" : "outline"} 
+                    className={cn("text-xs flex-1 h-8", 
+                      filterOption === "all" ? "bg-primary-500 hover:bg-primary-600" : "")}
+                    onClick={() => setFilterOption("all")}
+                  >
+                    All
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant={filterOption === "unread" ? "default" : "outline"} 
+                    className={cn("text-xs flex-1 h-8", 
+                      filterOption === "unread" ? "bg-primary-500 hover:bg-primary-600" : "")}
+                    onClick={() => setFilterOption("unread")}
+                  >
+                    Unread
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant={filterOption === "unanswered" ? "default" : "outline"} 
+                    className={cn("text-xs flex-1 h-8", 
+                      filterOption === "unanswered" ? "bg-primary-500 hover:bg-primary-600" : "")}
+                    onClick={() => setFilterOption("unanswered")}
+                  >
+                    Unanswered
+                  </Button>
                 </div>
               </div>
               
