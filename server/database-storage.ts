@@ -298,4 +298,64 @@ export class DatabaseStorage implements IStorage {
     
     return updatedNotification;
   }
+
+  // Message methods
+  async getMessages(clientId: number, therapistId: number): Promise<Message[]> {
+    const result = await db.select()
+      .from(messages)
+      .where(eq(messages.clientId, clientId) && eq(messages.therapistId, therapistId));
+    
+    // Sort by date created, most recent first
+    return result.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async getClientMessages(clientId: number): Promise<Message[]> {
+    const result = await db.select()
+      .from(messages)
+      .where(eq(messages.clientId, clientId));
+    
+    // Sort by date created, most recent first
+    return result.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async getTherapistMessages(therapistId: number): Promise<Message[]> {
+    const result = await db.select()
+      .from(messages)
+      .where(eq(messages.therapistId, therapistId));
+    
+    // Sort by date created, most recent first
+    return result.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async getUnreadMessages(therapistId: number): Promise<Message[]> {
+    const result = await db.select()
+      .from(messages)
+      .where(eq(messages.therapistId, therapistId) && eq(messages.isRead, false));
+    
+    // Sort by date created, most recent first
+    return result.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async createMessage(messageData: InsertMessage): Promise<Message> {
+    const [message] = await db.insert(messages).values(messageData).returning();
+    return message;
+  }
+
+  async markMessageAsRead(id: number): Promise<Message | undefined> {
+    const [updatedMessage] = await db
+      .update(messages)
+      .set({ isRead: true })
+      .where(eq(messages.id, id))
+      .returning();
+    
+    return updatedMessage;
+  }
 }

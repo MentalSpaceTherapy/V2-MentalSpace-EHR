@@ -7,6 +7,7 @@ import {
   insertSessionSchema, 
   insertDocumentationSchema, 
   insertNotificationSchema,
+  insertMessageSchema,
   extendedClientSchema
 } from "@shared/schema";
 import { z } from "zod";
@@ -384,6 +385,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(notification);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Message routes
+  app.get("/api/messages", isAuthenticated, async (req, res, next) => {
+    try {
+      // User is guaranteed to exist due to isAuthenticated middleware
+      const therapistId = (req.user as Express.User).id;
+      
+      // Check if we're filtering by client
+      if (req.query.clientId) {
+        const clientId = parseInt(req.query.clientId as string);
+        const messages = await storage.getMessages(clientId, therapistId);
+        return res.json(messages);
+      }
+      
+      // If not, return all messages for the therapist
+      const messages = await storage.getTherapistMessages(therapistId);
+      res.json(messages);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.get("/api/messages/unread", isAuthenticated, async (req, res, next) => {
+    try {
+      const therapistId = (req.user as Express.User).id;
+      const messages = await storage.getUnreadMessages(therapistId);
+      res.json(messages);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.get("/api/clients/:clientId/messages", isAuthenticated, async (req, res, next) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const therapistId = (req.user as Express.User).id;
+      
+      // Validate the client exists
+      const client = await storage.getClient(clientId);
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      const messages = await storage.getMessages(clientId, therapistId);
+      res.json(messages);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/messages", isAuthenticated, async (req, res, next) => {
+    try {
+      // Set therapist ID from authenticated user
+      req.body.therapistId = (req.user as Express.User).id;
+      
+      // Validate request body
+      const validatedData = insertMessageSchema.parse(req.body);
+      
+      // Set sender as "therapist" if not provided
+      if (!validatedData.sender) {
+        validatedData.sender = "therapist";
+      }
+      
+      const message = await storage.createMessage(validatedData);
+      
+      // Create a notification for the therapist if the message is from the client
+      if (validatedData.sender === "client") {
+        try {
+          await storage.createNotification({
+            userId: message.therapistId,
+            title: "New Message",
+            message: `You have a new message from your client.`,
+            type: "Message",
+            isRead: false,
+            link: `/messages?clientId=${message.clientId}`
+          });
+        } catch (notificationError) {
+          console.error("Failed to create notification:", notificationError);
+          // Don't block the message creation if notification fails
+        }
+      }
+      
+      res.status(201).json(message);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.patch("/api/messages/:id/read", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const message = await storage.markMessageAsRead(id);
+      
+      if (!message) {
+        return res.status(404).json({ message: "Message not found" });
+      }
+      
+      res.json(message);
     } catch (error) {
       next(error);
     }
