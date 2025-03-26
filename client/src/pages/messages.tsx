@@ -508,8 +508,7 @@ export default function Messages() {
                           className={cn(
                             "flex",
                             message.sender === "therapist" ? "justify-end" : "justify-start"
-                          }
-                        >
+                          }>
                           <div className={cn(
                             "max-w-[80%] p-3 rounded-lg",
                             message.sender === "therapist" 
