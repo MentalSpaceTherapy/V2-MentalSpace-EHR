@@ -580,6 +580,96 @@ export default function Messages() {
           </div>
         </div>
       </div>
+      
+      {/* New Message Dialog */}
+      <Dialog 
+        open={newMessageDialogOpen} 
+        onOpenChange={setNewMessageDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>New Message</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="client">Client</Label>
+              <Select 
+                value={newMessageData.clientId}
+                onValueChange={(value) => setNewMessageData({...newMessageData, clientId: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientsData && clientsData.map((client) => (
+                    <SelectItem key={client.id} value={client.id.toString()}>
+                      {client.firstName} {client.lastName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="subject">Subject</Label>
+              <Input 
+                id="subject" 
+                placeholder="Brief message topic" 
+                value={newMessageData.subject}
+                onChange={(e) => setNewMessageData({...newMessageData, subject: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="message">Message</Label>
+              <Textarea 
+                id="message" 
+                placeholder="Type your secure message here" 
+                rows={6}
+                value={newMessageData.content}
+                onChange={(e) => setNewMessageData({...newMessageData, content: e.target.value})}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setNewMessageDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (newMessageData.clientId && newMessageData.content) {
+                  const content = newMessageData.subject 
+                    ? `Subject: ${newMessageData.subject}\n\n${newMessageData.content}`
+                    : newMessageData.content;
+                  
+                  sendMessageMutation.mutate({
+                    clientId: parseInt(newMessageData.clientId),
+                    content: content,
+                    sender: "therapist"
+                  });
+                  
+                  // Clear form and close dialog
+                  setNewMessageData({
+                    clientId: "",
+                    subject: "",
+                    content: ""
+                  });
+                  setNewMessageDialogOpen(false);
+                  
+                  // If this was the first message to this client, select them
+                  if (selectedClientId !== parseInt(newMessageData.clientId)) {
+                    setSelectedClientId(parseInt(newMessageData.clientId));
+                  }
+                }
+              }}
+              disabled={!newMessageData.clientId || !newMessageData.content}
+            >
+              Send Message
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
