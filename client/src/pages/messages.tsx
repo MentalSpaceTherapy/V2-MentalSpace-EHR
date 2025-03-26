@@ -512,10 +512,12 @@ export default function Messages() {
                           <div className={cn(
                             "max-w-[80%] p-3 rounded-lg",
                             message.sender === "therapist" 
-                              ? "bg-primary-500 text-white rounded-tr-none" 
+                              ? "bg-primary-600 rounded-tr-none" 
                               : "bg-white border border-neutral-200 rounded-tl-none"
                           )}>
-                            <p className={message.sender === "client" ? "text-black" : "text-white"}>{message.text}</p>
+                            <p className={message.sender === "therapist" ? "text-white font-medium" : "text-gray-900 font-medium"}>
+                              {message.text}
+                            </p>
                             <div className={cn(
                               "text-xs mt-1 text-right",
                               message.sender === "therapist" ? "text-primary-100" : "text-neutral-400"
