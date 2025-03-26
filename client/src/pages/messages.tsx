@@ -499,8 +499,9 @@ export default function Messages() {
                   </div>
                   
                   {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 bg-neutral-50">
-                    <div className="max-w-3xl mx-auto space-y-4">
+                  <div className="flex-1 overflow-y-auto p-bg-blue-100
+                    <div className="max-w-3xl mx-autospace-y-6
+                  </div>
                       {currentConversation.map(message => (
                         <div 
                           key={message.id}
