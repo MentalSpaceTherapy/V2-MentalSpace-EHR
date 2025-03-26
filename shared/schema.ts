@@ -158,6 +158,27 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
   link: true,
 });
 
+// Messages model
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").references(() => clients.id).notNull(),
+  therapistId: integer("therapist_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  sender: text("sender").notNull(), // "client" or "therapist"
+  isRead: boolean("is_read").default(false).notNull(),
+  status: text("status").default("sent").notNull(), // sent, delivered, read, etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertMessageSchema = createInsertSchema(messages).pick({
+  clientId: true,
+  therapistId: true,
+  content: true,
+  sender: true,
+  isRead: true,
+  status: true,
+});
+
 // Extended client schema with additional fields
 export const extendedClientSchema = insertClientSchema.extend({
   // Personal information
@@ -247,3 +268,6 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type EmergencyContact = z.infer<typeof emergencyContactSchema>;
 export type InsuranceInfo = z.infer<typeof insuranceInfoSchema>;
 export type PaymentCard = z.infer<typeof paymentCardSchema>;
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;

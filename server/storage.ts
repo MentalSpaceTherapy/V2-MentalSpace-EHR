@@ -1,10 +1,11 @@
 import { 
-  users, clients, sessions, documentation, notifications,
+  users, clients, sessions, documentation, notifications, messages,
   type User, type InsertUser,
   type Client, type InsertClient, type ExtendedClient,
   type Session, type InsertSession,
   type Documentation, type InsertDocumentation,
-  type Notification, type InsertNotification
+  type Notification, type InsertNotification,
+  type Message, type InsertMessage
 } from "@shared/schema";
 import session from "express-session";
 
@@ -50,6 +51,14 @@ export interface IStorage {
   getNotifications(userId: number, isRead?: boolean): Promise<Notification[]>;
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationAsRead(id: number): Promise<Notification | undefined>;
+  
+  // Message methods
+  getMessages(clientId: number, therapistId: number): Promise<Message[]>;
+  getClientMessages(clientId: number): Promise<Message[]>;
+  getTherapistMessages(therapistId: number): Promise<Message[]>;
+  getUnreadMessages(therapistId: number): Promise<Message[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
+  markMessageAsRead(id: number): Promise<Message | undefined>;
   
   // Session store for auth
   sessionStore: session.Store;
