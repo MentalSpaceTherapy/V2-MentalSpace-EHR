@@ -166,13 +166,33 @@ export default function Messages() {
   
   // Format messages for the current conversation
   const currentConversation: DisplayMessage[] = clientMessages ? 
-    (clientMessages as Message[]).map((message: Message) => ({
-      id: message.id,
-      text: message.content,
-      sender: message.sender as "client" | "therapist",
-      timestamp: new Date(message.createdAt),
-      isRead: message.isRead
-    })).sort((a: DisplayMessage, b: DisplayMessage) => a.timestamp.getTime() - b.timestamp.getTime()) : [];
+    (clientMessages as Message[]).map((message: Message) => {
+      try {
+        return {
+          id: message.id,
+          text: message.content,
+          sender: message.sender as "client" | "therapist",
+          timestamp: message.createdAt ? new Date(message.createdAt) : new Date(),
+          isRead: message.isRead
+        };
+      } catch (e) {
+        console.error("Error processing message:", e, message);
+        return {
+          id: message.id,
+          text: message.content,
+          sender: message.sender as "client" | "therapist",
+          timestamp: new Date(),
+          isRead: message.isRead
+        };
+      }
+    }).sort((a, b) => {
+      try {
+        return a.timestamp.getTime() - b.timestamp.getTime();
+      } catch (e) {
+        console.error("Error sorting messages:", e);
+        return 0;
+      }
+    }) : [];
   
   // Find the selected client
   const selectedClient = clients.find(c => c.id === selectedClientId);
@@ -212,18 +232,23 @@ export default function Messages() {
   
   // Format timestamp for display
   const formatTimestamp = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = diff / (1000 * 60 * 60 * 24);
-    
-    if (days < 1) {
-      return format(date, "h:mm a");
-    } else if (days < 2) {
-      return "Yesterday";
-    } else if (days < 7) {
-      return format(date, "EEEE"); // Day name
-    } else {
-      return format(date, "MMM d");
+    try {
+      const now = new Date();
+      const diff = now.getTime() - date.getTime();
+      const days = diff / (1000 * 60 * 60 * 24);
+      
+      if (days < 1) {
+        return format(date, "h:mm a");
+      } else if (days < 2) {
+        return "Yesterday";
+      } else if (days < 7) {
+        return format(date, "EEEE"); // Day name
+      } else {
+        return format(date, "MMM d");
+      }
+    } catch (e) {
+      console.error("Date formatting error:", e);
+      return "Unknown";
     }
   };
 
@@ -317,7 +342,15 @@ export default function Messages() {
                                 <h3 className="font-semibold text-base">{client.name}</h3>
                                 {client.dateOfBirth && (
                                   <p className="text-xs text-neutral-600">
-                                    <span className="font-medium">DOB:</span> {format(client.dateOfBirth, 'MMM d, yyyy')}
+                                    <span className="font-medium">DOB:</span> {
+                                      (() => {
+                                        try {
+                                          return format(client.dateOfBirth, 'MMM d, yyyy');
+                                        } catch (e) {
+                                          return 'Unknown';
+                                        }
+                                      })()
+                                    }
                                   </p>
                                 )}
                                 {client.phone && (
@@ -407,7 +440,15 @@ export default function Messages() {
                               "text-xs mt-1 text-right",
                               message.sender === "therapist" ? "text-primary-100" : "text-neutral-400"
                             )}>
-                              {format(message.timestamp, "h:mm a")}
+                              {
+                                (() => {
+                                  try {
+                                    return format(message.timestamp, "h:mm a");
+                                  } catch (e) {
+                                    return "Unknown time";
+                                  }
+                                })()
+                              }
                             </div>
                           </div>
                         </div>
