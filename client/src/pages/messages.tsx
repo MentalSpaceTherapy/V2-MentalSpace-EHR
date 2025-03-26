@@ -513,7 +513,7 @@ export default function Messages() {
                             "max-w-[80%] p-3 rounded-lg",
                             message.sender === "therapist" 
                               ? "bg-primary-500 text-white rounded-tr-none" 
-                              : "bg-white border border-neutral-200 rounded-tl-none"
+                              : "bg-white border border-neutral-200 rounded-tl-none text-neutral-900"
                           )}>
                             <p>{message.text}</p>
                             <div className={cn(
