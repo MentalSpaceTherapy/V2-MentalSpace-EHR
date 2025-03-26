@@ -411,56 +411,93 @@ export default function Messages() {
                             </div>
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <div>
-                            <p className="font-semibold">{client.name}</p>
-                            {client.dateOfBirth && <p className="text-xs">DOB: {format(client.dateOfBirth, "MMM d, yyyy")}</p>}
-                            {client.phone && <p className="text-xs">Phone: {client.phone}</p>}
+                        <TooltipContent side="right" className="p-0 max-w-sm">
+                          <div className="p-4 bg-white rounded-lg shadow-lg">
+                            <div className="flex items-start gap-3">
+                              <Avatar className="h-14 w-14">
+                                <AvatarImage src={client.profileImage} alt={client.name} />
+                                <AvatarFallback>{client.firstName.charAt(0)}{client.lastName.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <h3 className="font-semibold text-base">{client.name}</h3>
+                                {client.dateOfBirth && (
+                                  <p className="text-xs text-neutral-600">
+                                    <span className="font-medium">DOB:</span> {
+                                      (() => {
+                                        try {
+                                          return format(client.dateOfBirth, 'MMM d, yyyy');
+                                        } catch (e) {
+                                          return 'Unknown';
+                                        }
+                                      })()
+                                    }
+                                  </p>
+                                )}
+                                {client.phone && (
+                                  <p className="text-xs text-neutral-600">
+                                    <span className="font-medium">Phone:</span> {client.phone}
+                                  </p>
+                                )}
+                                <div className="mt-2 flex gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-xs h-7 px-2 py-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.location.href = `/clients?view=${client.id}`;
+                                    }}
+                                  >
+                                    View Chart
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-xs h-7 px-2 py-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.location.href = `/scheduling?client=${client.id}`;
+                                    }}
+                                  >
+                                    Schedule
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   ))
                 ) : (
-                  <div className="flex justify-center items-center h-full">
-                    <p className="text-neutral-500 text-center">
-                      {clients.length === 0 ? "No clients found" : "No matching clients"}
-                    </p>
+                  <div className="p-4 text-center text-neutral-500">
+                    No conversations found.
                   </div>
                 )}
               </div>
             </div>
             
-            {/* Message Content */}
+            {/* Conversation Area */}
             <div className="flex-1 flex flex-col">
-              {/* Client Header */}
-              {selectedClient && (
-                <div className="border-b bg-white p-3 flex justify-between items-center">
-                  <div className="flex items-center">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={selectedClient.profileImage} alt={selectedClient.name} />
-                      <AvatarFallback>{selectedClient.firstName.charAt(0)}{selectedClient.lastName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="ml-3">
-                      <h3 className="font-medium">{selectedClient.name}</h3>
-                      <div className="flex items-center text-xs text-neutral-500">
-                        <span className={cn(
-                          "w-2 h-2 rounded-full mr-1.5",
-                          selectedClient.unread ? "bg-green-500" : "bg-neutral-300"
-                        )} />
-                        {selectedClient.unread ? "Active" : "Inactive"}
-                      </div>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical className="h-5 w-5" />
-                  </Button>
-                </div>
-              )}
-              
-              {/* Message area */}
               {selectedClient ? (
                 <>
+                  {/* Conversation Header */}
+                  <div className="p-4 border-b bg-white flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={selectedClient.profileImage} alt={selectedClient.name} />
+                        <AvatarFallback>{selectedClient.name.substring(0, 2)}</AvatarFallback>
+                      </Avatar>
+                      <div className="ml-3">
+                        <h2 className="font-medium">{selectedClient.name}</h2>
+                        <p className="text-xs text-neutral-500">Secure, encrypted conversation</p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-5 w-5 text-neutral-500" />
+                    </Button>
+                  </div>
+                  
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto">
                     <div className="max-w-3xl mx-auto p-4 space-y-6">
@@ -470,15 +507,14 @@ export default function Messages() {
                           className={cn(
                             "flex",
                             message.sender === "therapist" ? "justify-end" : "justify-start"
-                          )}
-                        >
+                          }>
                           <div className={cn(
                             "max-w-[80%] p-3 rounded-lg",
                             message.sender === "therapist" 
                               ? "bg-primary-600 rounded-tr-none"
                               : "bg-blue-50 border border-blue-200 rounded-tl-none"
-                          )}>
-                            <p className={message.sender === "therapist" ? "text-white font-medium" : "text-black font-medium"}>
+                          )}>)
+                            <p className={message.sender === "therapist" ? "tebg-gray-200 font-medium" : text-blackfont-medium"}>
                               {message.text}
                             </p>
                             <div className={cn(
@@ -491,10 +527,10 @@ export default function Messages() {
                                     return format(message.timestamp, "h:mm a");
                                   } catch (e) {
                                     return "Unknown time";
-                                  }
+                                  
                                 })()
                               }
-                           </div>
+                           </div>)
                           </div>
                         </div>
                       ))}
@@ -503,14 +539,14 @@ export default function Messages() {
                   
                   {/* Message Input */}
                   <div className="p-4 border-t bg-white">
-                    <div className="flex items-end">
-                      <Button variant="ghost" size="icon" className="mb-1.5">
+                    <div className="flex items-end">)
+                      <Buton variant="ghost" size="icon" className="mb-1.5">
                         <Paperclip className="h-5 w-5 text-neutral-500" />
                       </Button>
                       <div className="flex-1 ml-2">
                         <textarea 
                           placeholder="Type a secure message..." 
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] py-3 px-4"
+                          className="flex h-10 w-full rounded-md border border-inpu)t bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] py-3 px-4"
                           value={messageText}
                           onChange={(e) => setMessageText(e.target.value)}
                           onKeyDown={(e) => {
@@ -606,6 +642,7 @@ export default function Messages() {
                 if (newMessageData.clientId && newMessageData.content) {
                   const content = newMessageData.subject 
                     ? `Subject: ${newMessageData.subject}\n\n${newMessageData.content}`
+                    }
                     : newMessageData.content;
                   
                   sendMessageMutation.mutate({
