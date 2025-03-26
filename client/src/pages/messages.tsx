@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { LoginForm } from "@/components/auth/LoginForm";
@@ -7,144 +7,210 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Send, Paperclip, MoreVertical } from "lucide-react";
-import { format, subDays, subHours, subMinutes } from "date-fns";
+import { Search, Send, Paperclip, MoreVertical, Loader2 } from "lucide-react";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Message, Client } from "@shared/schema";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DEFAULT_AVATAR } from "@/lib/constants";
 
-// Mock messaging data
-const mockClients = [
-  {
-    id: 1,
-    name: "Sophie Garcia",
-    profileImage: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    lastMessage: "I have a question about my medication...",
-    lastMessageTime: subHours(new Date(), 1),
-    unread: true
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    profileImage: "https://images.unsplash.com/photo-1600486913747-55e5470d6f40?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    lastMessage: "Thanks for the resources you shared last time.",
-    lastMessageTime: subDays(new Date(), 1),
-    unread: true
-  },
-  {
-    id: 3,
-    name: "Emma Wilson",
-    profileImage: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    lastMessage: "I'm feeling much better this week!",
-    lastMessageTime: subDays(new Date(), 2),
-    unread: false
-  },
-  {
-    id: 4,
-    name: "David Thompson",
-    profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    lastMessage: "See you at our next session.",
-    lastMessageTime: subDays(new Date(), 3),
-    unread: false
-  },
-  {
-    id: 5,
-    name: "Jamie Rodriguez",
-    profileImage: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    lastMessage: "I completed the assessment form you sent.",
-    lastMessageTime: subDays(new Date(), 5),
-    unread: false
-  }
-];
+// Client type with additional fields for UI
+interface MessageClient {
+  id: number;
+  name: string;
+  firstName: string;
+  lastName: string;
+  profileImage: string;
+  lastMessage: string;
+  lastMessageTime: Date;
+  unread: boolean;
+  dateOfBirth?: Date | null;
+  phone?: string | null;
+}
 
-const mockConversations: Record<number, Array<{id: number, text: string, sender: "client" | "therapist", timestamp: Date}>> = {
-  1: [
-    { id: 1, text: "Hello Dr. Johnson, I have a question about my medication.", sender: "client", timestamp: subHours(new Date(), 1) },
-    { id: 2, text: "Hi Sophie, I'm available now. What questions do you have about your medication?", sender: "therapist", timestamp: subMinutes(new Date(), 55) },
-    { id: 3, text: "I've been experiencing some side effects like dizziness and nausea. Is this normal?", sender: "client", timestamp: subMinutes(new Date(), 50) },
-    { id: 4, text: "Some dizziness and nausea can be common side effects when first starting the medication. When did these symptoms begin?", sender: "therapist", timestamp: subMinutes(new Date(), 45) },
-    { id: 5, text: "I started the medication about 3 days ago, and the symptoms started yesterday.", sender: "client", timestamp: subMinutes(new Date(), 40) },
-    { id: 6, text: "I see. Often these side effects diminish after about a week as your body adjusts. If they're severe or worsening, we might need to consider adjustments. Are you able to eat and drink normally?", sender: "therapist", timestamp: subMinutes(new Date(), 35) },
-    { id: 7, text: "I can eat, but I feel nauseous afterward. Drinking water seems fine.", sender: "client", timestamp: subMinutes(new Date(), 30) },
-    { id: 8, text: "Try taking the medication with food if you aren't already, and make sure to stay hydrated. If the symptoms don't improve in the next 2-3 days or if they worsen, please let me know right away. We can discuss this further in our session tomorrow as well.", sender: "therapist", timestamp: subMinutes(new Date(), 25) },
-    { id: 9, text: "I'll try that. Thank you for your help!", sender: "client", timestamp: subMinutes(new Date(), 20) },
-    { id: 10, text: "You're welcome. Feel free to reach out if you have any other concerns before our session.", sender: "therapist", timestamp: subMinutes(new Date(), 15) }
-  ],
-  2: [
-    { id: 1, text: "Hi Dr. Johnson, I wanted to thank you for the resources you shared in our last session.", sender: "client", timestamp: subDays(new Date(), 1) },
-    { id: 2, text: "You're welcome, Michael. Have you had a chance to review them yet?", sender: "therapist", timestamp: subDays(new Date(), 1) },
-    { id: 3, text: "Yes, I found the breathing exercises particularly helpful for managing anxiety.", sender: "client", timestamp: subDays(new Date(), 1) }
-  ],
-  3: [
-    { id: 1, text: "Dr. Johnson, I wanted to let you know that I'm feeling much better this week!", sender: "client", timestamp: subDays(new Date(), 2) },
-    { id: 2, text: "That's wonderful to hear, Emma! What do you think has contributed to the improvement?", sender: "therapist", timestamp: subDays(new Date(), 2) },
-    { id: 3, text: "I've been consistent with the mindfulness practices and journaling you recommended.", sender: "client", timestamp: subDays(new Date(), 2) },
-    { id: 4, text: "That's excellent. Consistency with those practices can make a big difference. I'm looking forward to discussing this more in our next session.", sender: "therapist", timestamp: subDays(new Date(), 2) }
-  ]
-};
+// Message type adjusted for UI
+interface DisplayMessage {
+  id: number;
+  text: string;
+  sender: "client" | "therapist";
+  timestamp: Date;
+  isRead: boolean;
+}
 
 export default function Messages() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedClientId, setSelectedClientId] = useState<number | null>(1); // Default to first client
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [messageText, setMessageText] = useState("");
-  const [clients, setClients] = useState(mockClients);
-  const [conversations, setConversations] = useState(mockConversations);
   
+  // Fetch therapist's clients
+  const { data: clientsData, isLoading: clientsLoading } = useQuery<Client[]>({
+    queryKey: ['/api/clients'],
+  });
+  
+  // Fetch all messages
+  const { data: messagesData, isLoading: messagesLoading } = useQuery<Message[]>({
+    queryKey: ['/api/messages'],
+    enabled: !!user,
+  });
+  
+  // Fetch client-specific messages when a client is selected
+  const { data: clientMessages, isLoading: clientMessagesLoading } = useQuery<Message[]>({
+    queryKey: ['/api/clients', selectedClientId, 'messages'],
+    enabled: !!selectedClientId,
+  });
+  
+  // Create a message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async (messageData: { clientId: number, content: string, sender: "therapist" | "client" }) => {
+      const res = await apiRequest('POST', '/api/messages', messageData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      // Invalidate relevant queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
+      if (selectedClientId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/clients', selectedClientId, 'messages'] });
+      }
+      
+      toast({
+        title: "Message Sent",
+        description: "Your message has been sent securely.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Message Failed",
+        description: `Failed to send message: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mark message as read mutation
+  const markAsReadMutation = useMutation({
+    mutationFn: async (messageId: number) => {
+      const res = await apiRequest('PATCH', `/api/messages/${messageId}/read`, {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      // Invalidate relevant queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
+      if (selectedClientId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/clients', selectedClientId, 'messages'] });
+      }
+    }
+  });
+  
+  // Format clients for display
+  const [clients, setClients] = useState<MessageClient[]>([]);
+  
+  useEffect(() => {
+    if (clientsData && messagesData) {
+      // Group messages by client
+      const messagesByClient: Record<number, Message[]> = {};
+      
+      (messagesData as Message[]).forEach((message: Message) => {
+        if (!messagesByClient[message.clientId]) {
+          messagesByClient[message.clientId] = [];
+        }
+        messagesByClient[message.clientId].push(message);
+      });
+      
+      // Create client list with latest message info
+      const clientList: MessageClient[] = (clientsData as Client[]).map((client: Client) => {
+        const clientMessages = messagesByClient[client.id] || [];
+        // Sort messages by createdAt date (newest first)
+        clientMessages.sort((a: Message, b: Message) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        const latestMessage = clientMessages[0];
+        const unreadMessages = clientMessages.filter(m => !m.isRead && m.sender === "client");
+        
+        return {
+          id: client.id,
+          name: `${client.firstName} ${client.lastName}`,
+          firstName: client.firstName,
+          lastName: client.lastName,
+          profileImage: DEFAULT_AVATAR,
+          lastMessage: latestMessage ? latestMessage.content : "No messages yet",
+          lastMessageTime: latestMessage ? new Date(latestMessage.createdAt) : new Date(),
+          unread: unreadMessages.length > 0,
+          dateOfBirth: client.dateOfBirth ? new Date(client.dateOfBirth) : null,
+          phone: client.phone
+        };
+      });
+      
+      // Sort clients by last message time and unread status
+      clientList.sort((a, b) => {
+        // First by unread status
+        if (a.unread && !b.unread) return -1;
+        if (!a.unread && b.unread) return 1;
+        // Then by timestamp
+        return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
+      });
+      
+      setClients(clientList);
+      
+      // If no client is selected and we have clients, select the first one
+      if (clientList.length > 0 && selectedClientId === null) {
+        setSelectedClientId(clientList[0].id);
+      }
+    }
+  }, [clientsData, messagesData, selectedClientId]);
+  
+  // Format messages for the current conversation
+  const currentConversation: DisplayMessage[] = clientMessages ? 
+    (clientMessages as Message[]).map((message: Message) => ({
+      id: message.id,
+      text: message.content,
+      sender: message.sender as "client" | "therapist",
+      timestamp: new Date(message.createdAt),
+      isRead: message.isRead
+    })).sort((a: DisplayMessage, b: DisplayMessage) => a.timestamp.getTime() - b.timestamp.getTime()) : [];
+  
+  // Find the selected client
   const selectedClient = clients.find(c => c.id === selectedClientId);
-  const currentConversation = selectedClientId ? conversations[selectedClientId] || [] : [];
   
   // Filter clients based on search
   const filteredClients = clients.filter(client => 
     client.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
+  // Handle client selection
   const handleSelectClient = (clientId: number) => {
     setSelectedClientId(clientId);
     
-    // Mark conversation as read
-    setClients(clients.map(client => 
-      client.id === clientId ? { ...client, unread: false } : client
-    ));
+    // Mark unread messages as read for this client
+    if (clientMessages) {
+      (clientMessages as Message[]).forEach((message: Message) => {
+        if (!message.isRead && message.sender === "client") {
+          markAsReadMutation.mutate(message.id);
+        }
+      });
+    }
   };
   
+  // Handle message sending
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedClientId) return;
     
-    const newMessage = {
-      id: (currentConversation.length > 0 ? Math.max(...currentConversation.map(m => m.id)) : 0) + 1,
-      text: messageText,
-      sender: "therapist" as const,
-      timestamp: new Date()
-    };
-    
-    // Update conversation
-    setConversations({
-      ...conversations,
-      [selectedClientId]: [...(conversations[selectedClientId] || []), newMessage]
+    sendMessageMutation.mutate({
+      clientId: selectedClientId,
+      content: messageText,
+      sender: "therapist"
     });
-    
-    // Update client's last message
-    setClients(clients.map(client => 
-      client.id === selectedClientId 
-        ? { 
-            ...client, 
-            lastMessage: messageText, 
-            lastMessageTime: new Date(),
-            unread: false
-          } 
-        : client
-    ));
     
     // Clear input
     setMessageText("");
-    
-    toast({
-      title: "Message Sent",
-      description: "Your message has been sent securely.",
-    });
   };
-
+  
+  // Format timestamp for display
   const formatTimestamp = (date: Date) => {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -190,49 +256,105 @@ export default function Messages() {
               </div>
               
               <div className="overflow-y-auto h-[calc(100%-69px)]">
-                {filteredClients.length > 0 ? (
+                {clientsLoading ? (
+                  <div className="flex justify-center items-center p-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+                  </div>
+                ) : filteredClients.length > 0 ? (
                   filteredClients.map(client => (
-                    <div 
-                      key={client.id}
-                      className={cn(
-                        "p-4 border-b hover:bg-neutral-50 cursor-pointer",
-                        selectedClientId === client.id && "bg-primary-50",
-                        client.unread && "bg-blue-50"
-                      )}
-                      onClick={() => handleSelectClient(client.id)}
-                    >
-                      <div className="flex items-start">
-                        <div className="relative">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage src={client.profileImage} alt={client.name} />
-                            <AvatarFallback>{client.name.substring(0, 2)}</AvatarFallback>
-                          </Avatar>
-                          {client.unread && (
-                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary-500 rounded-full border-2 border-white" />
-                          )}
-                        </div>
-                        
-                        <div className="ml-3 flex-1 min-w-0">
-                          <div className="flex justify-between items-baseline">
-                            <h3 className={cn(
-                              "font-medium truncate",
-                              client.unread && "font-semibold"
-                            )}>
-                              {client.name}
-                            </h3>
-                            <span className="text-xs text-neutral-500 whitespace-nowrap ml-2">
-                              {formatTimestamp(client.lastMessageTime)}
-                            </span>
+                    <TooltipProvider key={client.id}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div 
+                            className={cn(
+                              "p-4 border-b hover:bg-neutral-50 cursor-pointer",
+                              selectedClientId === client.id && "bg-primary-50",
+                              client.unread && "bg-blue-50"
+                            )}
+                            onClick={() => handleSelectClient(client.id)}
+                          >
+                            <div className="flex items-start">
+                              <div className="relative">
+                                <Avatar className="h-12 w-12">
+                                  <AvatarImage src={client.profileImage} alt={client.name} />
+                                  <AvatarFallback>{client.firstName.charAt(0)}{client.lastName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                {client.unread && (
+                                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary-500 rounded-full border-2 border-white" />
+                                )}
+                              </div>
+                              
+                              <div className="ml-3 flex-1 min-w-0">
+                                <div className="flex justify-between items-baseline">
+                                  <h3 className={cn(
+                                    "font-medium truncate",
+                                    client.unread && "font-semibold"
+                                  )}>
+                                    {client.name}
+                                  </h3>
+                                  <span className="text-xs text-neutral-500 whitespace-nowrap ml-2">
+                                    {formatTimestamp(client.lastMessageTime)}
+                                  </span>
+                                </div>
+                                <p className={cn(
+                                  "text-sm truncate text-neutral-500 mt-1",
+                                  client.unread && "text-neutral-800 font-medium"
+                                )}>
+                                  {client.lastMessage}
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                          <p className={cn(
-                            "text-sm truncate text-neutral-500 mt-1",
-                            client.unread && "text-neutral-800 font-medium"
-                          )}>
-                            {client.lastMessage}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="p-0 max-w-sm">
+                          <div className="p-4 bg-white rounded-lg shadow-lg">
+                            <div className="flex items-start gap-3">
+                              <Avatar className="h-14 w-14">
+                                <AvatarImage src={client.profileImage} alt={client.name} />
+                                <AvatarFallback>{client.firstName.charAt(0)}{client.lastName.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <h3 className="font-semibold text-base">{client.name}</h3>
+                                {client.dateOfBirth && (
+                                  <p className="text-xs text-neutral-600">
+                                    <span className="font-medium">DOB:</span> {format(client.dateOfBirth, 'MMM d, yyyy')}
+                                  </p>
+                                )}
+                                {client.phone && (
+                                  <p className="text-xs text-neutral-600">
+                                    <span className="font-medium">Phone:</span> {client.phone}
+                                  </p>
+                                )}
+                                <div className="mt-2 flex gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-xs h-7 px-2 py-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.location.href = `/clients?view=${client.id}`;
+                                    }}
+                                  >
+                                    View Chart
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-xs h-7 px-2 py-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.location.href = `/scheduling?client=${client.id}`;
+                                    }}
+                                  >
+                                    Schedule
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   ))
                 ) : (
                   <div className="p-4 text-center text-neutral-500">
@@ -300,9 +422,9 @@ export default function Messages() {
                         <Paperclip className="h-5 w-5 text-neutral-500" />
                       </Button>
                       <div className="flex-1 ml-2">
-                        <Input 
+                        <textarea 
                           placeholder="Type a secure message..." 
-                          className="min-h-[60px] py-3 px-4"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] py-3 px-4"
                           value={messageText}
                           onChange={(e) => setMessageText(e.target.value)}
                           onKeyDown={(e) => {
@@ -311,7 +433,6 @@ export default function Messages() {
                               handleSendMessage();
                             }
                           }}
-                          multiline
                         />
                       </div>
                       <Button 
