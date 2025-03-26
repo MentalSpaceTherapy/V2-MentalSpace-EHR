@@ -507,31 +507,31 @@ export default function Messages() {
                           className={cn(
                             "flex",
                             message.sender === "therapist" ? "justify-end" : "justify-start"
-                          )}
+                          }
                         >
                           <div className={cn(
                             "max-w-[80%] p-3 rounded-lg",
                             message.sender === "therapist" 
-                              ? "bg-primary-600 rounded-tr-none" 
+                              ? "bg-primary-600 rounded-tr-none"
                               : "bg-blue-50 border border-blue-200 rounded-tl-none"
-                          )}>
-                            <p className={message.sender === "therapist" ? "text-white font-medium" : "text-gray-900 font-medium"}>
+                          )}>)
+                            <p className={message.sender === "therapist" ? "tebg-gray-200 font-medium" : text-blackfont-medium"}>
                               {message.text}
                             </p>
                             <div className={cn(
                               "text-xs mt-1 text-right",
                               message.sender === "therapist" ? "text-primary-100" : "text-blue-500"
                             )}>
-                              {
+                             {
                                 (() => {
                                   try {
                                     return format(message.timestamp, "h:mm a");
                                   } catch (e) {
                                     return "Unknown time";
-                                  }
+                                  
                                 })()
                               }
-                            </div>
+                           </div>)
                           </div>
                         </div>
                       ))}
@@ -540,14 +540,14 @@ export default function Messages() {
                   
                   {/* Message Input */}
                   <div className="p-4 border-t bg-white">
-                    <div className="flex items-end">
-                      <Button variant="ghost" size="icon" className="mb-1.5">
+                    <div className="flex items-end">)
+                      <Buton variant="ghost" size="icon" className="mb-1.5">
                         <Paperclip className="h-5 w-5 text-neutral-500" />
                       </Button>
                       <div className="flex-1 ml-2">
                         <textarea 
                           placeholder="Type a secure message..." 
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] py-3 px-4"
+                          className="flex h-10 w-full rounded-md border border-inpu)t bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] py-3 px-4"
                           value={messageText}
                           onChange={(e) => setMessageText(e.target.value)}
                           onKeyDown={(e) => {
