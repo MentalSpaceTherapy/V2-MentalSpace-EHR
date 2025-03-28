@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
+
 // Client type with additional fields for UI
 interface MessageClient {
   id: number;
@@ -562,15 +563,31 @@ export default function Messages() {
                 value={newMessageData.clientId}
                 onValueChange={(value) => setNewMessageData({...newMessageData, clientId: value})}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a client" />
                 </SelectTrigger>
                 <SelectContent>
-                  {clientsData && clientsData.map((client) => (
-                    <SelectItem key={client.id} value={client.id.toString()}>
-                      {client.firstName} {client.lastName}
-                    </SelectItem>
-                  ))}
+                  {clientsData && clientsData
+                    .filter(client => {
+                      const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+                      return fullName.includes(searchQuery.toLowerCase());
+                    })
+                    .map((client) => (
+                      <SelectItem 
+                        key={client.id} 
+                        value={client.id.toString()}
+                        className="flex items-center gap-2 py-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={DEFAULT_AVATAR} alt={`${client.firstName} ${client.lastName}`} />
+                            <AvatarFallback>{client.firstName[0]}{client.lastName[0]}</AvatarFallback>
+                          </Avatar>
+                          <span>{client.firstName} {client.lastName}</span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  }
                 </SelectContent>
               </Select>
             </div>
