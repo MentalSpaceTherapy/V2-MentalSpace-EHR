@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Send, Paperclip, MoreVertical, Loader2, Plus } from "lucide-react";
+import { Search, Send, Paperclip, MoreVertical, Loader2, Plus, Calendar, MessageSquarePlus, FileText, UserRound, FileSpreadsheet, Clipboard } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Link } from "wouter";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 // Client type with additional fields for UI
@@ -46,6 +49,9 @@ interface DisplayMessage {
   isRead: boolean;
 }
 
+// Message types/categories
+type MessageCategory = "Clinical" | "Billing" | "Administrative";
+
 export default function Messages() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -53,11 +59,14 @@ export default function Messages() {
   const [searchQuery, setSearchQuery] = useState("");
   const [messageText, setMessageText] = useState("");
   const [filterOption, setFilterOption] = useState<string>("all"); // "all", "unread", "unanswered"
+  const [selectedCategory, setSelectedCategory] = useState<string>("all"); // "all", "Clinical", "Billing", "Administrative"
   const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
+  const [hoverClientId, setHoverClientId] = useState<number | null>(null);
   const [newMessageData, setNewMessageData] = useState({
     clientId: "",
     subject: "",
-    content: ""
+    content: "",
+    category: "Clinical" as MessageCategory
   });
   
   // Fetch therapist's clients
@@ -373,11 +382,13 @@ export default function Messages() {
                         <TooltipTrigger asChild>
                           <div 
                             className={cn(
-                              "p-4 border-b hover:bg-neutral-50 cursor-pointer",
+                              "p-4 border-b hover:bg-neutral-50 cursor-pointer relative",
                               selectedClientId === client.id && "bg-primary-50",
                               client.unread && "bg-blue-50"
                             )}
                             onClick={() => handleSelectClient(client.id)}
+                            onMouseEnter={() => setHoverClientId(client.id)}
+                            onMouseLeave={() => setHoverClientId(null)}
                           >
                             <div className="flex items-start">
                               <div className="relative">
@@ -392,12 +403,14 @@ export default function Messages() {
                               
                               <div className="ml-3 flex-1 min-w-0">
                                 <div className="flex justify-between items-baseline">
-                                  <h3 className={cn(
-                                    "font-medium truncate",
-                                    client.unread && "font-semibold"
-                                  )}>
-                                    {client.name}
-                                  </h3>
+                                  <Link to={`/clients/${client.id}`}>
+                                    <h3 className={cn(
+                                      "font-medium truncate text-primary-700 hover:underline",
+                                      client.unread && "font-semibold"
+                                    )}>
+                                      {client.name}
+                                    </h3>
+                                  </Link>
                                   <span className="text-xs text-neutral-500 whitespace-nowrap ml-2">
                                     {formatTimestamp(client.lastMessageTime)}
                                   </span>
@@ -410,6 +423,61 @@ export default function Messages() {
                                 </p>
                               </div>
                             </div>
+                            
+                            {/* Client action buttons on hover */}
+                            {hoverClientId === client.id && (
+                              <div className="absolute right-0 top-0 h-full flex items-center pr-2">
+                                <div className="bg-white shadow-md rounded-md p-1 flex gap-1 border">
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="icon" 
+                                          className="h-7 w-7"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setNewMessageDialogOpen(true);
+                                            setNewMessageData({
+                                              ...newMessageData, 
+                                              clientId: client.id.toString(),
+                                              category: "Clinical" as MessageCategory
+                                            });
+                                          }}
+                                        >
+                                          <MessageSquarePlus className="h-4 w-4 text-gray-600" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="bottom">
+                                        <p className="text-xs">New Message</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                  
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="icon" 
+                                          className="h-7 w-7"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Navigate to scheduling with this client
+                                            window.location.href = `/scheduling?client=${client.id}`;
+                                          }}
+                                        >
+                                          <Calendar className="h-4 w-4 text-gray-600" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="bottom">
+                                        <p className="text-xs">Schedule Session</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </TooltipTrigger>
                         <TooltipContent className="max-w-xs">
@@ -462,10 +530,49 @@ export default function Messages() {
               {/* Message area */}
               {selectedClient ? (
                 <>
+                  {/* Message Category Tabs */}
+                  <div className="p-3 bg-white border-b">
+                    <Tabs
+                      defaultValue="all"
+                      value={selectedCategory}
+                      onValueChange={setSelectedCategory}
+                      className="w-full"
+                    >
+                      <TabsList className="w-full grid grid-cols-4">
+                        <TabsTrigger value="all" className="flex items-center gap-1">
+                          <UserRound className="h-4 w-4" />
+                          <span>All</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="Clinical" className="flex items-center gap-1">
+                          <FileText className="h-4 w-4 text-primary-500" />
+                          <span>Clinical</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="Billing" className="flex items-center gap-1">
+                          <FileSpreadsheet className="h-4 w-4 text-green-500" />
+                          <span>Billing</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="Administrative" className="flex items-center gap-1">
+                          <Clipboard className="h-4 w-4 text-amber-500" />
+                          <span>Admin</span>
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+                  
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto">
                     <div className="max-w-3xl mx-auto p-4 space-y-6">
-                      {currentConversation.map(message => (
+                      {currentConversation
+                        .filter(message => {
+                          // If "all" is selected, show all messages
+                          if (selectedCategory === "all") return true;
+                          
+                          // For now, we don't have category info in messages
+                          // In a real implementation, we would filter by message.category
+                          // This is a placeholder for when that data is available
+                          return true;
+                        })
+                        .map(message => (
                         <div 
                           key={message.id}
                           className={cn(
@@ -592,6 +699,39 @@ export default function Messages() {
               </Select>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <RadioGroup 
+                value={newMessageData.category} 
+                onValueChange={(value) => setNewMessageData({
+                  ...newMessageData, 
+                  category: value as MessageCategory
+                })}
+                className="flex space-x-4 pt-1"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Clinical" id="clinical" />
+                  <Label htmlFor="clinical" className="flex items-center">
+                    <FileText className="h-4 w-4 mr-1.5 text-primary-500" />
+                    Clinical
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Billing" id="billing" />
+                  <Label htmlFor="billing" className="flex items-center">
+                    <FileSpreadsheet className="h-4 w-4 mr-1.5 text-green-500" />
+                    Billing
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Administrative" id="administrative" />
+                  <Label htmlFor="administrative" className="flex items-center">
+                    <Clipboard className="h-4 w-4 mr-1.5 text-amber-500" />
+                    Administrative
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="subject">Subject</Label>
               <Input 
                 id="subject" 
@@ -635,7 +775,8 @@ export default function Messages() {
                   setNewMessageData({
                     clientId: "",
                     subject: "",
-                    content: ""
+                    content: "",
+                    category: "Clinical" as MessageCategory
                   });
                   setNewMessageDialogOpen(false);
                   
