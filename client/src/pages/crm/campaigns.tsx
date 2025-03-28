@@ -60,7 +60,7 @@ import {
   Trash2, 
   Users 
 } from "lucide-react";
-import { useCRM } from "@/hooks/use-crm";
+import { useCRM, Campaign } from "@/hooks/use-crm";
 import { format } from "date-fns";
 
 export default function CRMCampaigns() {
@@ -76,7 +76,7 @@ export default function CRMCampaigns() {
   
   // Local state
   const [searchQuery, setSearchQuery] = useState("");
-  const [campaignForm, setCampaignForm] = useState({
+  const [campaignForm, setCampaignForm] = useState<Omit<Campaign, "id" | "performance" | "stats">>({
     name: "",
     type: "Email",
     audience: "All Clients",
@@ -118,7 +118,7 @@ export default function CRMCampaigns() {
   // Handle campaign creation
   const handleCreateCampaign = () => {
     // Create new campaign object
-    const newCampaign = {
+    const newCampaign: Omit<Campaign, "id"> = {
       ...campaignForm,
       performance: "Not started", // Add performance field
       stats: {

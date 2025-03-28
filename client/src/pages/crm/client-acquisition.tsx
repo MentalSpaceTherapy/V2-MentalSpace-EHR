@@ -39,7 +39,8 @@ import {
   Search, 
   Target, 
   UserPlus,
-  Users
+  Users,
+  X
 } from "lucide-react";
 import { useCRM } from "@/hooks/use-crm";
 import { 
@@ -897,7 +898,7 @@ export default function CRMClientAcquisition() {
                                           size="icon"
                                           onClick={() => removeCriteria(index)}
                                         >
-                                          <Trash2 className="h-4 w-4" />
+                                          <X className="h-4 w-4" />
                                         </Button>
                                       )}
                                     </div>
@@ -1001,7 +1002,7 @@ export default function CRMClientAcquisition() {
                         
                         <div className="pt-2">
                           <Button variant="outline" className="w-full justify-start">
-                            <PieChart className="h-4 w-4 mr-2" />
+                            <Target className="h-4 w-4 mr-2" />
                             View Full Analytics
                           </Button>
                         </div>
