@@ -66,6 +66,7 @@ export default function Messages() {
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [messageText, setMessageText] = useState("");
+  const [messageSubject, setMessageSubject] = useState("");
   const [filterOption, setFilterOption] = useState<string>("all"); // "all", "unread", "unanswered"
   const [selectedCategory, setSelectedCategory] = useState<string>("all"); // "all", "Clinical", "Billing", "Administrative"
   const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
@@ -342,11 +343,13 @@ export default function Messages() {
       clientId: selectedClientId,
       content: messageText,
       category: currentMessageCategory,
+      subject: messageSubject,
       sender: "therapist"
     });
     
     // Clear input
     setMessageText("");
+    setMessageSubject("");
   };
   
   // Format timestamp for display
@@ -651,15 +654,21 @@ export default function Messages() {
                               ? "bg-primary-600 rounded-tr-none"
                               : "bg-blue-50 border border-blue-200 rounded-tl-none"
                           )}>
-                            {/* Category badge - only shown for therapist messages */}
-                            {message.sender === "therapist" && message.category && (
+                            {/* Category badge - shown for both message types */}
+                            {message.category && (
                               <div className="mb-1.5 flex justify-between items-center">
                                 <Badge 
                                   variant="outline" 
-                                  className={cn("text-[10px] px-1.5 py-0 font-normal text-white border-white/30",
-                                    message.category === "Clinical" && "bg-primary-700/50",
-                                    message.category === "Billing" && "bg-green-700/50",
-                                    message.category === "Administrative" && "bg-amber-700/50"
+                                  className={cn("text-[10px] px-1.5 py-0 font-normal",
+                                    message.sender === "therapist" 
+                                      ? cn("text-white border-white/30",
+                                          message.category === "Clinical" && "bg-primary-700/50",
+                                          message.category === "Billing" && "bg-green-700/50",
+                                          message.category === "Administrative" && "bg-amber-700/50") 
+                                      : cn("border-blue-300",
+                                          message.category === "Clinical" && "bg-primary-100/50 text-primary-700",
+                                          message.category === "Billing" && "bg-green-100/50 text-green-700",
+                                          message.category === "Administrative" && "bg-amber-100/50 text-amber-700")
                                   )}
                                 >
                                   {message.category === "Clinical" && (
@@ -682,7 +691,9 @@ export default function Messages() {
                                   )}
                                 </Badge>
                                 {message.subject && (
-                                  <span className="text-xs text-white/70 font-medium ml-2">
+                                  <span className={cn("text-xs font-medium ml-2",
+                                    message.sender === "therapist" ? "text-white/70" : "text-blue-600"
+                                  )}>
                                     {message.subject}
                                   </span>
                                 )}
@@ -767,6 +778,17 @@ export default function Messages() {
                         <Clipboard className="h-3.5 w-3.5 text-amber-500" />
                         Admin
                       </Button>
+                    </div>
+                    
+                    {/* Subject input */}
+                    <div className="flex items-center mb-2">
+                      <span className="text-xs text-neutral-500 mr-2">Subject:</span>
+                      <Input
+                        className="h-7 text-sm"
+                        placeholder="Optional message subject"
+                        value={messageSubject}
+                        onChange={(e) => setMessageSubject(e.target.value)}
+                      />
                     </div>
                     
                     {/* Message input */}
