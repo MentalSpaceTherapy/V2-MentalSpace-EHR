@@ -246,12 +246,19 @@ export default function Messages() {
     const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
     
-    // Then apply type filter
-    if (filterOption === "all") return true;
-    if (filterOption === "unread" && client.unread) return true;
-    if (filterOption === "unanswered" && client.unanswered) return true;
+    // Then apply read status filter
+    const matchesStatus = 
+      filterOption === "all" || 
+      (filterOption === "unread" && client.unread) ||
+      (filterOption === "unanswered" && client.unanswered);
     
-    return filterOption === "all";
+    if (!matchesStatus) return false;
+    
+    // Then apply category filter - in a real implementation we would filter by message category
+    // This is a placeholder that would become functional with actual message categories
+    const matchesCategory = selectedCategory === "all" || true;
+    
+    return matchesCategory;
   });
   
   // Handle client selection
@@ -317,7 +324,36 @@ export default function Messages() {
         <TopBar title="Secure Messages" />
         
         <div className="h-[calc(100vh-64px)] bg-neutral-50">
-          <div className="flex h-full">
+          {/* Top-level Message Category Tabs */}
+          <div className="p-3 bg-white border-b">
+            <Tabs
+              defaultValue="all"
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+              className="w-full max-w-4xl mx-auto"
+            >
+              <TabsList className="w-full grid grid-cols-4">
+                <TabsTrigger value="all" className="flex items-center gap-1">
+                  <UserRound className="h-4 w-4" />
+                  <span>All Messages</span>
+                </TabsTrigger>
+                <TabsTrigger value="Clinical" className="flex items-center gap-1">
+                  <FileText className="h-4 w-4 text-primary-500" />
+                  <span>Clinical</span>
+                </TabsTrigger>
+                <TabsTrigger value="Billing" className="flex items-center gap-1">
+                  <FileSpreadsheet className="h-4 w-4 text-green-500" />
+                  <span>Billing</span>
+                </TabsTrigger>
+                <TabsTrigger value="Administrative" className="flex items-center gap-1">
+                  <Clipboard className="h-4 w-4 text-amber-500" />
+                  <span>Admin</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        
+          <div className="flex h-[calc(100%-56px)]">
             {/* Client List Sidebar */}
             <div className="w-80 border-r bg-white">
               <div className="p-4 border-b">
@@ -530,35 +566,6 @@ export default function Messages() {
               {/* Message area */}
               {selectedClient ? (
                 <>
-                  {/* Message Category Tabs */}
-                  <div className="p-3 bg-white border-b">
-                    <Tabs
-                      defaultValue="all"
-                      value={selectedCategory}
-                      onValueChange={setSelectedCategory}
-                      className="w-full"
-                    >
-                      <TabsList className="w-full grid grid-cols-4">
-                        <TabsTrigger value="all" className="flex items-center gap-1">
-                          <UserRound className="h-4 w-4" />
-                          <span>All</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="Clinical" className="flex items-center gap-1">
-                          <FileText className="h-4 w-4 text-primary-500" />
-                          <span>Clinical</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="Billing" className="flex items-center gap-1">
-                          <FileSpreadsheet className="h-4 w-4 text-green-500" />
-                          <span>Billing</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="Administrative" className="flex items-center gap-1">
-                          <Clipboard className="h-4 w-4 text-amber-500" />
-                          <span>Admin</span>
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
-                  
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto">
                     <div className="max-w-3xl mx-auto p-4 space-y-6">

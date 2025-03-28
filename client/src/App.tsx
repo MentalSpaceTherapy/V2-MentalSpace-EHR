@@ -54,6 +54,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/clients" component={Clients} />
+      <ProtectedRoute path="/clients/:id" component={Clients} />
       
       {/* Documentation routes */}
       <ProtectedRoute path="/documentation" component={DocumentationRoute} />

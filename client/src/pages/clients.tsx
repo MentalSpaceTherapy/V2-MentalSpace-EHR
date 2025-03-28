@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation, useParams } from "wouter";
 import { 
   Card, 
   CardContent, 
@@ -179,6 +180,7 @@ const mockClients = [
 export default function Clients() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, params] = useParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -207,6 +209,21 @@ export default function Clients() {
       return response.json();
     },
   });
+  
+  // Check if we have a client ID in the URL parameters
+  useEffect(() => {
+    // Only run this when clients are loaded and we have an ID parameter
+    if (!isLoadingClients && clients.length > 0 && params.id) {
+      const clientId = parseInt(params.id);
+      if (!isNaN(clientId)) {
+        const client = clients.find(c => c.id === clientId);
+        if (client) {
+          setSelectedClient(client);
+          setIsDetailsOpen(true);
+        }
+      }
+    }
+  }, [clients, isLoadingClients, params.id]);
   
   // Add client mutation
   const createClientMutation = useMutation({
