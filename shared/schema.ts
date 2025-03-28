@@ -164,19 +164,25 @@ export const messages = pgTable("messages", {
   clientId: integer("client_id").references(() => clients.id).notNull(),
   therapistId: integer("therapist_id").references(() => users.id).notNull(),
   content: text("content").notNull(),
+  subject: text("subject"), // Optional subject line
+  category: text("category").default("Clinical"), // "Clinical", "Billing", "Administrative"
   sender: text("sender").notNull(), // "client" or "therapist"
   isRead: boolean("is_read").default(false).notNull(),
   status: text("status").default("sent").notNull(), // sent, delivered, read, etc.
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  attachments: jsonb("attachments").default([]), // Array of attachment info
 });
 
 export const insertMessageSchema = createInsertSchema(messages).pick({
   clientId: true,
   therapistId: true,
   content: true,
+  subject: true,
+  category: true,
   sender: true,
   isRead: true,
   status: true,
+  attachments: true,
 });
 
 // Extended client schema with additional fields

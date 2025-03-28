@@ -7,8 +7,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Send, Paperclip, MoreVertical, Loader2, Plus, Calendar, MessageSquarePlus, FileText, UserRound, FileSpreadsheet, Clipboard } from "lucide-react";
-import { format } from "date-fns";
+import { Search, Send, Paperclip, MoreVertical, Loader2, Plus, Calendar, MessageSquarePlus, FileText, 
+         UserRound, FileSpreadsheet, Clipboard, CheckCircle, Clock, Eye, AlertCircle, Trash2, 
+         ChevronDown, Bookmark, MailQuestion, Archive, Bell, Settings } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -16,13 +18,16 @@ import { Message, Client } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DEFAULT_AVATAR } from "@/lib/constants";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Link } from "wouter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, 
+         DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 
 // Client type with additional fields for UI
@@ -44,9 +49,12 @@ interface MessageClient {
 interface DisplayMessage {
   id: number;
   text: string;
+  subject?: string;
+  category?: string;
   sender: "client" | "therapist";
   timestamp: Date;
   isRead: boolean;
+  attachments?: any[];
 }
 
 // Message types/categories
@@ -94,7 +102,14 @@ export default function Messages() {
   
   // Create a message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async (messageData: { clientId: number, content: string, sender: "therapist" | "client" }) => {
+    mutationFn: async (messageData: { 
+      clientId: number, 
+      content: string, 
+      subject?: string,
+      category?: string,
+      sender: "therapist" | "client",
+      attachments?: any[]
+    }) => {
       const res = await apiRequest('POST', '/api/messages', messageData);
       return await res.json();
     },
@@ -199,18 +214,35 @@ export default function Messages() {
   const currentConversation: DisplayMessage[] = clientMessages ? 
     (clientMessages as Message[]).map((message: Message) => {
       try {
+        // Parse the content to extract subject if it's in the format "Subject: ... \n\n content"
+        let subject = message.subject || "";
+        let text = message.content;
+        
+        if (!subject && message.content) {
+          // If there's no subject field but content has a "Subject:" line, extract it
+          const subjectMatch = message.content.match(/^Subject:(.*?)(?:\n\n|\r\n\r\n)([\s\S]*)$/);
+          if (subjectMatch) {
+            subject = subjectMatch[1].trim();
+            text = subjectMatch[2].trim();
+          }
+        }
+        
         return {
           id: message.id,
-          text: message.content,
+          text: text,
+          subject: subject,
+          category: message.category || "Clinical", // Default to Clinical if not specified
           sender: message.sender as "client" | "therapist",
           timestamp: message.createdAt ? new Date(message.createdAt) : new Date(),
-          isRead: message.isRead
+          isRead: message.isRead,
+          attachments: message.attachments as any[] || []
         };
       } catch (e) {
         console.error("Error processing message:", e, message);
         return {
           id: message.id,
           text: message.content,
+          category: "Clinical",
           sender: message.sender as "client" | "therapist",
           timestamp: new Date(),
           isRead: message.isRead
@@ -240,7 +272,21 @@ export default function Messages() {
     return clientMsgs[0].sender === "client";
   };
 
-  // Filter clients based on search and filter option
+  // Helper function to get category for client's latest message
+  const getClientLatestMessageCategory = (clientId: number): string => {
+    if (!messagesData) return "Clinical"; // Default
+    
+    const clientMsgs = (messagesData as Message[]).filter(m => m.clientId === clientId);
+    if (clientMsgs.length === 0) return "Clinical";
+    
+    // Sort by time, newest first
+    clientMsgs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    // Return category of latest message or default to Clinical
+    return clientMsgs[0].category || "Clinical";
+  };
+  
+  // Filter clients based on search, filter option, and category
   const filteredClients = clients.filter(client => {
     // First apply search filter
     const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -254,11 +300,21 @@ export default function Messages() {
     
     if (!matchesStatus) return false;
     
-    // Then apply category filter - in a real implementation we would filter by message category
-    // This is a placeholder that would become functional with actual message categories
-    const matchesCategory = selectedCategory === "all" || true;
+    // Then apply category filter
+    if (selectedCategory === "all") return true;
     
-    return matchesCategory;
+    // Check if this client has a message in the selected category
+    if (messagesData) {
+      const clientMsgs = (messagesData as Message[]).filter(m => m.clientId === client.id);
+      
+      // If no messages, don't filter out - they'll appear in all categories
+      if (clientMsgs.length === 0) return true;
+      
+      // Check if any messages have the selected category
+      return clientMsgs.some(m => m.category === selectedCategory);
+    }
+    
+    return true;
   });
   
   // Handle client selection
@@ -275,6 +331,9 @@ export default function Messages() {
     }
   };
   
+  // Current message category for quick replies
+  const [currentMessageCategory, setCurrentMessageCategory] = useState<MessageCategory>("Clinical");
+  
   // Handle message sending
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedClientId) return;
@@ -282,6 +341,7 @@ export default function Messages() {
     sendMessageMutation.mutate({
       clientId: selectedClientId,
       content: messageText,
+      category: currentMessageCategory,
       sender: "therapist"
     });
     
@@ -574,10 +634,8 @@ export default function Messages() {
                           // If "all" is selected, show all messages
                           if (selectedCategory === "all") return true;
                           
-                          // For now, we don't have category info in messages
-                          // In a real implementation, we would filter by message.category
-                          // This is a placeholder for when that data is available
-                          return true;
+                          // Filter by message category
+                          return message.category === selectedCategory;
                         })
                         .map(message => (
                         <div 
@@ -593,23 +651,75 @@ export default function Messages() {
                               ? "bg-primary-600 rounded-tr-none"
                               : "bg-blue-50 border border-blue-200 rounded-tl-none"
                           )}>
+                            {/* Category badge - only shown for therapist messages */}
+                            {message.sender === "therapist" && message.category && (
+                              <div className="mb-1.5 flex justify-between items-center">
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn("text-[10px] px-1.5 py-0 font-normal text-white border-white/30",
+                                    message.category === "Clinical" && "bg-primary-700/50",
+                                    message.category === "Billing" && "bg-green-700/50",
+                                    message.category === "Administrative" && "bg-amber-700/50"
+                                  )}
+                                >
+                                  {message.category === "Clinical" && (
+                                    <>
+                                      <FileText className="mr-1 h-2.5 w-2.5" />
+                                      Clinical
+                                    </>
+                                  )}
+                                  {message.category === "Billing" && (
+                                    <>
+                                      <FileSpreadsheet className="mr-1 h-2.5 w-2.5" />
+                                      Billing
+                                    </>
+                                  )}
+                                  {message.category === "Administrative" && (
+                                    <>
+                                      <Clipboard className="mr-1 h-2.5 w-2.5" />
+                                      Admin
+                                    </>
+                                  )}
+                                </Badge>
+                                {message.subject && (
+                                  <span className="text-xs text-white/70 font-medium ml-2">
+                                    {message.subject}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Message text */}
                             <p className={message.sender === "therapist" ? "text-white font-medium" : "text-black font-medium"}>
                               {message.text}
                             </p>
+                            
+                            {/* Timestamp */}
                             <div className={cn(
-                              "text-xs mt-1 text-right",
+                              "text-xs mt-1 flex justify-between items-center",
                               message.sender === "therapist" ? "text-primary-100" : "text-blue-500"
                             )}>
-                             {
-                                (() => {
+                              <div>
+                                {message.sender === "client" && !message.isRead && (
+                                  <Badge variant="outline" className="mr-1.5 text-[10px] py-0 px-1 border-blue-300 text-blue-600 bg-blue-50">
+                                    <Clock className="mr-1 h-2.5 w-2.5" />
+                                    New
+                                  </Badge>
+                                )}
+                              </div>
+                              <div>
+                                {(() => {
                                   try {
                                     return format(message.timestamp, "h:mm a");
                                   } catch (e) {
                                     return "Unknown time";
                                   }
-                                })()
-                              }
-                           </div>
+                                })()}
+                                {message.sender === "therapist" && (
+                                  <CheckCircle className="ml-1 inline-block h-3 w-3 text-primary-100" />
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -618,13 +728,72 @@ export default function Messages() {
                   
                   {/* Message Input */}
                   <div className="p-4 border-t bg-white">
-                    <div className="flex items-end">
-                      <Button variant="ghost" size="icon" className="mb-1.5">
-                        <Paperclip className="h-5 w-5 text-neutral-500" />
+                    {/* Message category buttons */}
+                    <div className="flex items-center justify-start space-x-2 mb-3">
+                      <span className="text-xs text-neutral-500 mr-1">Category:</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className={cn(
+                          "h-7 text-xs gap-1 py-0 px-2",
+                          currentMessageCategory === "Clinical" && "bg-primary-50 border-primary-200 text-primary-700"
+                        )}
+                        onClick={() => setCurrentMessageCategory("Clinical")}
+                      >
+                        <FileText className="h-3.5 w-3.5 text-primary-500" />
+                        Clinical
                       </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className={cn(
+                          "h-7 text-xs gap-1 py-0 px-2",
+                          currentMessageCategory === "Billing" && "bg-green-50 border-green-200 text-green-700"
+                        )}
+                        onClick={() => setCurrentMessageCategory("Billing")}
+                      >
+                        <FileSpreadsheet className="h-3.5 w-3.5 text-green-500" />
+                        Billing
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className={cn(
+                          "h-7 text-xs gap-1 py-0 px-2",
+                          currentMessageCategory === "Administrative" && "bg-amber-50 border-amber-200 text-amber-700"
+                        )}
+                        onClick={() => setCurrentMessageCategory("Administrative")}
+                      >
+                        <Clipboard className="h-3.5 w-3.5 text-amber-500" />
+                        Admin
+                      </Button>
+                    </div>
+                    
+                    {/* Message input */}
+                    <div className="flex items-end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="mb-1.5">
+                            <Paperclip className="h-5 w-5 text-neutral-500" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48">
+                          <DropdownMenuLabel>Attachments</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="gap-2">
+                            <FileText className="h-4 w-4" />
+                            <span>Document</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="gap-2">
+                            <FileSpreadsheet className="h-4 w-4" />
+                            <span>Form</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      
                       <div className="flex-1 ml-2">
                         <textarea 
-                          placeholder="Type a secure message..." 
+                          placeholder={`Type a ${currentMessageCategory.toLowerCase()} message...`}
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] py-3 px-4"
                           value={messageText}
                           onChange={(e) => setMessageText(e.target.value)}
@@ -636,16 +805,28 @@ export default function Messages() {
                           }}
                         />
                       </div>
+                      
                       <Button 
-                        className="ml-2 h-10 w-10 rounded-full p-0"
+                        className={cn(
+                          "ml-2 h-10 w-10 rounded-full p-0",
+                          currentMessageCategory === "Clinical" && "bg-primary-600 hover:bg-primary-700",
+                          currentMessageCategory === "Billing" && "bg-green-600 hover:bg-green-700",
+                          currentMessageCategory === "Administrative" && "bg-amber-600 hover:bg-amber-700"
+                        )}
                         onClick={handleSendMessage}
                         disabled={!messageText.trim()}
                       >
                         <Send className="h-5 w-5" />
                       </Button>
                     </div>
-                    <div className="text-xs text-neutral-500 text-center mt-2">
-                      All messages are encrypted end-to-end and HIPAA compliant
+                    
+                    <div className="text-xs text-neutral-500 flex justify-between items-center mt-2">
+                      <span>
+                        Sending as: <span className="font-medium">{currentMessageCategory}</span>
+                      </span>
+                      <span>
+                        All messages are encrypted end-to-end and HIPAA compliant
+                      </span>
                     </div>
                   </div>
                 </>
@@ -775,6 +956,8 @@ export default function Messages() {
                   sendMessageMutation.mutate({
                     clientId: parseInt(newMessageData.clientId),
                     content: content,
+                    category: newMessageData.category,
+                    subject: newMessageData.subject,
                     sender: "therapist"
                   });
                   
