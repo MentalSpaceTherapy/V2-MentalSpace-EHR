@@ -14,6 +14,7 @@ import Billing from "@/pages/billing";
 import Reports from "@/pages/reports";
 import Practice from "@/pages/practice";
 import { AuthProvider } from "@/hooks/use-auth";
+import { CRMProvider } from "@/hooks/use-crm";
 // CRM pages
 import CRMIndex from "@/pages/crm";
 import CRMDashboard from "@/pages/crm/dashboard";
@@ -71,14 +72,14 @@ function Router() {
       <ProtectedRoute path="/scheduling" component={Scheduling} />
       <ProtectedRoute path="/messages" component={Messages} />
       
-      {/* CRM routes */}
-      <ProtectedRoute path="/crm" component={CRMIndex} />
-      <ProtectedRoute path="/crm/dashboard" component={CRMDashboard} />
-      <ProtectedRoute path="/crm/campaigns" component={CRMCampaigns} />
-      <ProtectedRoute path="/crm/client-acquisition" component={CRMClientAcquisition} />
-      <ProtectedRoute path="/crm/marketing" component={CRMMarketing} />
-      <ProtectedRoute path="/crm/analytics" component={CRMAnalytics} />
-      <ProtectedRoute path="/crm/events" component={CRMEvents} />
+      {/* CRM routes - wrapped with CRMProvider */}
+      <WrappedCRMRoute path="/crm" component={CRMIndex} />
+      <WrappedCRMRoute path="/crm/dashboard" component={CRMDashboard} />
+      <WrappedCRMRoute path="/crm/campaigns" component={CRMCampaigns} />
+      <WrappedCRMRoute path="/crm/client-acquisition" component={CRMClientAcquisition} />
+      <WrappedCRMRoute path="/crm/marketing" component={CRMMarketing} />
+      <WrappedCRMRoute path="/crm/analytics" component={CRMAnalytics} />
+      <WrappedCRMRoute path="/crm/events" component={CRMEvents} />
       
       <ProtectedRoute path="/billing" component={Billing} />
       <ProtectedRoute path="/reports" component={Reports} />
@@ -86,6 +87,20 @@ function Router() {
       <Route component={NotFound} />
     </Switch>
   );
+}
+
+// Component to wrap CRM related routes
+const CRMRoute = ({ Component }: { Component: React.ComponentType }) => {
+  return (
+    <CRMProvider>
+      <Component />
+    </CRMProvider>
+  );
+};
+
+// Wrap CRM routes with the CRM provider
+function WrappedCRMRoute({ component: Component, path }: { component: React.ComponentType, path: string }) {
+  return <ProtectedRoute path={path} component={() => <CRMRoute Component={Component} />} />;
 }
 
 function App() {

@@ -42,8 +42,9 @@ import {
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useCRM } from "@/hooks/use-crm";
 
-// Temporary sample data for charts
+// Sample chart data
 const clientAcquisitionData = [
   { name: "Jan", newClients: 5, prospects: 12 },
   { name: "Feb", newClients: 8, prospects: 15 },
@@ -53,14 +54,14 @@ const clientAcquisitionData = [
   { name: "Jun", newClients: 18, prospects: 30 },
 ];
 
-const referralSourceData = [
-  { name: "Website", value: 35 },
-  { name: "Healthcare Providers", value: 25 },
-  { name: "Social Media", value: 20 },
-  { name: "Client Referrals", value: 15 },
-  { name: "Other", value: 5 },
+const campaignPerformanceData = [
+  { name: "Week 1", emailOpen: 35, clickThrough: 28, conversion: 12 },
+  { name: "Week 2", emailOpen: 40, clickThrough: 32, conversion: 15 },
+  { name: "Week 3", emailOpen: 45, clickThrough: 36, conversion: 18 },
+  { name: "Week 4", emailOpen: 50, clickThrough: 40, conversion: 22 },
 ];
 
+// Chart colors
 const COLORS = [
   "#6366f1", // primary
   "#4f46e5",
@@ -69,16 +70,25 @@ const COLORS = [
   "#312e81",
 ];
 
-const campaignPerformanceData = [
-  { name: "Week 1", emailOpen: 35, clickThrough: 28, conversion: 12 },
-  { name: "Week 2", emailOpen: 40, clickThrough: 32, conversion: 15 },
-  { name: "Week 3", emailOpen: 45, clickThrough: 36, conversion: 18 },
-  { name: "Week 4", emailOpen: 50, clickThrough: 40, conversion: 22 },
-];
-
 export default function CRMDashboard() {
-  const [activeTimeframe, setActiveTimeframe] = useState("thisMonth");
-
+  // Get data from CRM context
+  const { 
+    leads, 
+    conversionRate, 
+    activeCampaigns, 
+    selectedTimeRange, 
+    setSelectedTimeRange,
+    referralSources 
+  } = useCRM();
+  
+  // Time range options
+  const timeRangeOptions = {
+    "week": "This Week",
+    "month": "This Month",
+    "quarter": "This Quarter",
+    "year": "This Year"
+  };
+  
   return (
     <div className="flex h-screen bg-neutral-50">
       <Sidebar />
@@ -101,9 +111,20 @@ export default function CRMDashboard() {
                 <Filter className="h-3.5 w-3.5" />
                 <span>Filter</span>
               </Button>
-              <Button variant="outline" size="sm" className="h-9 px-3 text-xs gap-1.5">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-9 px-3 text-xs gap-1.5"
+                onClick={() => {
+                  // Cycle through time ranges
+                  const ranges: ("week" | "month" | "quarter" | "year")[] = ["week", "month", "quarter", "year"];
+                  const currentIndex = ranges.indexOf(selectedTimeRange);
+                  const nextIndex = (currentIndex + 1) % ranges.length;
+                  setSelectedTimeRange(ranges[nextIndex]);
+                }}
+              >
                 <Clock className="h-3.5 w-3.5" />
-                <span>This Month</span>
+                <span>{timeRangeOptions[selectedTimeRange]}</span>
               </Button>
               <Button variant="outline" size="sm" className="h-9 w-9 p-0">
                 <RefreshCw className="h-3.5 w-3.5" />
@@ -115,21 +136,21 @@ export default function CRMDashboard() {
           <div className="grid grid-cols-4 gap-6 mb-8">
             <MetricCard 
               title="New Leads"
-              value="28"
+              value={leads.toString()}
               change={{ value: "+12.5%", positive: true }}
               icon={<UserPlus className="h-5 w-5 text-primary-500" />}
               description="From all lead channels"
             />
             <MetricCard 
               title="Conversion Rate"
-              value="24.8%"
+              value={`${conversionRate}%`}
               change={{ value: "+3.2%", positive: true }}
               icon={<Target className="h-5 w-5 text-green-500" />}
               description="Leads to clients"
             />
             <MetricCard 
               title="Active Campaigns"
-              value="4"
+              value={activeCampaigns.length.toString()}
               change={{ value: "0%", positive: true }}
               icon={<Mail className="h-5 w-5 text-amber-500" />}
               description="Email and SMS"
@@ -201,16 +222,18 @@ export default function CRMDashboard() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart width={400} height={250}>
                       <Pie
-                        data={referralSourceData}
+                        data={referralSources}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }: { name: string, percent: number }) => 
+                          `${name}: ${(percent * 100).toFixed(0)}%`
+                        }
                       >
-                        {referralSourceData.map((entry, index) => (
+                        {referralSources.map((entry, index: number) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -221,7 +244,11 @@ export default function CRMDashboard() {
               </CardContent>
               <CardFooter className="border-t pt-4 flex justify-between">
                 <span className="text-sm text-neutral-500">Top source:</span>
-                <span className="text-sm font-medium">Website (35%)</span>
+                <span className="text-sm font-medium">
+                  {referralSources.length > 0 ? 
+                    `${referralSources[0].name} (${referralSources[0].percentage}%)` : 
+                    "No data available"}
+                </span>
               </CardFooter>
             </Card>
             
@@ -267,45 +294,35 @@ export default function CRMDashboard() {
               </CardHeader>
               <CardContent className="px-0">
                 <div className="space-y-3">
-                  {[
-                    {
-                      name: "Summer Wellness Newsletter",
-                      type: "Email",
-                      status: "Running",
-                      performance: "45% open rate",
-                      icon: Mail,
-                      color: "text-blue-500",
-                    },
-                    {
-                      name: "New Client Welcome Series",
-                      type: "Email + SMS",
-                      status: "Running",
-                      performance: "92% open rate",
-                      icon: UserPlus,
-                      color: "text-green-500",
-                    },
-                    {
-                      name: "Anxiety Workshop Promotion",
-                      type: "Email",
-                      status: "Running",
-                      performance: "38% open rate",
-                      icon: Clock,
-                      color: "text-purple-500",
-                    },
-                    {
-                      name: "Client Re-engagement",
-                      type: "SMS",
-                      status: "Running",
-                      performance: "23% response rate",
-                      icon: RefreshCw,
-                      color: "text-amber-500",
-                    },
-                  ].map((campaign, i) => {
-                    const CampaignIcon = campaign.icon;
+                  {activeCampaigns.map((campaign, i) => {
+                    // Choose icon based on campaign type
+                    let CampaignIcon = Mail;
+                    let colorClass = "text-blue-500";
+                    let bgColorClass = "bg-blue-50";
+                    
+                    if (campaign.type === "SMS") {
+                      CampaignIcon = RefreshCw;
+                      colorClass = "text-amber-500";
+                      bgColorClass = "bg-amber-50";
+                    } else if (campaign.type === "Multi-channel") {
+                      CampaignIcon = UserPlus;
+                      colorClass = "text-green-500";
+                      bgColorClass = "bg-green-50";
+                    } else if (campaign.type === "Social") {
+                      CampaignIcon = Clock;
+                      colorClass = "text-purple-500";
+                      bgColorClass = "bg-purple-50";
+                    }
+                    
+                    // Format performance metric
+                    const statsSum = campaign.stats.sent > 0 ? campaign.stats.sent : 1;
+                    const openRate = Math.round((campaign.stats.opened / statsSum) * 100);
+                    const performanceText = `${openRate}% open rate`;
+                    
                     return (
-                      <div key={i} className="flex items-center py-3 px-6 hover:bg-neutral-50">
-                        <div className={cn("p-2 rounded-full", campaign.color === "text-blue-500" ? "bg-blue-50" : campaign.color === "text-green-500" ? "bg-green-50" : campaign.color === "text-purple-500" ? "bg-purple-50" : "bg-amber-50")}>
-                          <CampaignIcon className={cn("h-4 w-4", campaign.color)} />
+                      <div key={campaign.id} className="flex items-center py-3 px-6 hover:bg-neutral-50">
+                        <div className={cn("p-2 rounded-full", bgColorClass)}>
+                          <CampaignIcon className={cn("h-4 w-4", colorClass)} />
                         </div>
                         <div className="ml-4 flex-1">
                           <p className="font-medium text-sm">{campaign.name}</p>
@@ -315,10 +332,16 @@ export default function CRMDashboard() {
                             <span className="text-xs text-green-600">{campaign.status}</span>
                           </div>
                         </div>
-                        <div className="text-sm font-medium">{campaign.performance}</div>
+                        <div className="text-sm font-medium">{performanceText}</div>
                       </div>
                     );
                   })}
+                  
+                  {activeCampaigns.length === 0 && (
+                    <div className="py-8 text-center text-neutral-500">
+                      No active campaigns at the moment
+                    </div>
+                  )}
                 </div>
               </CardContent>
               <CardFooter className="border-t pt-4 px-6">
