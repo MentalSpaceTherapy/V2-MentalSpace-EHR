@@ -9,7 +9,7 @@ import {
   MoreVertical, ChevronRight, Brain, Sparkles,
   FileSignature, ClipboardCheck, FilePlus, FileClock,
   FileSpreadsheet, Phone, FileQuestion, ChevronDown, Plus,
-  BarChart, Target, LineChart, UserPlus, AtSign
+  BarChart, Target, LineChart, UserPlus, AtSign, Share2
 } from "lucide-react";
 import {
   Collapsible,
@@ -74,6 +74,8 @@ export function Sidebar({ className }: SidebarProps) {
     { name: "Marketing", href: "/crm/marketing", icon: AtSign },
     { name: "Analytics", href: "/crm/analytics", icon: LineChart },
     { name: "Events", href: "/crm/events", icon: Calendar },
+    { name: "Referral Sources", href: "/crm/referral-sources", icon: Share2 },
+    { name: "Contact History", href: "/crm/contact-history", icon: MessageSquare },
   ];
 
   const navigation = [

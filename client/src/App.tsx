@@ -23,6 +23,8 @@ import CRMClientAcquisition from "@/pages/crm/client-acquisition";
 import CRMMarketing from "@/pages/crm/marketing";
 import CRMAnalytics from "@/pages/crm/analytics";
 import CRMEvents from "@/pages/crm/events";
+import CRMReferralSources from "@/pages/crm/referral-sources";
+import CRMContactHistory from "@/pages/crm/contact-history";
 // Old mock auth provider - we're not using this anymore
 // import { AuthProvider as MockAuthProvider } from "@/hooks/use-auth";
 import { ProgressNoteForm } from "@/components/forms/ProgressNoteForm";
@@ -80,6 +82,8 @@ function Router() {
       <WrappedCRMRoute path="/crm/marketing" component={CRMMarketing} />
       <WrappedCRMRoute path="/crm/analytics" component={CRMAnalytics} />
       <WrappedCRMRoute path="/crm/events" component={CRMEvents} />
+      <WrappedCRMRoute path="/crm/referral-sources" component={CRMReferralSources} />
+      <WrappedCRMRoute path="/crm/contact-history" component={CRMContactHistory} />
       
       <ProtectedRoute path="/billing" component={Billing} />
       <ProtectedRoute path="/reports" component={Reports} />

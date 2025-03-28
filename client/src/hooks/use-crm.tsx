@@ -37,6 +37,37 @@ export type LeadSource = {
   percentage: number;
 };
 
+export type ReferralPartner = {
+  id: string;
+  name: string;
+  type: "Healthcare Provider" | "Community Organization" | "Former Client" | "Business" | "Educational Institution" | "Other";
+  contactPerson: string;
+  email: string;
+  phone: string;
+  address?: string;
+  partnerSince: string;
+  activeStatus: "Active" | "Inactive" | "Potential";
+  referralCount: number;
+  conversionRate: number;
+  notes?: string;
+  lastContactDate?: string;
+};
+
+export type ContactHistory = {
+  id: string;
+  leadId: string;
+  contactType: "Email" | "Phone" | "In-Person" | "Video" | "Text" | "Social Media";
+  contactNumber: number; // 1st, 2nd, 3rd contact, etc.
+  date: string;
+  time: string;
+  duration?: number;
+  notes?: string;
+  outcome: "Positive" | "Neutral" | "Negative" | "No Response";
+  followUpDate?: string;
+  followUpType?: string;
+  completedBy: string;
+};
+
 export type ClientSegment = {
   id: string;
   name: string;
@@ -52,6 +83,18 @@ export type MarketingTemplate = {
   subject?: string;
   content: string;
   lastUsed?: string;
+};
+
+export type Lead = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  source: string;
+  stage: string;
+  notes?: string;
+  dateAdded: string;
+  lastContacted: string;
 };
 
 export type TimeRange = "week" | "month" | "quarter" | "year";
@@ -84,6 +127,19 @@ interface CRMContextType {
   // Referral sources 
   referralSources: LeadSource[];
   updateReferralSources: (sources: LeadSource[]) => void;
+  
+  // Referral partners
+  referralPartners: ReferralPartner[];
+  addReferralPartner: (partner: Omit<ReferralPartner, "id">) => void;
+  updateReferralPartner: (id: string, partner: Partial<ReferralPartner>) => void;
+  deleteReferralPartner: (id: string) => void;
+  
+  // Contact history
+  contactHistory: ContactHistory[];
+  addContactHistory: (contact: Omit<ContactHistory, "id">) => void;
+  updateContactHistory: (id: string, contact: Partial<ContactHistory>) => void;
+  deleteContactHistory: (id: string) => void;
+  getLeadContactHistory: (leadId: string) => ContactHistory[];
   
   // Client segments
   clientSegments: ClientSegment[];
@@ -307,6 +363,166 @@ const defaultMarketingTemplates: MarketingTemplate[] = [
   }
 ];
 
+const defaultReferralPartners: ReferralPartner[] = [
+  {
+    id: "partner1",
+    name: "Oakwood Medical Center",
+    type: "Healthcare Provider",
+    contactPerson: "Dr. Sarah Johnson",
+    email: "sjohnson@oakwoodmed.com",
+    phone: "(555) 123-4567",
+    address: "123 Oakwood Ave, Suite 300, Portland, OR 97205",
+    partnerSince: "2023-04-15",
+    activeStatus: "Active",
+    referralCount: 18,
+    conversionRate: 72.2,
+    notes: "Primary care practice with focus on holistic health",
+    lastContactDate: "2024-06-05"
+  },
+  {
+    id: "partner2",
+    name: "Riverdale Community Center",
+    type: "Community Organization",
+    contactPerson: "Michael Chen",
+    email: "mchen@riverdalecommunity.org",
+    phone: "(555) 234-5678",
+    address: "456 Riverdale Blvd, Portland, OR 97215",
+    partnerSince: "2023-08-22",
+    activeStatus: "Active",
+    referralCount: 12,
+    conversionRate: 58.3,
+    notes: "Community outreach programs for underserved populations",
+    lastContactDate: "2024-05-28"
+  },
+  {
+    id: "partner3",
+    name: "Sunrise Wellness Group",
+    type: "Healthcare Provider",
+    contactPerson: "Dr. Emily Carter",
+    email: "ecarter@sunrisewellness.com",
+    phone: "(555) 345-6789",
+    address: "789 Sunrise Lane, Portland, OR 97220",
+    partnerSince: "2023-06-10",
+    activeStatus: "Active",
+    referralCount: 24,
+    conversionRate: 83.3,
+    notes: "Integrative medicine practice, frequent referrals for anxiety patients",
+    lastContactDate: "2024-06-12"
+  },
+  {
+    id: "partner4",
+    name: "Portland State University",
+    type: "Educational Institution",
+    contactPerson: "Prof. James Wilson",
+    email: "jwilson@psu.edu",
+    phone: "(555) 456-7890",
+    partnerSince: "2023-09-05",
+    activeStatus: "Active",
+    referralCount: 9,
+    conversionRate: 66.7,
+    notes: "Student counseling services overflow",
+    lastContactDate: "2024-05-15"
+  },
+  {
+    id: "partner5",
+    name: "Harmony Wellness Spa",
+    type: "Business",
+    contactPerson: "Lisa Thompson",
+    email: "lthompson@harmonywellness.com",
+    phone: "(555) 567-8901",
+    partnerSince: "2024-01-18",
+    activeStatus: "Potential",
+    referralCount: 2,
+    conversionRate: 50.0,
+    notes: "New partnership being developed",
+    lastContactDate: "2024-06-01"
+  }
+];
+
+const defaultContactHistory: ContactHistory[] = [
+  {
+    id: "contact1",
+    leadId: "lead-1",
+    contactType: "Email",
+    contactNumber: 1,
+    date: "2024-06-15",
+    time: "10:30 AM",
+    notes: "Initial outreach email introducing services",
+    outcome: "Positive",
+    followUpDate: "2024-06-17",
+    followUpType: "Phone call",
+    completedBy: "Sarah Williams"
+  },
+  {
+    id: "contact2",
+    leadId: "lead-1",
+    contactType: "Phone",
+    contactNumber: 2,
+    date: "2024-06-17",
+    time: "2:15 PM",
+    duration: 12,
+    notes: "Discussed service options, client expressed interest in anxiety treatment",
+    outcome: "Positive",
+    followUpDate: "2024-06-20",
+    followUpType: "Video consultation",
+    completedBy: "Sarah Williams"
+  },
+  {
+    id: "contact3",
+    leadId: "lead-1",
+    contactType: "Video",
+    contactNumber: 3,
+    date: "2024-06-20",
+    time: "11:00 AM",
+    duration: 30,
+    notes: "Initial consultation, discussed treatment plan",
+    outcome: "Positive",
+    followUpDate: "2024-06-27",
+    followUpType: "First session",
+    completedBy: "Dr. Jennifer Baker"
+  },
+  {
+    id: "contact4",
+    leadId: "lead-2",
+    contactType: "Phone",
+    contactNumber: 1,
+    date: "2024-06-10",
+    time: "9:45 AM",
+    duration: 8,
+    notes: "Client called inquiring about family therapy options",
+    outcome: "Positive",
+    followUpDate: "2024-06-12",
+    followUpType: "Email with information",
+    completedBy: "Michael Rodriguez"
+  },
+  {
+    id: "contact5",
+    leadId: "lead-2",
+    contactType: "Email",
+    contactNumber: 2,
+    date: "2024-06-12",
+    time: "3:30 PM",
+    notes: "Sent detailed information about family therapy services and pricing",
+    outcome: "Neutral",
+    followUpDate: "2024-06-15",
+    followUpType: "Phone call",
+    completedBy: "Michael Rodriguez"
+  },
+  {
+    id: "contact6",
+    leadId: "lead-3",
+    contactType: "Social Media",
+    contactNumber: 1,
+    date: "2024-06-05",
+    time: "4:20 PM",
+    notes: "Initial message through Instagram about depression services",
+    outcome: "Positive",
+    followUpDate: "2024-06-07",
+    followUpType: "Phone call",
+    completedBy: "Sarah Williams"
+  }
+];
+
 // Create the context
 export const CRMContext = createContext<CRMContextType | null>(null);
 
@@ -325,6 +541,12 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   
   // State for referral sources
   const [referralSources, setReferralSources] = useState<LeadSource[]>(defaultReferralSources);
+  
+  // State for referral partners
+  const [referralPartners, setReferralPartners] = useState<ReferralPartner[]>(defaultReferralPartners);
+  
+  // State for contact history
+  const [contactHistory, setContactHistory] = useState<ContactHistory[]>(defaultContactHistory);
   
   // State for client segments
   const [clientSegments, setClientSegments] = useState<ClientSegment[]>(defaultClientSegments);
@@ -382,6 +604,53 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   // Referral sources methods
   const updateReferralSources = (sources: LeadSource[]) => {
     setReferralSources(sources);
+  };
+  
+  // Referral partner methods
+  const addReferralPartner = (partner: Omit<ReferralPartner, "id">) => {
+    const newPartner = {
+      ...partner,
+      id: `partner${referralPartners.length + 1}`
+    };
+    setReferralPartners([...referralPartners, newPartner]);
+  };
+  
+  const updateReferralPartner = (id: string, partnerUpdate: Partial<ReferralPartner>) => {
+    setReferralPartners(
+      referralPartners.map(partner => 
+        partner.id === id ? { ...partner, ...partnerUpdate } : partner
+      )
+    );
+  };
+  
+  const deleteReferralPartner = (id: string) => {
+    setReferralPartners(referralPartners.filter(partner => partner.id !== id));
+  };
+  
+  // Contact history methods
+  const addContactHistory = (contact: Omit<ContactHistory, "id">) => {
+    const newContact = {
+      ...contact,
+      id: `contact${contactHistory.length + 1}`
+    };
+    setContactHistory([...contactHistory, newContact]);
+  };
+  
+  const updateContactHistory = (id: string, contactUpdate: Partial<ContactHistory>) => {
+    setContactHistory(
+      contactHistory.map(contact => 
+        contact.id === id ? { ...contact, ...contactUpdate } : contact
+      )
+    );
+  };
+  
+  const deleteContactHistory = (id: string) => {
+    setContactHistory(contactHistory.filter(contact => contact.id !== id));
+  };
+  
+  const getLeadContactHistory = (leadId: string) => {
+    return contactHistory.filter(contact => contact.leadId === leadId)
+      .sort((a, b) => a.contactNumber - b.contactNumber);
   };
   
   // Client segment methods
@@ -453,6 +722,17 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         
         referralSources,
         updateReferralSources,
+        
+        referralPartners,
+        addReferralPartner,
+        updateReferralPartner,
+        deleteReferralPartner,
+        
+        contactHistory,
+        addContactHistory,
+        updateContactHistory,
+        deleteContactHistory,
+        getLeadContactHistory,
         
         clientSegments,
         addClientSegment,
