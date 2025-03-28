@@ -385,48 +385,50 @@ export default function DocumentationDashboard() {
               {viewMode === 'card' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                   {filteredDocuments.map((doc) => (
-                    <Card key={doc.id} className="overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer border-neutral-200 hover:border-primary-200" onClick={() => handleEditDocument(doc.id)}>
-                      <div className={`h-1.5 w-full ${
-                        doc.status === "Overdue" ? "bg-red-500" : 
-                        doc.status === "Due Today" ? "bg-amber-500" : 
-                        doc.status === "In Progress" ? "bg-blue-500" : 
-                        doc.status === "Complete" ? "bg-green-500" : 
-                        doc.status === "Signed" ? "bg-purple-500" : "bg-gray-500"}`}
-                      />
-                      <CardContent className="p-5">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-2 mb-3">
-                              {getDocTypeIcon(doc.type)}
-                              <span className="text-sm font-medium text-neutral-700">{doc.type}</span>
+                    <Link key={doc.id} href={`/documentation?docId=${doc.id}&type=${encodeURIComponent(doc.type)}&clientName=${encodeURIComponent(doc.clientName)}`} className="block">
+                      <Card className="overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer border-neutral-200 hover:border-primary-200">
+                        <div className={`h-1.5 w-full ${
+                          doc.status === "Overdue" ? "bg-red-500" : 
+                          doc.status === "Due Today" ? "bg-amber-500" : 
+                          doc.status === "In Progress" ? "bg-blue-500" : 
+                          doc.status === "Complete" ? "bg-green-500" : 
+                          doc.status === "Signed" ? "bg-purple-500" : "bg-gray-500"}`}
+                        />
+                        <CardContent className="p-5">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-3">
+                                {getDocTypeIcon(doc.type)}
+                                <span className="text-sm font-medium text-neutral-700">{doc.type}</span>
+                              </div>
+                              <h3 className="text-base font-semibold mb-1.5 text-neutral-900 group-hover:text-primary-700 transition-colors">{doc.clientName}</h3>
+                              <div className="flex items-center gap-2 text-xs text-neutral-600">
+                                <Calendar className="h-3.5 w-3.5 text-neutral-500" />
+                                <span>Session: {format(doc.sessionDate, "MMM d, yyyy")}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-neutral-600 mt-1">
+                                <Clock className="h-3.5 w-3.5 text-neutral-500" />
+                                <span className={doc.status === "Overdue" ? "text-red-600 font-medium" : ""}>
+                                  Due: {format(doc.dueDate, "MMM d, yyyy")}
+                                </span>
+                              </div>
                             </div>
-                            <h3 className="text-base font-semibold mb-1.5 text-neutral-900 group-hover:text-primary-700 transition-colors">{doc.clientName}</h3>
-                            <div className="flex items-center gap-2 text-xs text-neutral-600">
-                              <Calendar className="h-3.5 w-3.5 text-neutral-500" />
-                              <span>Session: {format(doc.sessionDate, "MMM d, yyyy")}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-neutral-600 mt-1">
-                              <Clock className="h-3.5 w-3.5 text-neutral-500" />
-                              <span className={doc.status === "Overdue" ? "text-red-600 font-medium" : ""}>
-                                Due: {format(doc.dueDate, "MMM d, yyyy")}
-                              </span>
+                            <Badge className={getStatusBadgeClass(doc.status)}>
+                              {doc.status}
+                            </Badge>
+                          </div>
+                          <div className="mt-4 pt-4 border-t border-neutral-200 flex justify-between items-center">
+                            <span className="text-xs text-neutral-600">Created {format(doc.createdDate, "MMM d, yyyy")}</span>
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="sm" className="h-8 text-primary-600">
+                                {doc.status === "Complete" || doc.status === "Signed" ? "View" : 
+                                doc.status === "In Progress" ? "Continue" : "Complete"}
+                              </Button>
                             </div>
                           </div>
-                          <Badge className={getStatusBadgeClass(doc.status)}>
-                            {doc.status}
-                          </Badge>
-                        </div>
-                        <div className="mt-4 pt-4 border-t border-neutral-200 flex justify-between items-center">
-                          <span className="text-xs text-neutral-600">Created {format(doc.createdDate, "MMM d, yyyy")}</span>
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="sm" className="h-8 text-primary-600">
-                              {doc.status === "Complete" || doc.status === "Signed" ? "View" : 
-                              doc.status === "In Progress" ? "Continue" : "Complete"}
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+                    </Link>
                   ))}
                   {filteredDocuments.length === 0 && (
                     <div className="col-span-full p-10 text-center bg-white rounded-lg border border-dashed border-neutral-300">
@@ -465,7 +467,7 @@ export default function DocumentationDashboard() {
                       <tbody className="bg-white divide-y divide-neutral-200">
                         {filteredDocuments.length > 0 ? (
                           filteredDocuments.map((doc) => (
-                            <tr key={doc.id} className="hover:bg-neutral-50">
+                            <tr key={doc.id} className="hover:bg-neutral-50 cursor-pointer" onClick={() => setLocation(`/documentation?docId=${doc.id}&type=${encodeURIComponent(doc.type)}&clientName=${encodeURIComponent(doc.clientName)}`)}>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-800">
                                 <div className="flex items-center">
                                   <User className="h-4 w-4 mr-2 text-neutral-500" />
@@ -494,15 +496,16 @@ export default function DocumentationDashboard() {
                                   {doc.status}
                                 </Badge>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <Button 
-                                  variant="ghost" 
-                                  className="text-primary-600 hover:text-primary-800"
-                                  onClick={() => handleEditDocument(doc.id)}
-                                >
-                                  {doc.status === "Complete" || doc.status === "Signed" ? "View" : 
-                                   doc.status === "In Progress" ? "Continue" : "Complete"}
-                                </Button>
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={(e) => e.stopPropagation()}>
+                                <Link href={`/documentation?docId=${doc.id}&type=${encodeURIComponent(doc.type)}&clientName=${encodeURIComponent(doc.clientName)}`}>
+                                  <Button 
+                                    variant="ghost" 
+                                    className="text-primary-600 hover:text-primary-800"
+                                  >
+                                    {doc.status === "Complete" || doc.status === "Signed" ? "View" : 
+                                    doc.status === "In Progress" ? "Continue" : "Complete"}
+                                  </Button>
+                                </Link>
                               </td>
                             </tr>
                           ))

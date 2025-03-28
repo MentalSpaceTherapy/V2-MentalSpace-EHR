@@ -144,11 +144,35 @@ export default function Documentation({ formType }: DocumentationProps) {
   const [currentForm, setCurrentForm] = useState<string | undefined>(undefined);
   
   // Effect to automatically open create dialog when navigated with create=true parameter
+  // Parse URL parameters for document selection and navigation
   useEffect(() => {
+    // Get all URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const docIdParam = params.get('docId');
+    const typeParam = params.get('type');
+    const clientNameParam = params.get('clientName');
+    
+    // Handle document creation dialog
     if (shouldOpenCreateDialog) {
       setIsCreateDialogOpen(true);
     }
-  }, [shouldOpenCreateDialog]);
+    
+    // Handle document opening when docId is provided
+    if (docIdParam) {
+      const docId = parseInt(docIdParam);
+      setActiveDocument(docId);
+      // If document exists in our store, open the form view
+      const doc = documents.find(d => d.id === docId);
+      if (doc) {
+        setViewMode('form');
+        setCurrentForm(doc.type.toLowerCase().replace(/\s+/g, '-'));
+        toast({
+          title: `Opening ${doc.type}`,
+          description: `Opening document for ${doc.clientName}...`,
+        });
+      }
+    }
+  }, [shouldOpenCreateDialog, documents, toast]);
   
   // Filter documents based on search query, status filter, and type filter
   const filteredDocuments = documents.filter(doc => {
@@ -441,7 +465,11 @@ export default function Documentation({ formType }: DocumentationProps) {
                           <tbody className="bg-white divide-y divide-neutral-200">
                             {filteredDocuments.length > 0 ? (
                               filteredDocuments.map((doc) => (
-                                <tr key={doc.id} className="hover:bg-neutral-50">
+                                <tr 
+                                  key={doc.id} 
+                                  className="hover:bg-neutral-50 cursor-pointer transition-colors duration-150"
+                                  onClick={() => handleEditDocument(doc.id)}
+                                >
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-800">
                                     <div className="flex items-center">
                                       <User className="h-4 w-4 mr-2 text-neutral-400" />
@@ -470,11 +498,14 @@ export default function Documentation({ formType }: DocumentationProps) {
                                       {doc.status}
                                     </Badge>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={(e) => e.stopPropagation()}>
                                     <Button 
                                       variant="link" 
                                       className="text-primary-600 hover:text-primary-800"
-                                      onClick={() => handleEditDocument(doc.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditDocument(doc.id);
+                                      }}
                                     >
                                       {doc.status === "Complete" || doc.status === "Signed" ? "View" : 
                                        doc.status === "In Progress" ? "Continue" : "Complete"}
@@ -545,7 +576,11 @@ export default function Documentation({ formType }: DocumentationProps) {
                           <tbody className="bg-white divide-y divide-neutral-200">
                             {filteredDocuments.length > 0 ? (
                               filteredDocuments.map((doc) => (
-                                <tr key={doc.id} className="hover:bg-neutral-50">
+                                <tr 
+                                  key={doc.id} 
+                                  className="hover:bg-neutral-50 cursor-pointer transition-colors duration-150"
+                                  onClick={() => handleEditDocument(doc.id)}
+                                >
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-800">
                                     <div className="flex items-center">
                                       <User className="h-4 w-4 mr-2 text-neutral-400" />
@@ -568,11 +603,14 @@ export default function Documentation({ formType }: DocumentationProps) {
                                       {doc.status}
                                     </Badge>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={(e) => e.stopPropagation()}>
                                     <Button 
                                       variant="link" 
                                       className="text-primary-600 hover:text-primary-800"
-                                      onClick={() => handleEditDocument(doc.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditDocument(doc.id);
+                                      }}
                                     >
                                       {doc.status === "Complete" || doc.status === "Signed" ? "View" : 
                                       doc.status === "In Progress" ? "Continue" : "Complete"}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { useLocation } from "wouter";
 import { 
   Card, 
@@ -411,11 +411,40 @@ export function ClientDetails(props: ClientDetailProps) {
     });
   };
 
-  const calculateAge = (dob?: Date | string) => {
+  const calculateAge = (dob?: Date | string | null) => {
     if (!dob) return "N/A";
-    const dobDate = dob instanceof Date ? dob : new Date(dob);
     
-    // Check if the date is valid
+    let dobDate: Date;
+    
+    // Handle different date formats
+    if (dob instanceof Date) {
+      dobDate = dob;
+    } else if (typeof dob === 'string') {
+      // Try parsing with Date constructor
+      dobDate = new Date(dob);
+      
+      // If invalid, try different formats
+      if (isNaN(dobDate.getTime())) {
+        // Try to parse ISO format specifically
+        try {
+          const parts = dob.split(/[-/]/);
+          if (parts.length === 3) {
+            // Assuming YYYY-MM-DD or MM/DD/YYYY format
+            const year = parts[0].length === 4 ? parseInt(parts[0]) : parseInt(parts[2]);
+            const month = parts[0].length === 4 ? parseInt(parts[1]) - 1 : parseInt(parts[0]) - 1;
+            const day = parts[0].length === 4 ? parseInt(parts[2]) : parseInt(parts[1]);
+            
+            dobDate = new Date(year, month, day);
+          }
+        } catch (e) {
+          return "N/A";
+        }
+      }
+    } else {
+      return "N/A";
+    }
+    
+    // Final check if the date is valid
     if (isNaN(dobDate.getTime())) return "N/A";
     
     const today = new Date();
@@ -458,6 +487,44 @@ export function ClientDetails(props: ClientDetailProps) {
         return "bg-amber-100 text-amber-800";
       default:
         return "bg-neutral-100 text-neutral-800";
+    }
+  };
+  
+  // Helper function to safely format dates that might be strings or Date objects
+  const safeFormatDate = (date: Date | string | null | undefined, formatString: string): string => {
+    if (!date) return "N/A";
+    
+    try {
+      // If it's already a Date object
+      if (date instanceof Date) {
+        return format(date, formatString);
+      }
+      
+      // If it's a string, try to parse it
+      if (typeof date === 'string') {
+        // Try standard Date constructor first
+        let parsedDate = new Date(date);
+        
+        // If that fails, try parseISO
+        if (isNaN(parsedDate.getTime())) {
+          try {
+            parsedDate = parseISO(date);
+          } catch (e) {
+            // If still failing, return N/A
+            return "N/A";
+          }
+        }
+        
+        // Final check if valid before formatting
+        if (isValid(parsedDate)) {
+          return format(parsedDate, formatString);
+        }
+      }
+      
+      return "N/A";
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return "N/A";
     }
   };
 
@@ -662,7 +729,7 @@ export function ClientDetails(props: ClientDetailProps) {
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <dt className="text-sm font-medium text-gray-500">Date of Birth</dt>
-                    <dd>{props.dateOfBirth ? format(new Date(props.dateOfBirth), "MMM d, yyyy") : "N/A"}</dd>
+                    <dd>{safeFormatDate(props.dateOfBirth, "MMM d, yyyy")}</dd>
                   </div>
                   
                   <div className="space-y-1">
