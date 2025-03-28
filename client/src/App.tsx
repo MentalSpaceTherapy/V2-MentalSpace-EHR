@@ -14,6 +14,14 @@ import Billing from "@/pages/billing";
 import Reports from "@/pages/reports";
 import Practice from "@/pages/practice";
 import { AuthProvider } from "@/hooks/use-auth";
+// CRM pages
+import CRMIndex from "@/pages/crm";
+import CRMDashboard from "@/pages/crm/dashboard";
+import CRMCampaigns from "@/pages/crm/campaigns";
+import CRMClientAcquisition from "@/pages/crm/client-acquisition";
+import CRMMarketing from "@/pages/crm/marketing";
+import CRMAnalytics from "@/pages/crm/analytics";
+import CRMEvents from "@/pages/crm/events";
 // Old mock auth provider - we're not using this anymore
 // import { AuthProvider as MockAuthProvider } from "@/hooks/use-auth";
 import { ProgressNoteForm } from "@/components/forms/ProgressNoteForm";
@@ -62,6 +70,16 @@ function Router() {
       
       <ProtectedRoute path="/scheduling" component={Scheduling} />
       <ProtectedRoute path="/messages" component={Messages} />
+      
+      {/* CRM routes */}
+      <ProtectedRoute path="/crm" component={CRMIndex} />
+      <ProtectedRoute path="/crm/dashboard" component={CRMDashboard} />
+      <ProtectedRoute path="/crm/campaigns" component={CRMCampaigns} />
+      <ProtectedRoute path="/crm/client-acquisition" component={CRMClientAcquisition} />
+      <ProtectedRoute path="/crm/marketing" component={CRMMarketing} />
+      <ProtectedRoute path="/crm/analytics" component={CRMAnalytics} />
+      <ProtectedRoute path="/crm/events" component={CRMEvents} />
+      
       <ProtectedRoute path="/billing" component={Billing} />
       <ProtectedRoute path="/reports" component={Reports} />
       <ProtectedRoute path="/practice" component={Practice} />

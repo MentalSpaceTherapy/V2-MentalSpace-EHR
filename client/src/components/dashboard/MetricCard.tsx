@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowUpIcon, ArrowDownIcon, Sparkles } from "lucide-react";
+import { ArrowUpIcon, ArrowDownIcon, Sparkles, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MetricCardProps {
@@ -9,13 +9,29 @@ interface MetricCardProps {
   change?: {
     value: string;
     positive: boolean;
-  };
+  } | number;
+  changeType?: 'positive' | 'negative' | 'neutral';
   icon: ReactNode;
   className?: string;
+  description?: string;
 }
 
-export function MetricCard({ title, value, change, icon, className }: MetricCardProps) {
+export function MetricCard({ title, value, change, changeType, icon, className, description }: MetricCardProps) {
   const hasGradient = className?.includes('bg-gradient');
+  
+  // Determine if change is positive, negative, or neutral based on changeType or change value
+  let isChangePositive = false;
+  let isChangeNeutral = false;
+  let changeValue = '';
+  
+  if (typeof change === 'number') {
+    isChangePositive = changeType === 'positive' || (changeType === undefined && change > 0);
+    isChangeNeutral = changeType === 'neutral' || change === 0;
+    changeValue = change > 0 ? `+${change}%` : `${change}%`;
+  } else if (change && 'value' in change) {
+    isChangePositive = change.positive;
+    changeValue = change.value;
+  }
   
   return (
     <Card className={cn("overflow-hidden transition-all duration-300 border-none dashboard-card metric-card", className)}>
@@ -45,9 +61,14 @@ export function MetricCard({ title, value, change, icon, className }: MetricCard
             )}>
               {value}
             </p>
+            {description && (
+              <p className="text-xs text-neutral-500 mt-0.5">{description}</p>
+            )}
             {change && (
               <div className="flex items-center mt-1.5">
-                {change.positive ? (
+                {isChangeNeutral ? (
+                  <Minus className={`h-4 w-4 mr-1 ${hasGradient ? "text-white text-opacity-80" : "text-neutral-500"}`} />
+                ) : isChangePositive ? (
                   <ArrowUpIcon className={`h-4 w-4 mr-1 ${hasGradient ? "text-white text-opacity-80" : "text-success-500"}`} />
                 ) : (
                   <ArrowDownIcon className={`h-4 w-4 mr-1 ${hasGradient ? "text-white text-opacity-80" : "text-error-500"}`} />
@@ -56,12 +77,13 @@ export function MetricCard({ title, value, change, icon, className }: MetricCard
                   hasGradient 
                     ? "text-white text-opacity-90" 
                     : {
-                        "text-success-500": change.positive,
-                        "text-error-500": !change.positive,
-                        "text-warning-500": title === "Pending Notes" && !change.positive
+                        "text-success-500": isChangePositive && !isChangeNeutral,
+                        "text-error-500": !isChangePositive && !isChangeNeutral,
+                        "text-neutral-500": isChangeNeutral,
+                        "text-warning-500": title === "Pending Notes" && !isChangePositive
                       }
                 )}>
-                  {change.value}
+                  {changeValue}
                 </span>
               </div>
             )}

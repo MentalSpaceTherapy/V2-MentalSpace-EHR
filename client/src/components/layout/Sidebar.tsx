@@ -8,7 +8,8 @@ import {
   MessageSquare, DollarSign, BarChart2, Building, 
   MoreVertical, ChevronRight, Brain, Sparkles,
   FileSignature, ClipboardCheck, FilePlus, FileClock,
-  FileSpreadsheet, Phone, FileQuestion, ChevronDown, Plus
+  FileSpreadsheet, Phone, FileQuestion, ChevronDown, Plus,
+  BarChart, Target, LineChart, UserPlus, AtSign
 } from "lucide-react";
 import {
   Collapsible,
@@ -20,8 +21,8 @@ interface SidebarProps {
   className?: string;
 }
 
-// Documentation submenu type
-interface DocumentType {
+// Submenu type for documentation and CRM
+interface SubMenuItemType {
   name: string;
   href: string;
   icon: React.ElementType;
@@ -33,13 +34,19 @@ export function Sidebar({ className }: SidebarProps) {
   const [mounted, setMounted] = useState(false);
   const [openDocumentMenu, setOpenDocumentMenu] = useState(false);
 
+  // States for submenus
+  const [openCrmMenu, setOpenCrmMenu] = useState(false);
+  
   // Get whether the current path starts with a specific prefix
   const isPathActive = (prefix: string) => location.startsWith(prefix);
 
-  // Check if we're on any documentation page to keep menu open
+  // Check if we're on any documentation or CRM page to keep menu open
   useEffect(() => {
     if (isPathActive('/documentation')) {
       setOpenDocumentMenu(true);
+    }
+    if (isPathActive('/crm')) {
+      setOpenCrmMenu(true);
     }
   }, [location]);
 
@@ -48,7 +55,7 @@ export function Sidebar({ className }: SidebarProps) {
   }, []);
 
   // Documentation submenu items
-  const documentTypes: DocumentType[] = [
+  const documentTypes: SubMenuItemType[] = [
     { name: "Dashboard", href: "/documentation/dashboard", icon: LayoutDashboard },
     { name: "Intake Forms", href: "/documentation/intake", icon: FilePlus },
     { name: "Progress Notes", href: "/documentation/progress-notes", icon: FileSignature },
@@ -58,6 +65,16 @@ export function Sidebar({ className }: SidebarProps) {
     { name: "Consultations", href: "/documentation/consultations", icon: FileSpreadsheet },
     { name: "Miscellaneous", href: "/documentation/miscellaneous", icon: FileQuestion },
   ];
+  
+  // CRM submenu items
+  const crmTypes: SubMenuItemType[] = [
+    { name: "Dashboard", href: "/crm/dashboard", icon: LayoutDashboard },
+    { name: "Campaigns", href: "/crm/campaigns", icon: Target },
+    { name: "Client Acquisition", href: "/crm/client-acquisition", icon: UserPlus },
+    { name: "Marketing", href: "/crm/marketing", icon: AtSign },
+    { name: "Analytics", href: "/crm/analytics", icon: LineChart },
+    { name: "Events", href: "/crm/events", icon: Calendar },
+  ];
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -66,10 +83,23 @@ export function Sidebar({ className }: SidebarProps) {
       name: "Documentation", 
       href: "/documentation", 
       icon: FileText,
-      hasSubmenu: true 
+      hasSubmenu: true,
+      submenuItems: documentTypes,
+      openState: openDocumentMenu,
+      setOpenState: setOpenDocumentMenu
     },
     { name: "Scheduling", href: "/scheduling", icon: Calendar },
     { name: "Messages", href: "/messages", icon: MessageSquare, badge: 3 },
+    { 
+      name: "CRM & Marketing", 
+      href: "/crm", 
+      icon: Target,
+      hasSubmenu: true,
+      submenuItems: crmTypes,
+      openState: openCrmMenu,
+      setOpenState: setOpenCrmMenu,
+      new: true // Show as new feature
+    },
     { name: "Billing", href: "/billing", icon: DollarSign },
     { name: "Reports", href: "/reports", icon: BarChart2 },
     { name: "Practice Mgmt", href: "/practice", icon: Building },
@@ -111,7 +141,12 @@ export function Sidebar({ className }: SidebarProps) {
                 const Icon = item.icon;
                 
                 if (item.hasSubmenu) {
-                  // Special handling for Documentation with submenu
+                  const isDocumentation = item.name === "Documentation";
+                  const isNewItem = item.new === true;
+                  const submenuItems = item.submenuItems || [];
+                  const menuOpenState = item.openState;
+                  const setMenuOpenState = item.setOpenState;
+                  
                   return (
                     <li 
                       key={item.name}
@@ -121,8 +156,8 @@ export function Sidebar({ className }: SidebarProps) {
                       className={mounted ? "animate-slide-up" : "opacity-0"}
                     >
                       <Collapsible
-                        open={openDocumentMenu}
-                        onOpenChange={setOpenDocumentMenu}
+                        open={menuOpenState}
+                        onOpenChange={setMenuOpenState}
                         className="w-full"
                       >
                         <CollapsibleTrigger className="w-full text-left">
@@ -143,55 +178,64 @@ export function Sidebar({ className }: SidebarProps) {
                             )}>
                               <Icon className="h-5 w-5" />
                             </div>
-                            <span className="font-medium">{item.name}</span>
+                            <div className="flex items-center">
+                              <span className="font-medium">{item.name}</span>
+                              {isNewItem && (
+                                <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-green-100 text-green-800 rounded-sm font-medium">
+                                  NEW
+                                </span>
+                              )}
+                            </div>
                             <ChevronDown className={cn(
                               "ml-auto h-4 w-4 transition-transform duration-200",
-                              openDocumentMenu ? "transform rotate-180" : "",
+                              menuOpenState ? "transform rotate-180" : "",
                               isActive ? "text-primary-500" : "text-neutral-400"
                             )} />
                           </div>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="pl-11 mt-0.5 animate-slide-down">
                           <ul className="space-y-1 border-l-2 border-primary-100 ml-1 pl-2">
-                            {documentTypes.map((docType, docIndex) => {
-                              const isDocActive = location === docType.href;
-                              const DocIcon = docType.icon;
+                            {submenuItems.map((subItem, subIndex) => {
+                              const isSubItemActive = location === subItem.href;
+                              const SubItemIcon = subItem.icon;
                               
                               return (
-                                <li key={docType.name} className="py-0.5">
+                                <li key={subItem.name} className="py-0.5">
                                   <div className="flex items-center space-x-2">
-                                    <Link href={docType.href}>
+                                    <Link href={subItem.href}>
                                       <a
                                         className={cn(
                                           "flex items-center px-3 py-2 rounded-lg transition-all duration-200 text-sm flex-1",
                                           "hover:bg-primary-50 group",
-                                          isDocActive 
+                                          isSubItemActive 
                                             ? "bg-primary-50 text-primary-700 shadow-sm" 
                                             : "text-neutral-500"
                                         )}
                                       >
-                                        <DocIcon className={cn(
+                                        <SubItemIcon className={cn(
                                           "h-4 w-4 mr-2",
-                                          isDocActive ? "text-primary-600" : "text-neutral-400 group-hover:text-primary-500"
+                                          isSubItemActive ? "text-primary-600" : "text-neutral-400 group-hover:text-primary-500"
                                         )} />
                                         <span className={cn(
-                                          isDocActive ? "font-medium" : "font-normal"
+                                          isSubItemActive ? "font-medium" : "font-normal"
                                         )}>
-                                          {docType.name}
+                                          {subItem.name}
                                         </span>
-                                        {isDocActive && (
+                                        {isSubItemActive && (
                                           <div className="ml-auto h-2 w-2 rounded-full bg-primary-500"></div>
                                         )}
                                       </a>
                                     </Link>
-                                    <Link href={`${docType.href}?create=true`}>
-                                      <a
-                                        className="p-1.5 rounded-md text-neutral-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-                                        title={`Create New ${docType.name}`}
-                                      >
-                                        <Plus className="h-3.5 w-3.5" />
-                                      </a>
-                                    </Link>
+                                    {isDocumentation && (
+                                      <Link href={`${subItem.href}?create=true`}>
+                                        <a
+                                          className="p-1.5 rounded-md text-neutral-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                                          title={`Create New ${subItem.name}`}
+                                        >
+                                          <Plus className="h-3.5 w-3.5" />
+                                        </a>
+                                      </Link>
+                                    )}
                                   </div>
                                 </li>
                               );
@@ -254,7 +298,7 @@ export function Sidebar({ className }: SidebarProps) {
           <div className="border-t border-neutral-100 p-4 mx-3 my-3 bg-gradient-to-r from-primary-50 to-white rounded-xl card-transition">
             <div className="flex items-center">
               <Avatar className="border-2 border-white shadow-md hover-lift">
-                <AvatarImage src={user.profileImageUrl} />
+                <AvatarImage src={user.profileImageUrl || undefined} />
                 <AvatarFallback className="bg-gradient-purple text-white">
                   {`${user.firstName[0]}${user.lastName[0]}`}
                 </AvatarFallback>
