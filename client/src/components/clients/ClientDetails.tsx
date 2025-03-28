@@ -88,14 +88,14 @@ interface ClientDetailProps {
   lastName: string;
   middleName?: string;
   preferredName?: string;
-  dateOfBirth?: Date;
-  email?: string;
-  phone?: string;
+  dateOfBirth?: Date | string | null;
+  email?: string | null;
+  phone?: string | null;
   mobilePhone?: string;
   homePhone?: string;
   workPhone?: string;
   otherPhone?: string;
-  address?: string;
+  address?: string | null;
   address1?: string;
   address2?: string;
   city?: string;
@@ -133,12 +133,12 @@ interface ClientDetailProps {
   privateNotes?: string;
   balance?: number;
   lastPaymentAmount?: number;
-  lastPaymentDate?: Date;
-  lastSession?: Date;
-  nextSession?: Date | null;
+  lastPaymentDate?: Date | string;
+  lastSession?: Date | string | null;
+  nextSession?: Date | string | null;
   therapistId?: number;
   therapistName?: string;
-  createdAt?: Date;
+  createdAt?: Date | string;
   sessionsAttended?: number;
   preferredPronouns?: string;
   onClose: () => void;
@@ -411,13 +411,18 @@ export function ClientDetails(props: ClientDetailProps) {
     });
   };
 
-  const calculateAge = (dob?: Date) => {
+  const calculateAge = (dob?: Date | string) => {
     if (!dob) return "N/A";
-    const today = new Date();
-    let age = today.getFullYear() - dob.getFullYear();
-    const monthDiff = today.getMonth() - dob.getMonth();
+    const dobDate = dob instanceof Date ? dob : new Date(dob);
     
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    // Check if the date is valid
+    if (isNaN(dobDate.getTime())) return "N/A";
+    
+    const today = new Date();
+    let age = today.getFullYear() - dobDate.getFullYear();
+    const monthDiff = today.getMonth() - dobDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDate.getDate())) {
       age--;
     }
     
@@ -592,7 +597,7 @@ export function ClientDetails(props: ClientDetailProps) {
               {props.nextSession && (
                 <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">
                   <Calendar className="mr-1 h-3 w-3" />
-                  Next: {format(props.nextSession, "MMM d")}
+                  Next: {format(new Date(props.nextSession), "MMM d")}
                 </Badge>
               )}
             </div>
@@ -657,7 +662,7 @@ export function ClientDetails(props: ClientDetailProps) {
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <dt className="text-sm font-medium text-gray-500">Date of Birth</dt>
-                    <dd>{props.dateOfBirth ? format(props.dateOfBirth, "MMM d, yyyy") : "N/A"}</dd>
+                    <dd>{props.dateOfBirth ? format(new Date(props.dateOfBirth), "MMM d, yyyy") : "N/A"}</dd>
                   </div>
                   
                   <div className="space-y-1">
@@ -896,7 +901,7 @@ export function ClientDetails(props: ClientDetailProps) {
                     </div>
                     <div className="text-sm">
                       <p className="font-medium">Client Since</p>
-                      <p className="text-gray-600">{props.createdAt ? format(props.createdAt, "MMMM d, yyyy") : "Unknown"}</p>
+                      <p className="text-gray-600">{props.createdAt ? format(new Date(props.createdAt), "MMMM d, yyyy") : "Unknown"}</p>
                     </div>
                   </div>
                   
@@ -905,8 +910,8 @@ export function ClientDetails(props: ClientDetailProps) {
                     <div className="text-sm font-medium text-gray-500 mb-2">Next Appointment</div>
                     {props.nextSession ? (
                       <div className="text-sm">
-                        <p className="font-medium">{format(props.nextSession, "EEEE, MMMM d")}</p>
-                        <p className="text-gray-600">{format(props.nextSession, "h:mm a")} - Individual Therapy</p>
+                        <p className="font-medium">{format(new Date(props.nextSession), "EEEE, MMMM d")}</p>
+                        <p className="text-gray-600">{format(new Date(props.nextSession), "h:mm a")} - Individual Therapy</p>
                       </div>
                     ) : (
                       <div className="text-sm text-gray-600">No upcoming appointments</div>
@@ -920,7 +925,7 @@ export function ClientDetails(props: ClientDetailProps) {
                     <div className="text-xs text-gray-500 mt-1">Total sessions attended</div>
                     {props.lastSession && (
                       <div className="text-xs text-gray-500 mt-1">
-                        Last: {format(props.lastSession, "MMM d, yyyy")}
+                        Last: {format(new Date(props.lastSession), "MMM d, yyyy")}
                       </div>
                     )}
                   </div>
@@ -1024,7 +1029,7 @@ export function ClientDetails(props: ClientDetailProps) {
                 <div className="bg-white p-4 rounded-md border border-gray-200">
                   <div className="text-sm text-gray-500 mb-1">Last Session</div>
                   <div className="text-sm font-medium">
-                    {props.lastSession ? format(props.lastSession, "MMM d, yyyy") : "N/A"}
+                    {props.lastSession ? format(new Date(props.lastSession), "MMM d, yyyy") : "N/A"}
                   </div>
                 </div>
               </div>
@@ -1040,7 +1045,7 @@ export function ClientDetails(props: ClientDetailProps) {
                       <div>
                         <h3 className="font-medium text-blue-800">Upcoming Appointment</h3>
                         <p className="text-sm text-blue-700">
-                          {format(props.nextSession, "EEEE, MMMM d, yyyy")} at {format(props.nextSession, "h:mm a")} - Individual Therapy
+                          {format(new Date(props.nextSession), "EEEE, MMMM d, yyyy")} at {format(new Date(props.nextSession), "h:mm a")} - Individual Therapy
                         </p>
                       </div>
                     </div>
@@ -1087,7 +1092,7 @@ export function ClientDetails(props: ClientDetailProps) {
                       {sessionsData.map((session) => (
                         <tr key={session.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {format(session.date, "MMM d, yyyy")} at {format(session.date, "h:mm a")}
+                            {format(new Date(session.date), "MMM d, yyyy")} at {format(new Date(session.date), "h:mm a")}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {session.type}
@@ -1314,7 +1319,7 @@ export function ClientDetails(props: ClientDetailProps) {
                                 {doc.type}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {format(doc.date, "MMM d, yyyy")}
+                                {format(new Date(doc.date), "MMM d, yyyy")}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {doc.author}
@@ -1538,7 +1543,7 @@ export function ClientDetails(props: ClientDetailProps) {
                     ${props.lastPaymentAmount?.toFixed(2) || '0.00'}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {props.lastPaymentDate ? format(props.lastPaymentDate, "MMM d, yyyy") : "No payments"}
+                    {props.lastPaymentDate ? format(new Date(props.lastPaymentDate), "MMM d, yyyy") : "No payments"}
                   </div>
                 </div>
                 
@@ -1598,7 +1603,7 @@ export function ClientDetails(props: ClientDetailProps) {
                             {paymentsData.map((payment) => (
                               <tr key={payment.id} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {format(payment.date, "MMM d, yyyy")}
+                                  {format(new Date(payment.date), "MMM d, yyyy")}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                   {payment.description}

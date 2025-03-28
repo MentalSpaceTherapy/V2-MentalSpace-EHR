@@ -189,14 +189,71 @@ export default function Clients() {
   const [selectedClient, setSelectedClient] = useState<ExtendedClientData | null>(null);
   
   // Define a more flexible client type to handle properties that might not exist in the database schema
-  interface ExtendedClientData extends Client {
-    // Additional properties that might be returned from the API but aren't in the DB schema
+  // Override the Client type with more flexible date handling for API responses
+  interface ExtendedClientData {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    phone: string | null;
+    status: string;
+    address: string | null;
+    primaryTherapistId: number | null;
+    // Modified to handle string dates from API
+    dateOfBirth?: Date | string | null;
+    // Additional properties that might be returned from the API
     lastSession?: Date | string | null;
     nextSession?: Date | string | null;
     balance?: number;
     therapistName?: string;
     sessionsAttended?: number;
     // Add any other fields that might be used in the UI
+    middleName?: string;
+    preferredName?: string;
+    mobilePhone?: string;
+    homePhone?: string;
+    workPhone?: string;
+    otherPhone?: string;
+    address1?: string;
+    address2?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    timeZone?: string;
+    administrativeSex?: "male" | "female" | "unknown";
+    genderIdentity?: string;
+    sexualOrientation?: string;
+    race?: string;
+    ethnicity?: string;
+    language?: string;
+    maritalStatus?: string;
+    employment?: string;
+    referralSource?: string;
+    emergencyContactName?: string;
+    emergencyContactPhone?: string;
+    emergencyContactRelationship?: string;
+    insuranceProvider?: string;
+    insurancePolicyNumber?: string;
+    insuranceGroupNumber?: string;
+    insuranceCopay?: string;
+    insuranceDeductible?: string;
+    responsibleParty?: string;
+    diagnosisCodes?: string[];
+    medicationList?: string;
+    allergies?: string;
+    smokingStatus?: string;
+    hipaaConsentSigned?: boolean;
+    consentForTreatmentSigned?: boolean;
+    consentForCommunication?: string[];
+    notes?: string;
+    billingNotes?: string;
+    privateNotes?: string;
+    lastPaymentAmount?: number;
+    lastPaymentDate?: Date | string;
+    emergencyContacts?: any[];
+    insuranceInformation?: any[];
+    paymentCards?: any[];
+    preferredPronouns?: string;
   }
   
   // Fetch clients from API
@@ -375,7 +432,7 @@ export default function Clients() {
           
           <div className="p-6 bg-neutral-50 min-h-screen">
             <ClientDetails 
-              {...selectedClient}
+              {...selectedClient as any}
               onClose={() => setIsDetailsOpen(false)}
               onEdit={handleClientUpdate}
             />
@@ -616,7 +673,7 @@ export default function Clients() {
             </DialogDescription>
           </DialogHeader>
           <ClientForm 
-            client={selectedClient} 
+            client={selectedClient || undefined} 
             onClose={() => setIsFormOpen(false)}
             onSubmit={handleClientFormSubmit}
           />

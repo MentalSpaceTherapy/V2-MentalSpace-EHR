@@ -100,7 +100,7 @@ const clientSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   middleName: z.string().optional().or(z.literal("")),
   preferredName: z.string().optional().or(z.literal("")),
-  dateOfBirth: z.date().optional(),
+  dateOfBirth: z.date().optional().or(z.string()).nullable(),
   administrativeSex: z.enum(["male", "female", "unknown"]).optional(),
   genderIdentity: z.string().optional().or(z.literal("")),
   sexualOrientation: z.string().optional().or(z.literal("")),
@@ -173,8 +173,10 @@ type ClientFormValues = z.infer<typeof clientSchema>;
 interface ClientFormProps {
   client?: Partial<ClientFormValues> & { 
     id?: number;
-    phone?: string; 
-    address?: string;
+    phone?: string | null; 
+    address?: string | null;
+    email?: string | null;
+    dateOfBirth?: Date | string | null;
   };
   onClose: () => void;
   onSubmit: (data: ClientFormValues) => void;
@@ -493,7 +495,7 @@ export function ClientForm({ client, onClose, onSubmit, isLoading = false }: Cli
                           <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                               mode="single"
-                              selected={field.value}
+                              selected={field.value ? new Date(field.value) : undefined}
                               onSelect={field.onChange}
                               disabled={(date) =>
                                 date > new Date() || date < new Date("1900-01-01")
