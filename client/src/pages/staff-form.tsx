@@ -1,10 +1,10 @@
 import React from "react";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { TopBar } from "@/components/layout/TopBar";
-import { LoginForm } from "@/components/auth/LoginForm";
-import { useAuth } from "@/hooks/use-auth";
-import { StaffForm as StaffFormComponent } from "@/components/practice/StaffForm";
-import { useToast } from "@/hooks/use-toast";
+import { Sidebar } from "../components/layout/Sidebar";
+import { TopBar } from "../components/layout/TopBar";
+import { LoginForm } from "../components/auth/LoginForm";
+import { useAuth } from "../hooks/use-auth";
+import { StaffForm as StaffFormComponent } from "../components/practice/StaffForm";
+import { useToast } from "../hooks/use-toast";
 import { useLocation } from "wouter";
 
 export default function StaffFormPage() {
