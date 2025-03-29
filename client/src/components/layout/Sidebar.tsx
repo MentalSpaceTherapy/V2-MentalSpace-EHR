@@ -210,38 +210,40 @@ export function Sidebar({ className }: SidebarProps) {
                               return (
                                 <li key={subItem.name} className="py-0.5">
                                   <div className="flex items-center space-x-2">
-                                    <Link href={subItem.href}>
-                                      <a
-                                        className={cn(
-                                          "flex items-center px-3 py-2 rounded-lg transition-all duration-200 text-sm flex-1",
-                                          "hover:bg-primary-50 group",
-                                          isSubItemActive 
-                                            ? "bg-primary-50 text-primary-700 shadow-sm" 
-                                            : "text-neutral-500"
-                                        )}
-                                      >
-                                        <SubItemIcon className={cn(
-                                          "h-4 w-4 mr-2",
-                                          isSubItemActive ? "text-primary-600" : "text-neutral-400 group-hover:text-primary-500"
-                                        )} />
-                                        <span className={cn(
-                                          isSubItemActive ? "font-medium" : "font-normal"
-                                        )}>
-                                          {subItem.name}
-                                        </span>
-                                        {isSubItemActive && (
-                                          <div className="ml-auto h-2 w-2 rounded-full bg-primary-500"></div>
-                                        )}
-                                      </a>
-                                    </Link>
+                                    <div className="flex-1">
+                                      <Link href={subItem.href}>
+                                        <div
+                                          className={cn(
+                                            "flex items-center px-3 py-2 rounded-lg transition-all duration-200 text-sm",
+                                            "hover:bg-primary-50 group",
+                                            isSubItemActive 
+                                              ? "bg-primary-50 text-primary-700 shadow-sm" 
+                                              : "text-neutral-500"
+                                          )}
+                                        >
+                                          <SubItemIcon className={cn(
+                                            "h-4 w-4 mr-2",
+                                            isSubItemActive ? "text-primary-600" : "text-neutral-400 group-hover:text-primary-500"
+                                          )} />
+                                          <span className={cn(
+                                            isSubItemActive ? "font-medium" : "font-normal"
+                                          )}>
+                                            {subItem.name}
+                                          </span>
+                                          {isSubItemActive && (
+                                            <div className="ml-auto h-2 w-2 rounded-full bg-primary-500"></div>
+                                          )}
+                                        </div>
+                                      </Link>
+                                    </div>
                                     {isDocumentation && (
                                       <Link href={`${subItem.href}?create=true`}>
-                                        <a
-                                          className="p-1.5 rounded-md text-neutral-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                                        <div
+                                          className="p-1.5 rounded-md text-neutral-400 hover:text-primary-600 hover:bg-primary-50 transition-colors cursor-pointer"
                                           title={`Create New ${subItem.name}`}
                                         >
                                           <Plus className="h-3.5 w-3.5" />
-                                        </a>
+                                        </div>
                                       </Link>
                                     )}
                                   </div>
@@ -262,7 +264,7 @@ export function Sidebar({ className }: SidebarProps) {
                     className="opacity-100" // Remove animation for immediate visibility
                   >
                     <Link href={item.href}>
-                      <a
+                      <div
                         className={cn(
                           "flex items-center px-3 py-3 rounded-xl transition-all duration-200",
                           "hover:bg-primary-50 cursor-pointer group",
@@ -289,7 +291,7 @@ export function Sidebar({ className }: SidebarProps) {
                           "ml-auto h-4 w-4 opacity-0 -translate-x-2 transition-all duration-200", 
                           isActive ? "opacity-100 translate-x-0 text-primary-500" : "group-hover:opacity-70 group-hover:translate-x-0 text-neutral-400"
                         )} />
-                      </a>
+                      </div>
                     </Link>
                   </li>
                 );
@@ -303,30 +305,30 @@ export function Sidebar({ className }: SidebarProps) {
           <div className="border-t border-neutral-100 p-4 mx-3 my-3 bg-gradient-to-r from-primary-50 to-white rounded-xl card-transition">
             <div className="flex items-center">
               <Link href="/settings/profile">
-                <a className="flex-shrink-0">
-                  <Avatar className="border-2 border-white shadow-md hover-lift cursor-pointer">
+                <div className="flex-shrink-0 cursor-pointer">
+                  <Avatar className="border-2 border-white shadow-md hover-lift">
                     <AvatarImage src={user.profileImageUrl || undefined} />
                     <AvatarFallback className="bg-gradient-purple text-white">
                       {`${user.firstName[0]}${user.lastName[0]}`}
                     </AvatarFallback>
                   </Avatar>
-                </a>
+                </div>
               </Link>
               <div className="ml-3">
                 <Link href="/settings/profile">
-                  <a className="hover:text-primary-700 transition-colors">
+                  <div className="hover:text-primary-700 transition-colors cursor-pointer">
                     <p className="text-sm font-semibold text-neutral-800">
                       Dr. {user.firstName} {user.lastName}
                     </p>
                     <p className="text-xs text-primary-600">{user.licenseType}</p>
-                  </a>
+                  </div>
                 </Link>
               </div>
               <div className="ml-auto flex gap-1">
                 <Link href="/settings/profile">
-                  <a className="text-neutral-400 hover:text-primary-600 p-1 rounded-full hover:bg-primary-50 transition-colors">
+                  <div className="text-neutral-400 hover:text-primary-600 p-1 rounded-full hover:bg-primary-50 transition-colors cursor-pointer">
                     <UserIcon className="h-4 w-4" />
-                  </a>
+                  </div>
                 </Link>
                 <button 
                   onClick={() => {
