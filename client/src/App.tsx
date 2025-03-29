@@ -5,6 +5,9 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard"; // Using our updated dashboard
 import AuthPage from "@/pages/auth-page";
+import PasswordResetPage from "@/pages/password-reset";
+import PracticeRegistrationPage from "@/pages/practice-registration";
+import ProfileSettingsPage from "@/pages/settings/profile";
 import Clients from "@/pages/clients";
 import Documentation from "@/pages/documentation";
 import DocumentationDashboard from "@/pages/documentation-dashboard";
@@ -63,6 +66,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
+      <Route path="/password-reset" component={PasswordResetPage} />
+      <Route path="/practice-registration" component={PracticeRegistrationPage} />
+      <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/clients" component={Clients} />
       <ProtectedRoute path="/clients/:id" component={Clients} />

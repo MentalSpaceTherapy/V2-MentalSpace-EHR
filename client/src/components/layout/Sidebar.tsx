@@ -9,7 +9,8 @@ import {
   MoreVertical, ChevronRight, Brain, Sparkles,
   FileSignature, ClipboardCheck, FilePlus, FileClock,
   FileSpreadsheet, Phone, FileQuestion, ChevronDown, Plus,
-  BarChart, Target, LineChart, UserPlus, AtSign, Share2
+  BarChart, Target, LineChart, UserPlus, AtSign, Share2,
+  User as UserIcon
 } from "lucide-react";
 import {
   Collapsible,
@@ -299,21 +300,41 @@ export function Sidebar({ className }: SidebarProps) {
         {user && (
           <div className="border-t border-neutral-100 p-4 mx-3 my-3 bg-gradient-to-r from-primary-50 to-white rounded-xl card-transition">
             <div className="flex items-center">
-              <Avatar className="border-2 border-white shadow-md hover-lift">
-                <AvatarImage src={user.profileImageUrl || undefined} />
-                <AvatarFallback className="bg-gradient-purple text-white">
-                  {`${user.firstName[0]}${user.lastName[0]}`}
-                </AvatarFallback>
-              </Avatar>
+              <Link href="/settings/profile">
+                <a className="flex-shrink-0">
+                  <Avatar className="border-2 border-white shadow-md hover-lift cursor-pointer">
+                    <AvatarImage src={user.profileImageUrl || undefined} />
+                    <AvatarFallback className="bg-gradient-purple text-white">
+                      {`${user.firstName[0]}${user.lastName[0]}`}
+                    </AvatarFallback>
+                  </Avatar>
+                </a>
+              </Link>
               <div className="ml-3">
-                <p className="text-sm font-semibold text-neutral-800">
-                  Dr. {user.firstName} {user.lastName}
-                </p>
-                <p className="text-xs text-primary-600">{user.licenseType}</p>
+                <Link href="/settings/profile">
+                  <a className="hover:text-primary-700 transition-colors">
+                    <p className="text-sm font-semibold text-neutral-800">
+                      Dr. {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-xs text-primary-600">{user.licenseType}</p>
+                  </a>
+                </Link>
               </div>
-              <button className="ml-auto text-neutral-400 hover:text-primary-600 p-1 rounded-full hover:bg-primary-50 transition-colors">
-                <MoreVertical className="h-4 w-4" />
-              </button>
+              <div className="ml-auto flex gap-1">
+                <Link href="/settings/profile">
+                  <a className="text-neutral-400 hover:text-primary-600 p-1 rounded-full hover:bg-primary-50 transition-colors">
+                    <UserIcon className="h-4 w-4" />
+                  </a>
+                </Link>
+                <button 
+                  onClick={() => {
+                    // Add logout functionality later
+                  }}
+                  className="text-neutral-400 hover:text-primary-600 p-1 rounded-full hover:bg-primary-50 transition-colors"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         )}

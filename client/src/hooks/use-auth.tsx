@@ -32,6 +32,18 @@ type RegisterData = {
   licenseType?: string;
   licenseNumber?: string;
   profileImageUrl?: string;
+  practiceMetadata?: {
+    practiceName?: string;
+    practiceType?: string;
+    specialties?: string[];
+    practicePhone?: string;
+    practiceAddress?: string;
+    practiceWebsite?: string;
+    practiceSize?: string;
+    acceptingNewClients?: boolean;
+    insuranceAccepted?: string[];
+    practiceDescription?: string;
+  };
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);

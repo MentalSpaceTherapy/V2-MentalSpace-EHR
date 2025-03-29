@@ -92,6 +92,19 @@ export default function AuthPage() {
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
+            <div className="text-center text-sm mb-4">
+              <span className="text-muted-foreground">Registering a new practice? </span>
+              <a
+                href="/practice-registration"
+                className="text-primary hover:underline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setLocation("/practice-registration");
+                }}
+              >
+                Start here
+              </a>
+            </div>
             
             {/* Login Tab */}
             <TabsContent value="login">
@@ -121,7 +134,14 @@ export default function AuthPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password">Password</Label>
-                      <a href="#" className="text-xs text-primary hover:underline">
+                      <a
+                        href="/password-reset"
+                        className="text-xs text-primary hover:underline"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setLocation("/password-reset");
+                        }}
+                      >
                         Forgot password?
                       </a>
                     </div>
