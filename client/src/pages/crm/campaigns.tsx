@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import EmailCampaigns from "@/components/crm/EmailCampaigns";
+import { Breadcrumbs } from "@/components/ui/breadcrumb";
 import {
   Card,
   CardContent,
@@ -187,6 +188,12 @@ export default function CRMCampaigns() {
         <TopBar title="Marketing Campaigns" />
         
         <div className="container p-6 max-w-7xl mx-auto">
+          <Breadcrumbs 
+            items={[
+              { label: "CRM", href: "/crm" },
+              { label: "Campaigns", href: "/crm/campaigns" }
+            ]}
+          />
           <div className="flex justify-between items-center mb-8">
             <div>
               <h1 className="text-3xl font-bold text-neutral-900">Marketing Campaigns</h1>
