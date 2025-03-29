@@ -6,7 +6,8 @@ import {
   clients, 
   leads, 
   referralSources, 
-  eventRegistrations
+  eventRegistrations,
+  type ContactHistoryRecord
 } from '../shared/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { exec } from 'child_process';
@@ -81,15 +82,14 @@ async function migrateCrmData() {
     
     for (const client of clientRecords) {
       // Try to find a contact history record for this client with a campaign ID
-      const [contactRecord] = await db.select()
+      const contactHistoryRecords = await db.select()
         .from(contactHistory)
         .where(
-          and(
-            eq(contactHistory.clientId, client.id),
-            isNull(contactHistory.campaignId).not()
-          )
-        )
-        .limit(1);
+          eq(contactHistory.clientId, client.id)
+        );
+        
+      // Filter to only those with campaign IDs
+      const contactRecord = contactHistoryRecords.find(record => record.campaignId !== null);
       
       if (contactRecord && contactRecord.campaignId) {
         console.log(`Connecting client #${client.id} to original marketing campaign #${contactRecord.campaignId}`);
@@ -142,24 +142,24 @@ async function migrateCrmData() {
     
     // 4. Add email tracking info to contact history where there's a campaign connection
     console.log('Updating contact history with email tracking information...');
-    const campaignConnectedRecords = await db.select()
-      .from(contactHistory)
-      .where(isNull(contactHistory.campaignId).not());
+    const allContactRecords = await db.select().from(contactHistory);
+    // Filter for records that have a campaign ID
+    const campaignConnectedRecords = allContactRecords.filter(record => record.campaignId !== null);
     
     for (const record of campaignConnectedRecords) {
       // Only update email-related contact records that don't have tracking info yet
       if (
         record.contactType?.toLowerCase().includes('email') && 
-        (record.emailStatus === null || record.emailOpened === null)
+        !record.emailOpened
       ) {
         console.log(`Adding email tracking info to contact history #${record.id}`);
         
         try {
           await db.update(contactHistory)
             .set({ 
-              emailStatus: 'sent',
               emailOpened: false,
-              emailClicked: false 
+              emailClicked: false,
+              emailDelivered: true
             })
             .where(eq(contactHistory.id, record.id));
         } catch (err) {

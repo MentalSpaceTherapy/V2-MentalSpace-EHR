@@ -15,18 +15,16 @@ export const insuranceInfoSchema = z.object({
   groupNumber: z.string().optional(),
   copay: z.string().optional(),
   deductible: z.string().optional(),
-  isPrimary: z.boolean().default(false),
-  priorAuthNumber: z.string().optional(),
-  priorAuthStartDate: z.date().optional(),
-  priorAuthEndDate: z.date().optional(),
-  priorAuthVisitsApproved: z.number().optional(),
-  priorAuthVisitsUsed: z.number().optional()
+  insurancePhone: z.string().optional(),
+  effectiveDate: z.string().optional(),
+  insuranceStatus: z.string().optional(),
+  responsibleParty: z.string().optional()
 });
 
 export const paymentCardSchema = z.object({
-  cardholderName: z.string().optional(),
-  cardType: z.string().optional(),
+  nickname: z.string().optional(),
   lastFourDigits: z.string().optional(),
+  cardType: z.string().optional(),
   expiryMonth: z.string().optional(),
   expiryYear: z.string().optional(),
   isDefault: z.boolean().default(false),
@@ -63,6 +61,80 @@ export const insertUserSchema = createInsertSchema(users).pick({
   profileImageUrl: true,
 });
 
+// Referral sources - defined early to avoid circular references
+export const referralSources = pgTable("referral_sources", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // Healthcare Provider, Community Organization, Former Client, Business, Educational Institution, Other
+  details: jsonb("details").default({}),
+  activeSince: timestamp("active_since").defaultNow(),
+  activeStatus: text("active_status").default("active").notNull(), // Active, Inactive, Potential
+  contactPerson: text("contact_person"),
+  contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
+  notes: text("notes"),
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Marketing campaigns - defined early to avoid circular references
+export const marketingCampaigns = pgTable("marketing_campaigns", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // Email, SMS, Social, Multi-channel
+  status: text("status").default("draft").notNull(), // Draft, Scheduled, Running, Completed, Paused
+  description: text("description"),
+  audience: text("audience"), // Target audience description
+  content: jsonb("content").default({}), // Campaign content (templates, messages, etc.)
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  tags: text("tags").array(),
+  stats: jsonb("stats").default({}), // Campaign performance statistics
+  
+  // Integration with Constant Contact
+  ccCampaignId: text("cc_campaign_id"), // Constant Contact campaign ID
+  ccListIds: text("cc_list_ids").array(), // Constant Contact list IDs used in this campaign
+  ccTemplateId: text("cc_template_id"), // Constant Contact template ID
+  
+  // Tracking and analytics
+  totalSent: integer("total_sent").default(0),
+  totalOpened: integer("total_opened").default(0),
+  totalClicked: integer("total_clicked").default(0),
+  totalBounced: integer("total_bounced").default(0),
+  totalUnsubscribed: integer("total_unsubscribed").default(0),
+  
+  // Referral source connection
+  referralSourceId: integer("referral_source_id").references(() => referralSources.id),
+});
+
+// Leads model - defined early to avoid circular references
+export const leads = pgTable("leads", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  source: text("source"), // Where lead came from (website, referral, etc.)
+  sourceId: integer("source_id"), // Reference to referral_sources if applicable
+  status: text("status").default("new").notNull(), // new, contacted, qualified, converted, etc.
+  notes: text("notes"),
+  stage: text("stage").default("inquiry").notNull(), // inquiry, consultation, assessment, etc.
+  assignedToId: integer("assigned_to_id").references(() => users.id),
+  dateAdded: timestamp("date_added").defaultNow().notNull(),
+  lastContactDate: timestamp("last_contact_date").defaultNow().notNull(),
+  interestedServices: jsonb("interested_services").default([]),
+  demographicInfo: jsonb("demographic_info").default({}),
+  conversionDate: timestamp("conversion_date"), // When lead was converted to client
+  marketingCampaignId: integer("marketing_campaign_id"),
+  leadScore: integer("lead_score").default(0),
+  conversionProbability: integer("conversion_probability").default(0),
+  lastActivityDate: timestamp("last_activity_date").defaultNow(),
+  tags: text("tags").array(),
+});
+
 // Client/Patient model
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
@@ -97,6 +169,21 @@ export const insertClientSchema = createInsertSchema(clients).pick({
   originalMarketingCampaignId: true,
 });
 
+// Documentation/Notes model - defined early to avoid circular references
+export const documentation = pgTable("documentation", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").references(() => clients.id).notNull(),
+  therapistId: integer("therapist_id").references(() => users.id).notNull(),
+  sessionId: integer("session_id"), // We'll set this reference later
+  title: text("title").notNull(),
+  content: text("content"),
+  type: text("type").notNull(), // Progress Note, Treatment Plan, Assessment, etc.
+  status: text("status").default("draft").notNull(), // Draft, Complete, Signed
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  dueDate: timestamp("due_date"),
+  completedAt: timestamp("completed_at"),
+});
+
 // Session/Appointment model
 export const sessions = pgTable("sessions", {
   id: serial("id").primaryKey(),
@@ -124,6 +211,9 @@ export const sessions = pgTable("sessions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Note: originally we tried to set up a circular reference here
+// but it's actually not needed as we defined the sessionId column without a reference
+
 export const insertSessionSchema = createInsertSchema(sessions).pick({
   clientId: true,
   therapistId: true,
@@ -140,21 +230,6 @@ export const insertSessionSchema = createInsertSchema(sessions).pick({
   externalCalendarType: true,
   recurrenceRule: true,
   recurrenceEndDate: true,
-});
-
-// Documentation/Notes model
-export const documentation = pgTable("documentation", {
-  id: serial("id").primaryKey(),
-  clientId: integer("client_id").references(() => clients.id).notNull(),
-  therapistId: integer("therapist_id").references(() => users.id).notNull(),
-  sessionId: integer("session_id").references(() => sessions.id),
-  title: text("title").notNull(),
-  content: text("content"),
-  type: text("type").notNull(), // Progress Note, Treatment Plan, Assessment, etc.
-  status: text("status").default("draft").notNull(), // Draft, Complete, Signed
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  dueDate: timestamp("due_date"),
-  completedAt: timestamp("completed_at"),
 });
 
 export const insertDocumentationSchema = createInsertSchema(documentation).pick({
@@ -189,62 +264,37 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
   link: true,
 });
 
-// Leads model
-export const leads = pgTable("leads", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  phone: text("phone"),
-  source: text("source"), // Where lead came from (website, referral, etc.)
-  sourceId: integer("source_id"), // Reference to referral_sources if applicable
-  status: text("status").default("new").notNull(), // new, contacted, qualified, converted, etc.
-  notes: text("notes"),
-  stage: text("stage").default("inquiry").notNull(), // inquiry, consultation, assessment, etc.
-  assignedToId: integer("assigned_to_id").references(() => users.id),
-  dateAdded: timestamp("date_added").defaultNow().notNull(),
-  lastContactDate: timestamp("last_contact_date").defaultNow().notNull(),
-  interestedServices: jsonb("interested_services").default([]),
-  demographicInfo: jsonb("demographic_info").default({}),
-  conversionDate: timestamp("conversion_date"), // When lead was converted to client
-  convertedToClientId: integer("converted_to_client_id").references(() => clients.id),
-  marketingCampaignId: integer("marketing_campaign_id"),
-  leadScore: integer("lead_score").default(0),
-  conversionProbability: integer("conversion_probability").default(0),
-  lastActivityDate: timestamp("last_activity_date").defaultNow(),
-  tags: text("tags").array(),
+export const insertLeadSchema = createInsertSchema(leads).pick({
+  name: true,
+  email: true,
+  phone: true,
+  source: true,
+  sourceId: true,
+  status: true,
+  notes: true,
+  stage: true,
+  assignedToId: true,
+  interestedServices: true,
+  demographicInfo: true,
+  marketingCampaignId: true,
+  tags: true,
 });
 
-// Marketing campaigns
-export const marketingCampaigns = pgTable("marketing_campaigns", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  type: text("type").notNull(), // Email, SMS, Social, Multi-channel
-  status: text("status").default("draft").notNull(), // Draft, Scheduled, Running, Completed, Paused
-  description: text("description"),
-  audience: text("audience"), // Target audience description
-  content: jsonb("content").default({}), // Campaign content (templates, messages, etc.)
-  startDate: timestamp("start_date"),
-  endDate: timestamp("end_date"),
-  createdById: integer("created_by_id").references(() => users.id).notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  tags: text("tags").array(),
-  stats: jsonb("stats").default({}), // Campaign performance statistics
-  
-  // Integration with Constant Contact
-  ccCampaignId: text("cc_campaign_id"), // Constant Contact campaign ID
-  ccListIds: text("cc_list_ids").array(), // Constant Contact list IDs used in this campaign
-  ccTemplateId: text("cc_template_id"), // Constant Contact template ID
-  
-  // Tracking and analytics
-  totalSent: integer("total_sent").default(0),
-  totalOpened: integer("total_opened").default(0),
-  totalClicked: integer("total_clicked").default(0),
-  totalBounced: integer("total_bounced").default(0),
-  totalUnsubscribed: integer("total_unsubscribed").default(0),
-  
-  // Referral source connection
-  referralSourceId: integer("referral_source_id").references(() => referralSources.id),
+export const insertMarketingCampaignSchema = createInsertSchema(marketingCampaigns).pick({
+  name: true,
+  type: true,
+  status: true,
+  description: true,
+  audience: true,
+  content: true,
+  startDate: true,
+  endDate: true,
+  createdById: true,
+  tags: true,
+  ccCampaignId: true,
+  ccListIds: true,
+  ccTemplateId: true,
+  referralSourceId: true,
 });
 
 // Marketing events
@@ -263,6 +313,18 @@ export const marketingEvents = pgTable("marketing_events", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const insertMarketingEventSchema = createInsertSchema(marketingEvents).pick({
+  name: true,
+  type: true,
+  description: true,
+  date: true,
+  duration: true,
+  location: true,
+  capacity: true,
+  status: true,
+  createdById: true,
+});
+
 // Event registrations
 export const eventRegistrations = pgTable("event_registrations", {
   id: serial("id").primaryKey(),
@@ -274,6 +336,16 @@ export const eventRegistrations = pgTable("event_registrations", {
   status: text("status").default("registered").notNull(), // registered, attended, cancelled, no-show
   registrationDate: timestamp("registration_date").defaultNow().notNull(),
   notes: text("notes"),
+});
+
+export const insertEventRegistrationSchema = createInsertSchema(eventRegistrations).pick({
+  eventId: true,
+  leadId: true,
+  clientId: true,
+  email: true,
+  name: true,
+  status: true,
+  notes: true,
 });
 
 // Contact history for leads and clients
@@ -303,21 +375,40 @@ export const contactHistory = pgTable("contact_history", {
   constantContactActivityId: text("constant_contact_activity_id"), // Track connection to Constant Contact
 });
 
-// Referral sources
-export const referralSources = pgTable("referral_sources", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  type: text("type").notNull(), // Healthcare Provider, Community Organization, Former Client, Business, Educational Institution, Other
-  details: jsonb("details").default({}),
-  activeSince: timestamp("active_since").defaultNow(),
-  activeStatus: text("active_status").default("active").notNull(), // Active, Inactive, Potential
-  contactPerson: text("contact_person"),
-  contactEmail: text("contact_email"),
-  contactPhone: text("contact_phone"),
-  notes: text("notes"),
-  createdById: integer("created_by_id").references(() => users.id).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+export const insertContactHistorySchema = createInsertSchema(contactHistory).pick({
+  leadId: true,
+  clientId: true,
+  contactType: true,
+  direction: true,
+  subject: true,
+  content: true,
+  contactNumber: true,
+  date: true,
+  duration: true,
+  notes: true,
+  outcome: true,
+  followUpDate: true,
+  followUpType: true,
+  completedById: true,
+  campaignId: true,
+  emailOpened: true,
+  emailClicked: true,
+  emailDelivered: true,
+  emailBounced: true,
+  constantContactActivityId: true,
+});
+
+export const insertReferralSourceSchema = createInsertSchema(referralSources).pick({
+  name: true,
+  type: true,
+  details: true,
+  activeSince: true,
+  activeStatus: true,
+  contactPerson: true,
+  contactEmail: true,
+  contactPhone: true,
+  notes: true,
+  createdById: true,
 });
 
 // Messages model
@@ -416,6 +507,184 @@ export const extendedClientSchema = insertClientSchema.extend({
   privateNotes: z.string().optional(),
 });
 
+// Document Templates
+export const documentTemplates = pgTable("document_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // Progress Note, Treatment Plan, Assessment, etc.
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  defaultContent: text("default_content"), // Default template content
+  status: text("status").default("active").notNull(), // Active, Inactive, Draft
+  tags: text("tags").array(), // For categorization/filtering
+  isSystem: boolean("is_system").default(false), // Whether it's a built-in template or user-created
+});
+
+// Template versions for tracking changes
+export const templateVersions = pgTable("template_versions", {
+  id: serial("id").primaryKey(),
+  templateId: integer("template_id").references(() => documentTemplates.id).notNull(),
+  versionNumber: integer("version_number").notNull(),
+  content: text("content").notNull(),
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  notes: text("notes"), // Notes about changes in this version
+  status: text("status").default("draft").notNull(), // Draft, Approved, Deprecated
+  approvedById: integer("approved_by_id").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+});
+
+export const insertDocumentTemplateSchema = createInsertSchema(documentTemplates).pick({
+  name: true,
+  description: true,
+  type: true,
+  createdById: true,
+  defaultContent: true,
+  status: true,
+  tags: true,
+  isSystem: true,
+});
+
+export const insertTemplateVersionSchema = createInsertSchema(templateVersions).pick({
+  templateId: true,
+  versionNumber: true,
+  content: true,
+  createdById: true,
+  notes: true,
+  status: true,
+  approvedById: true,
+  approvedAt: true,
+});
+
+// E-signature system
+export const signatureRequests = pgTable("signature_requests", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").references(() => documentation.id).notNull(),
+  requestedById: integer("requested_by_id").references(() => users.id).notNull(),
+  requestedForId: integer("requested_for_id").references(() => clients.id).notNull(),
+  status: text("status").default("pending").notNull(), // Pending, Signed, Rejected, Expired
+  requestedAt: timestamp("requested_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  expiresAt: timestamp("expires_at"),
+  signatureToken: text("signature_token").notNull(), // Unique token for the e-signing link
+  emailSent: boolean("email_sent").default(false),
+  emailSentAt: timestamp("email_sent_at"),
+  reminderSent: boolean("reminder_sent").default(false),
+  reminderSentAt: timestamp("reminder_sent_at"),
+  notes: text("notes"),
+});
+
+// Track fields that need signatures 
+export const signatureFields = pgTable("signature_fields", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id").references(() => signatureRequests.id).notNull(),
+  fieldType: text("field_type").notNull(), // Signature, Initial, Date, Text
+  label: text("label").notNull(),
+  required: boolean("required").default(true),
+  xPosition: integer("x_position"), // Position data for rendering
+  yPosition: integer("y_position"),
+  pageNumber: integer("page_number").default(1),
+  width: integer("width"),
+  height: integer("height"),
+  completedAt: timestamp("completed_at"),
+  value: text("value"), // The signed/entered value
+});
+
+// Audit trail for signature events
+export const signatureEvents = pgTable("signature_events", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id").references(() => signatureRequests.id).notNull(),
+  eventType: text("event_type").notNull(), // Viewed, Signed, Rejected, Reminder Sent
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  eventData: jsonb("event_data").default({}), // Additional event details
+});
+
+export const insertSignatureRequestSchema = createInsertSchema(signatureRequests).pick({
+  documentId: true,
+  requestedById: true,
+  requestedForId: true,
+  status: true,
+  expiresAt: true,
+  signatureToken: true,
+  notes: true,
+});
+
+export const insertSignatureFieldSchema = createInsertSchema(signatureFields).pick({
+  requestId: true,
+  fieldType: true,
+  label: true,
+  required: true,
+  xPosition: true,
+  yPosition: true,
+  pageNumber: true,
+  width: true,
+  height: true,
+  value: true,
+});
+
+export const insertSignatureEventSchema = createInsertSchema(signatureEvents).pick({
+  requestId: true,
+  eventType: true,
+  ipAddress: true,
+  userAgent: true,
+  eventData: true,
+});
+
+// External integrations table
+export const integrations = pgTable("integrations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  providerName: text("provider_name").notNull(), // Constant Contact, Google Calendar, etc.
+  providerUserId: text("provider_user_id"), // ID of the user in the provider's system
+  accessToken: text("access_token"), // OAuth access token
+  refreshToken: text("refresh_token"), // OAuth refresh token
+  tokenExpiresAt: timestamp("token_expires_at"),
+  scopes: text("scopes").array(), // OAuth scopes granted
+  status: text("status").default("active").notNull(), // Active, Revoked, Expired
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  metadata: jsonb("metadata").default({}), // Additional provider-specific data
+});
+
+export const insertIntegrationSchema = createInsertSchema(integrations).pick({
+  userId: true,
+  providerName: true,
+  providerUserId: true,
+  accessToken: true,
+  refreshToken: true,
+  tokenExpiresAt: true,
+  scopes: true,
+  status: true,
+  metadata: true,
+});
+
+// OAuth state tracking
+export const oauthStates = pgTable("oauth_states", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  state: text("state").notNull(), // Random state value for CSRF protection
+  providerName: text("provider_name").notNull(), // Name of the OAuth provider
+  redirectUri: text("redirect_uri"), // Where to return after OAuth
+  scopes: text("scopes").array(), // Requested OAuth scopes
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(), // States should expire after a short time
+  used: boolean("used").default(false), // Whether the state has been used
+  usedAt: timestamp("used_at"), // When the state was used
+});
+
+export const insertOAuthStateSchema = createInsertSchema(oauthStates).pick({
+  userId: true,
+  state: true,
+  providerName: true,
+  redirectUri: true,
+  scopes: true,
+  expiresAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -437,119 +706,9 @@ export type EmergencyContact = z.infer<typeof emergencyContactSchema>;
 export type InsuranceInfo = z.infer<typeof insuranceInfoSchema>;
 export type PaymentCard = z.infer<typeof paymentCardSchema>;
 
-// Create insert schemas for the new models
-export const insertLeadSchema = createInsertSchema(leads).pick({
-  name: true,
-  email: true,
-  phone: true,
-  source: true,
-  sourceId: true,
-  status: true,
-  notes: true,
-  stage: true,
-  assignedToId: true,
-  interestedServices: true,
-  demographicInfo: true,
-  marketingCampaignId: true,
-  conversionDate: true,
-  convertedToClientId: true,
-  leadScore: true,
-  conversionProbability: true,
-  tags: true,
-});
-
-// Adjust lead schema to handle nulls properly
-insertLeadSchema.shape.source = z.string().nullable();
-insertLeadSchema.shape.sourceId = z.number().nullable();
-insertLeadSchema.shape.marketingCampaignId = z.number().nullable();
-
-export const insertMarketingCampaignSchema = createInsertSchema(marketingCampaigns).pick({
-  name: true,
-  type: true,
-  status: true,
-  description: true,
-  audience: true,
-  content: true,
-  startDate: true,
-  endDate: true,
-  createdById: true,
-  tags: true,
-  stats: true,
-  // Add Constant Contact fields
-  ccCampaignId: true,
-  ccListIds: true,
-  ccTemplateId: true,
-  // Analytics fields
-  totalSent: true,
-  totalOpened: true,
-  totalClicked: true,
-  totalBounced: true,
-  totalUnsubscribed: true,
-  // Referral connection
-  referralSourceId: true,
-});
-
-export const insertMarketingEventSchema = createInsertSchema(marketingEvents).pick({
-  name: true,
-  type: true,
-  description: true,
-  date: true,
-  duration: true,
-  location: true,
-  capacity: true,
-  status: true,
-  createdById: true,
-});
-
-export const insertEventRegistrationSchema = createInsertSchema(eventRegistrations).pick({
-  eventId: true,
-  leadId: true,
-  clientId: true,
-  email: true,
-  name: true,
-  status: true,
-  notes: true,
-});
-
-export const insertContactHistorySchema = createInsertSchema(contactHistory).pick({
-  leadId: true,
-  clientId: true,
-  contactType: true,
-  direction: true,
-  subject: true,
-  content: true,
-  contactNumber: true,
-  duration: true,
-  notes: true,
-  outcome: true,
-  followUpDate: true,
-  followUpType: true,
-  completedById: true,
-  campaignId: true,
-  // Add new email tracking fields
-  emailOpened: true,
-  emailClicked: true, 
-  emailDelivered: true,
-  emailBounced: true,
-  constantContactActivityId: true,
-});
-
-export const insertReferralSourceSchema = createInsertSchema(referralSources).pick({
-  name: true,
-  type: true,
-  details: true,
-  activeStatus: true,
-  contactPerson: true,
-  contactEmail: true,
-  contactPhone: true,
-  notes: true,
-  createdById: true,
-});
-
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
-// Export types for new models
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
 
@@ -568,161 +727,12 @@ export type InsertContactHistory = z.infer<typeof insertContactHistorySchema>;
 export type ReferralSource = typeof referralSources.$inferSelect;
 export type InsertReferralSource = z.infer<typeof insertReferralSourceSchema>;
 
-// Document template system with version control
-export const documentTemplates = pgTable("document_templates", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  type: text("type").notNull(), // Progress Note, Treatment Plan, Assessment, etc.
-  status: text("status").default("draft").notNull(), // draft, active, inactive, archived
-  createdById: integer("created_by_id").references(() => users.id).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  organizationId: integer("organization_id"), // For multi-tenant systems
-  isGlobal: boolean("is_global").default(false).notNull(), // Whether this template is available to all users
-  requiresApproval: boolean("requires_approval").default(false).notNull(), // Whether changes to this template need approval
-  approvalStatus: text("approval_status").default("not-submitted").notNull(), // not-submitted, pending, approved, rejected
-  approvedById: integer("approved_by_id").references(() => users.id),
-  approvedAt: timestamp("approved_at"),
-  currentVersionId: integer("current_version_id"), // FK to be set after creation of the version
-});
-
-// Version history for document templates
-export const templateVersions = pgTable("template_versions", {
-  id: serial("id").primaryKey(),
-  templateId: integer("template_id").references(() => documentTemplates.id).notNull(),
-  versionNumber: integer("version_number").notNull(),
-  content: text("content").notNull(), // Could be JSON or HTML content
-  metadata: jsonb("metadata").default({}), // Additional fields specific to template type
-  createdById: integer("created_by_id").references(() => users.id).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  isLatest: boolean("is_latest").default(false).notNull(),
-  notes: text("notes"), // Change notes or comments for this version
-  approvalStatus: text("approval_status").default("not-submitted").notNull(), // not-submitted, pending, approved, rejected
-  approvedById: integer("approved_by_id").references(() => users.id),
-  approvedAt: timestamp("approved_at"),
-  rejectionReason: text("rejection_reason"),
-});
-
-// Create insert schemas for document templates
-export const insertDocumentTemplateSchema = createInsertSchema(documentTemplates).pick({
-  name: true,
-  description: true,
-  type: true,
-  status: true,
-  createdById: true,
-  organizationId: true,
-  isGlobal: true,
-  requiresApproval: true,
-  approvalStatus: true,
-  approvedById: true,
-  approvedAt: true,
-});
-
-// Create insert schema for template versions
-export const insertTemplateVersionSchema = createInsertSchema(templateVersions).pick({
-  templateId: true,
-  versionNumber: true,
-  content: true,
-  metadata: true,
-  createdById: true,
-  isLatest: true,
-  notes: true,
-  approvalStatus: true,
-  approvedById: true,
-  approvedAt: true,
-  rejectionReason: true,
-});
-
-// Types for document templates and versions
 export type DocumentTemplate = typeof documentTemplates.$inferSelect;
 export type InsertDocumentTemplate = z.infer<typeof insertDocumentTemplateSchema>;
 
 export type TemplateVersion = typeof templateVersions.$inferSelect;
 export type InsertTemplateVersion = z.infer<typeof insertTemplateVersionSchema>;
 
-// E-Signature system
-export const signatureRequests = pgTable("signature_requests", {
-  id: serial("id").primaryKey(),
-  documentId: integer("document_id").references(() => documentation.id).notNull(),
-  requestedById: integer("requested_by_id").references(() => users.id).notNull(),
-  requestedForId: integer("requested_for_id").references(() => clients.id).notNull(),
-  requestedAt: timestamp("requested_at").defaultNow().notNull(),
-  expiresAt: timestamp("expires_at"),
-  status: text("status").default("pending").notNull(), // pending, completed, expired, rejected, cancelled
-  message: text("message"), // Optional message to the signer
-  remindersSent: integer("reminders_sent").default(0).notNull(),
-  lastReminderSent: timestamp("last_reminder_sent"),
-  accessCode: text("access_code"), // Optional security code
-  accessUrl: text("access_url").notNull(), // Unique URL for signing
-  completedAt: timestamp("completed_at"),
-  rejectedAt: timestamp("rejected_at"),
-  rejectionReason: text("rejection_reason"),
-  metadata: jsonb("metadata").default({}), // Additional config like required fields
-});
-
-export const signatureFields = pgTable("signature_fields", {
-  id: serial("id").primaryKey(),
-  requestId: integer("request_id").references(() => signatureRequests.id).notNull(),
-  fieldType: text("field_type").notNull(), // signature, initial, date, checkbox, text
-  label: text("label").notNull(),
-  required: boolean("required").default(true).notNull(),
-  pageNumber: integer("page_number").default(1).notNull(),
-  xPosition: integer("x_position").notNull(), // X coordinate on the page
-  yPosition: integer("y_position").notNull(), // Y coordinate on the page
-  width: integer("width").notNull(),
-  height: integer("height").notNull(),
-  value: text("value"), // The value after signing
-  completedAt: timestamp("completed_at"),
-  order: integer("order").default(0).notNull(), // Order in the signing flow
-});
-
-export const signatureEvents = pgTable("signature_events", {
-  id: serial("id").primaryKey(),
-  requestId: integer("request_id").references(() => signatureRequests.id).notNull(),
-  eventType: text("event_type").notNull(), // viewed, signed, declined, reminded, etc.
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
-  metadata: jsonb("metadata").default({}), // Additional data about the event
-});
-
-// Create insert schemas for e-signature tables
-export const insertSignatureRequestSchema = createInsertSchema(signatureRequests).pick({
-  documentId: true,
-  requestedById: true,
-  requestedForId: true,
-  expiresAt: true,
-  status: true,
-  message: true,
-  accessCode: true,
-  accessUrl: true,
-  metadata: true,
-});
-
-export const insertSignatureFieldSchema = createInsertSchema(signatureFields).pick({
-  requestId: true,
-  fieldType: true,
-  label: true,
-  required: true,
-  pageNumber: true,
-  xPosition: true,
-  yPosition: true,
-  width: true,
-  height: true,
-  value: true,
-  order: true,
-});
-
-export const insertSignatureEventSchema = createInsertSchema(signatureEvents).pick({
-  requestId: true,
-  eventType: true,
-  ipAddress: true,
-  userAgent: true,
-  metadata: true,
-});
-
-// Types for e-signature system
 export type SignatureRequest = typeof signatureRequests.$inferSelect;
 export type InsertSignatureRequest = z.infer<typeof insertSignatureRequestSchema>;
 
@@ -732,51 +742,8 @@ export type InsertSignatureField = z.infer<typeof insertSignatureFieldSchema>;
 export type SignatureEvent = typeof signatureEvents.$inferSelect;
 export type InsertSignatureEvent = z.infer<typeof insertSignatureEventSchema>;
 
-// Integrations for external services like Constant Contact
-export const integrations = pgTable("integrations", {
-  id: serial("id").primaryKey(),
-  serviceName: text("service_name").notNull(), // "constant_contact", "google_calendar", etc.
-  // userId field is removed to match database structure
-  accessToken: text("access_token"),
-  refreshToken: text("refresh_token"),
-  expiresAt: timestamp("expires_at"),
-  active: boolean("active").default(true),
-  metadata: jsonb("metadata"), // Additional service-specific data
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertIntegrationSchema = createInsertSchema(integrations).pick({
-  serviceName: true,
-  // userId: true, - removed to match database structure
-  accessToken: true,
-  refreshToken: true,
-  expiresAt: true,
-  active: true,
-  metadata: true,
-});
-
 export type Integration = typeof integrations.$inferSelect;
 export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;
-
-// OAuth state tracking for proper redirection and security
-export const oauthStates = pgTable("oauth_states", {
-  id: serial("id").primaryKey(),
-  state: text("state").notNull().unique(), // The state parameter sent in OAuth request
-  service: text("service").notNull(), // Service name: "constant_contact", "google", etc.
-  userId: integer("user_id").notNull(), // The user who initiated the request
-  expiresAt: timestamp("expires_at").notNull(), // When this state expires
-  createdAt: timestamp("created_at").defaultNow(),
-  used: boolean("used").default(false), // Whether this state has been used
-});
-
-export const insertOAuthStateSchema = createInsertSchema(oauthStates).pick({
-  state: true,
-  service: true,
-  userId: true,
-  expiresAt: true,
-  used: true,
-});
 
 export type OAuthState = typeof oauthStates.$inferSelect;
 export type InsertOAuthState = z.infer<typeof insertOAuthStateSchema>;
