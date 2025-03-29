@@ -12,6 +12,16 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
+// Define a type for authenticated user to avoid using AuthenticatedUser
+type AuthenticatedUser = {
+  id: number;
+  role: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
 // Middleware to check if user is authenticated
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   if (req.isAuthenticated()) {
@@ -27,14 +37,106 @@ const hasRole = (roles: string | string[]) => {
       return res.status(401).json({ message: "Unauthorized - Not logged in" });
     }
 
+    // Use type assertion for user since we verified isAuthenticated
+    const user = req.user as AuthenticatedUser;
+    
     const userRoles = Array.isArray(roles) ? roles : [roles];
     
-    if (userRoles.includes(req.user.role)) {
+    if (userRoles.includes(user.role)) {
       return next();
     }
     
     return res.status(403).json({ message: "Forbidden - Insufficient permissions" });
   };
+};
+
+// Middleware to check if therapist has access to a specific client
+const canAccessClient = async (req: Request, res: Response, next: NextFunction) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized - Not logged in" });
+  }
+  
+  // Use type assertion for user since we verified isAuthenticated
+  const user = req.user as AuthenticatedUser;
+  
+  const clientId = parseInt(req.params.id);
+  const therapistId = user.id;
+  
+  // If user is an administrator, allow access without client assignment check
+  if (user.role === "administrator") {
+    return next();
+  }
+  
+  try {
+    // Check if the client exists and is assigned to this therapist
+    const client = await storage.getClient(clientId);
+    
+    if (!client) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+    
+    if (client.primaryTherapistId !== therapistId) {
+      return res.status(403).json({ 
+        message: "Forbidden - You don't have access to this client" 
+      });
+    }
+    
+    // If we get here, the therapist has access to this client
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Middleware to check if therapist has access to a client ID provided in request body or query
+const canAccessClientId = async (req: Request, res: Response, next: NextFunction) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized - Not logged in" });
+  }
+  
+  // Use type assertion for user since we verified isAuthenticated
+  const user = req.user as AuthenticatedUser;
+  
+  // If user is an administrator, allow access without client assignment check
+  if (user.role === "administrator") {
+    return next();
+  }
+  
+  // Get client ID from either request body, query params, or route params
+  let clientId: number | undefined;
+  
+  if (req.body && req.body.clientId) {
+    clientId = parseInt(req.body.clientId as string);
+  } else if (req.query && req.query.clientId) {
+    clientId = parseInt(req.query.clientId as string);
+  } else if (req.params && req.params.clientId) {
+    clientId = parseInt(req.params.clientId);
+  }
+  
+  // If no client ID found, we can't check access so allow the request
+  if (!clientId) {
+    return next();
+  }
+  
+  try {
+    // Check if the client exists and is assigned to this therapist
+    const client = await storage.getClient(clientId);
+    
+    if (!client) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+    
+    if (client.primaryTherapistId !== user.id) {
+      return res.status(403).json({ 
+        message: "Forbidden - You don't have access to this client" 
+      });
+    }
+    
+    // If we get here, the therapist has access to this client
+    return next();
+  } catch (error) {
+    return next(error);
+  }
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -44,8 +146,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Client routes
   app.get("/api/clients", isAuthenticated, async (req, res, next) => {
     try {
-      const therapistId = req.query.therapistId ? parseInt(req.query.therapistId as string) : undefined;
+      let therapistId: number | undefined;
       const status = req.query.status as string | undefined;
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+
+      // If user is not an administrator, they can only see their own clients
+      if (user.role !== "administrator") {
+        therapistId = user.id;
+      } else if (req.query.therapistId) {
+        // If admin and therapistId is provided, filter by that
+        therapistId = parseInt(req.query.therapistId as string);
+      }
       
       const clients = await storage.getClients(therapistId, status);
       res.json(clients);
@@ -54,15 +167,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/clients/:id", isAuthenticated, async (req, res, next) => {
+  app.get("/api/clients/:id", isAuthenticated, canAccessClient, async (req, res, next) => {
     try {
       const id = parseInt(req.params.id);
       const client = await storage.getClient(id);
       
-      if (!client) {
-        return res.status(404).json({ message: "Client not found" });
-      }
-      
+      // Client existence is already checked in canAccessClient middleware
       res.json(client);
     } catch (error) {
       next(error);
@@ -71,8 +181,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/clients", isAuthenticated, async (req, res, next) => {
     try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
       // Validate request body against the extended client schema
       const validatedData = extendedClientSchema.parse(req.body);
+      
+      // If no primary therapist is set and user is a therapist, assign themselves
+      if (!validatedData.primaryTherapistId && user.role === "therapist") {
+        validatedData.primaryTherapistId = user.id;
+      }
       
       const client = await storage.createClient(validatedData);
       res.status(201).json(client);
@@ -87,18 +205,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch("/api/clients/:id", isAuthenticated, async (req, res, next) => {
+  app.patch("/api/clients/:id", isAuthenticated, canAccessClient, async (req, res, next) => {
     try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
       const id = parseInt(req.params.id);
       
-      // Validate the client exists
-      const existingClient = await storage.getClient(id);
-      if (!existingClient) {
-        return res.status(404).json({ message: "Client not found" });
-      }
+      // Client existence is already checked in canAccessClient middleware
       
       // Partial validation of update data
       const validatedData = extendedClientSchema.partial().parse(req.body);
+      
+      // If user is not an administrator, they cannot reassign the client to another therapist
+      if (user.role !== "administrator" && validatedData.primaryTherapistId && 
+          validatedData.primaryTherapistId !== user.id) {
+        return res.status(403).json({ 
+          message: "Forbidden - You cannot reassign clients to other therapists" 
+        });
+      }
       
       const updatedClient = await storage.updateClient(id, validatedData);
       res.json(updatedClient);
@@ -114,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Session/Appointment routes
-  app.get("/api/sessions", isAuthenticated, async (req, res, next) => {
+  app.get("/api/sessions", isAuthenticated, canAccessClientId, async (req, res, next) => {
     try {
       const filters: {
         clientId?: number;
@@ -124,11 +249,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status?: string;
       } = {};
       
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // Handle client ID filter with access control
       if (req.query.clientId) {
         filters.clientId = parseInt(req.query.clientId as string);
       }
       
-      if (req.query.therapistId) {
+      // Handle therapist ID filter - if user isn't admin, they can only see their own sessions
+      if (user.role !== "administrator") {
+        filters.therapistId = user.id;
+      } else if (req.query.therapistId) {
+        // Admin can filter by specific therapist
         filters.therapistId = parseInt(req.query.therapistId as string);
       }
       
@@ -153,11 +286,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/sessions/:id", isAuthenticated, async (req, res, next) => {
     try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
       const id = parseInt(req.params.id);
       const session = await storage.getSession(id);
       
       if (!session) {
         return res.status(404).json({ message: "Session not found" });
+      }
+      
+      // Check if user has access to this session (either admin or session therapist)
+      if (user.role !== "administrator" && session.therapistId !== user.id) {
+        return res.status(403).json({ 
+          message: "Forbidden - You don't have access to this session" 
+        });
       }
       
       res.json(session);
@@ -166,10 +309,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/sessions", isAuthenticated, async (req, res, next) => {
+  app.post("/api/sessions", isAuthenticated, canAccessClientId, async (req, res, next) => {
     try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
       // Validate request body
       const validatedData = insertSessionSchema.parse(req.body);
+      
+      // If therapist creating a session, ensure it's assigned to them
+      if (user.role === "therapist" && validatedData.therapistId !== user.id) {
+        validatedData.therapistId = user.id;
+      }
       
       const session = await storage.createSession(validatedData);
       res.status(201).json(session);
@@ -186,6 +337,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.patch("/api/sessions/:id", isAuthenticated, async (req, res, next) => {
     try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
       const id = parseInt(req.params.id);
       
       // Validate the session exists
@@ -194,8 +348,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Session not found" });
       }
       
+      // Check if user has permission to modify this session
+      if (user.role !== "administrator" && existingSession.therapistId !== user.id) {
+        return res.status(403).json({ 
+          message: "Forbidden - You don't have access to modify this session" 
+        });
+      }
+      
       // Partial validation of update data
       const validatedData = insertSessionSchema.partial().parse(req.body);
+      
+      // Non-admins cannot reassign sessions to other therapists
+      if (user.role !== "administrator" && validatedData.therapistId && 
+          validatedData.therapistId !== user.id) {
+        return res.status(403).json({ 
+          message: "Forbidden - You cannot reassign sessions to other therapists" 
+        });
+      }
       
       const updatedSession = await storage.updateSession(id, validatedData);
       res.json(updatedSession);
@@ -211,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Documentation routes
-  app.get("/api/documents", isAuthenticated, async (req, res, next) => {
+  app.get("/api/documents", isAuthenticated, canAccessClientId, async (req, res, next) => {
     try {
       const filters: {
         clientId?: number;
@@ -221,11 +390,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status?: string;
       } = {};
       
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // Handle client ID filter with access control
       if (req.query.clientId) {
         filters.clientId = parseInt(req.query.clientId as string);
       }
       
-      if (req.query.therapistId) {
+      // Handle therapist ID filter - if user isn't admin, they can only see their own documents
+      if (user.role !== "administrator") {
+        filters.therapistId = user.id;
+      } else if (req.query.therapistId) {
+        // Admin can filter by specific therapist
         filters.therapistId = parseInt(req.query.therapistId as string);
       }
       
@@ -250,11 +427,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/documents/:id", isAuthenticated, async (req, res, next) => {
     try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
       const id = parseInt(req.params.id);
       const document = await storage.getDocument(id);
       
       if (!document) {
         return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Check if user has access to this document (either admin or document therapist)
+      if (user.role !== "administrator" && document.therapistId !== user.id) {
+        return res.status(403).json({ 
+          message: "Forbidden - You don't have access to this document" 
+        });
       }
       
       res.json(document);
@@ -263,10 +450,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/documents", isAuthenticated, async (req, res, next) => {
+  app.post("/api/documents", isAuthenticated, canAccessClientId, async (req, res, next) => {
     try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
       // Validate request body
       const validatedData = insertDocumentationSchema.parse(req.body);
+      
+      // If therapist creating a document, ensure it's assigned to them
+      if (user.role === "therapist" && validatedData.therapistId !== user.id) {
+        validatedData.therapistId = user.id;
+      }
       
       const document = await storage.createDocument(validatedData);
       
@@ -299,6 +494,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.patch("/api/documents/:id", isAuthenticated, async (req, res, next) => {
     try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
       const id = parseInt(req.params.id);
       
       // Validate the document exists
@@ -307,8 +505,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Document not found" });
       }
       
+      // Check if user has permission to modify this document
+      if (user.role !== "administrator" && existingDocument.therapistId !== user.id) {
+        return res.status(403).json({ 
+          message: "Forbidden - You don't have access to modify this document" 
+        });
+      }
+      
       // Partial validation of update data
       const validatedData = insertDocumentationSchema.partial().parse(req.body);
+      
+      // Non-admins cannot reassign documents to other therapists
+      if (user.role !== "administrator" && validatedData.therapistId && 
+          validatedData.therapistId !== user.id) {
+        return res.status(403).json({ 
+          message: "Forbidden - You cannot reassign documents to other therapists" 
+        });
+      }
       
       const updatedDocument = await storage.updateDocument(id, validatedData);
       
@@ -349,7 +562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // User is guaranteed to exist due to isAuthenticated middleware
       // but we'll add a type assertion to satisfy TypeScript
-      const userId = (req.user as Express.User).id;
+      const userId = (req.user as AuthenticatedUser).id;
       const notifications = await storage.getNotifications(userId, isRead);
       res.json(notifications);
     } catch (error) {
@@ -391,20 +604,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Message routes
-  app.get("/api/messages", isAuthenticated, async (req, res, next) => {
+  app.get("/api/messages", isAuthenticated, canAccessClientId, async (req, res, next) => {
     try {
-      // User is guaranteed to exist due to isAuthenticated middleware
-      const therapistId = (req.user as Express.User).id;
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
       
       // Check if we're filtering by client
       if (req.query.clientId) {
         const clientId = parseInt(req.query.clientId as string);
-        const messages = await storage.getMessages(clientId, therapistId);
+        const messages = await storage.getMessages(clientId, user.id);
         return res.json(messages);
       }
       
       // If not, return all messages for the therapist
-      const messages = await storage.getTherapistMessages(therapistId);
+      const messages = await storage.getTherapistMessages(user.id);
       res.json(messages);
     } catch (error) {
       next(error);
@@ -413,8 +626,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/messages/unread", isAuthenticated, async (req, res, next) => {
     try {
-      const therapistId = (req.user as Express.User).id;
-      const messages = await storage.getUnreadMessages(therapistId);
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      const messages = await storage.getUnreadMessages(user.id);
       res.json(messages);
     } catch (error) {
       next(error);
@@ -423,8 +638,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/clients/:clientId/messages", isAuthenticated, async (req, res, next) => {
     try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
       const clientId = parseInt(req.params.clientId);
-      const therapistId = (req.user as Express.User).id;
       
       // Validate the client exists
       const client = await storage.getClient(clientId);
@@ -432,17 +649,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Client not found" });
       }
       
-      const messages = await storage.getMessages(clientId, therapistId);
+      // Check if user has access to this client (either admin or client's therapist)
+      if (user.role !== "administrator" && client.primaryTherapistId !== user.id) {
+        return res.status(403).json({ 
+          message: "Forbidden - You don't have access to this client's messages" 
+        });
+      }
+      
+      const messages = await storage.getMessages(clientId, user.id);
       res.json(messages);
     } catch (error) {
       next(error);
     }
   });
   
-  app.post("/api/messages", isAuthenticated, async (req, res, next) => {
+  app.post("/api/messages", isAuthenticated, canAccessClientId, async (req, res, next) => {
     try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
       // Set therapist ID from authenticated user
-      req.body.therapistId = (req.user as Express.User).id;
+      req.body.therapistId = user.id;
       
       // Validate request body
       const validatedData = insertMessageSchema.parse(req.body);
@@ -485,11 +712,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.patch("/api/messages/:id/read", isAuthenticated, async (req, res, next) => {
     try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
       const id = parseInt(req.params.id);
       const message = await storage.markMessageAsRead(id);
       
       if (!message) {
         return res.status(404).json({ message: "Message not found" });
+      }
+      
+      // Check if user has access to this message
+      if (user.role !== "administrator" && message.therapistId !== user.id) {
+        return res.status(403).json({ 
+          message: "Forbidden - You don't have access to this message" 
+        });
       }
       
       res.json(message);
