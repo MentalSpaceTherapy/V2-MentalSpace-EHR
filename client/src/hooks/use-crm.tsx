@@ -196,12 +196,6 @@ interface CRMContextType {
   sendGridStatus: SendGridStatus;
   isSendGridConfigured: boolean;
   fetchSendGridStatus: () => Promise<void>;
-  
-  // Remove Constant Contact references
-  ccStatus?: any;
-  connectConstantContact?: any;
-  fetchCCStatus?: any;
-  isConstantContactConnected?: boolean;
 }
 
 // Sample data
