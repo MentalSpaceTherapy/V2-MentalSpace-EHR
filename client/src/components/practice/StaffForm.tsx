@@ -1,355 +1,362 @@
-import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { USER_ROLES, ROLE_CATEGORIES, ROLE_DETAILS, LICENSE_TYPES } from "@/lib/constants";
-
-interface StaffMember {
-  id?: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  role?: string;
-  roles?: string[];
-  licenseType?: string | null;
-  licenseNumber?: string | null;
-  licenseExpiration?: Date | null;
-  status?: string;
-  formalName?: string;
-  title?: string;
-  npiNumber?: string;
-  supervision?: string;
-  languages?: string[];
-  canReceiveSMS?: boolean;
-  workPhone?: string;
-  homePhone?: string;
-  address1?: string;
-  address2?: string;
-  zip?: string;
-  city?: string;
-  state?: string;
-}
+// StaffForm.tsx with the exact same structure as the JSX version
+import React, { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface StaffFormProps {
-  onSave: (staffData: StaffMember) => void;
-  onCancel: () => void;
-  editingStaff?: StaffMember;
+  onSave?: (data: any) => void;
+  onCancel?: () => void;
+  editingStaff?: any;
 }
 
 export function StaffForm({ onSave, onCancel, editingStaff }: StaffFormProps) {
-  // Initialize form data
-  const [formData, setFormData] = useState<StaffMember>({
-    firstName: "",
-    lastName: "",
+  const { toast } = useToast();
+  const [staffData, setStaffData] = useState({
+    first_name: "",
+    middle_name: "",
+    last_name: "",
+    suffix: "",
+    type_of_clinician: "",
+    npi_number: "",
+    supervisor_id: "",
+    role: "",
     email: "",
     phone: "",
-    roles: [],
-    licenseType: "",
-    licenseNumber: "",
-    formalName: "",
-    title: "",
-    npiNumber: "",
-    supervision: "Not Supervised",
-    languages: ["English (primary)"],
-    canReceiveSMS: false,
-    workPhone: "",
-    homePhone: "",
-    address1: "",
-    address2: "",
-    zip: "",
-    city: "",
-    state: "",
+    can_receive_texts: false,
+    work_phone: "",
+    address: "",
+    city_state: "",
+    zip_code: "",
+    license_state: "",
+    license_taxonomy: "",
+    license_expiration: "",
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showClinicianFields, setShowClinicianFields] = useState(false);
-  
-  // Update form data when editing an existing staff member
-  useEffect(() => {
-    if (editingStaff) {
-      setFormData({
-        ...editingStaff,
-        roles: editingStaff.roles || (editingStaff.role ? [editingStaff.role] : []),
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    
+    setStaffData((prevData) => ({
+      ...prevData,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("/api/staff", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(staffData),
       });
-    }
-  }, [editingStaff]);
-
-  // Update showClinicianFields based on selected roles
-  useEffect(() => {
-    const hasClinicianRole = 
-      formData.roles?.includes(USER_ROLES.CLINICIAN) || 
-      formData.roles?.includes(USER_ROLES.INTERN) ||
-      formData.roles?.includes(USER_ROLES.SUPERVISOR) ||
-      formData.roles?.includes(USER_ROLES.CLINICAL_ADMIN);
-    
-    setShowClinicianFields(hasClinicianRole || false);
-  }, [formData.roles]);
-
-  // Validate form before saving
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.firstName) newErrors.firstName = "First name is required";
-    if (!formData.lastName) newErrors.lastName = "Last name is required";
-    if (!formData.email) newErrors.email = "Email is required";
-    
-    if (!formData.roles || formData.roles.length === 0) {
-      newErrors.roles = "At least one role is required";
-    }
-    
-    if (showClinicianFields) {
-      if (!formData.licenseType) {
-        newErrors.licenseType = "License type is required for clinical roles";
-      }
-      if (!formData.licenseNumber) {
-        newErrors.licenseNumber = "License number is required for clinical roles";
-      }
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Handle role toggle
-  const handleRoleToggle = (role: string) => {
-    setFormData(prev => {
-      const roles = prev.roles || [];
-      const roleExists = roles.includes(role);
       
-      if (roleExists) {
-        return {
-          ...prev,
-          roles: roles.filter(r => r !== role)
-        };
+      const result = await response.json();
+      
+      if (!response.ok) {
+        toast({
+          title: "Error",
+          description: result.message || "Error creating staff member",
+          variant: "destructive",
+        });
       } else {
-        return {
-          ...prev,
-          roles: [...roles, role]
-        };
+        toast({
+          title: "Success",
+          description: `Staff member ${staffData.first_name} ${staffData.last_name} created successfully`,
+        });
+        
+        // Reset form
+        setStaffData({
+          first_name: "",
+          middle_name: "",
+          last_name: "",
+          suffix: "",
+          type_of_clinician: "",
+          npi_number: "",
+          supervisor_id: "",
+          role: "",
+          email: "",
+          phone: "",
+          can_receive_texts: false,
+          work_phone: "",
+          address: "",
+          city_state: "",
+          zip_code: "",
+          license_state: "",
+          license_taxonomy: "",
+          license_expiration: "",
+        });
+        
+        // If onSave prop is provided, call it with the staff data
+        if (onSave) {
+          onSave(result.staff);
+        }
       }
-    });
-  };
-
-  // Handle form submission
-  const handleSubmit = () => {
-    if (validateForm()) {
-      onSave(formData);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit form. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>
-          {editingStaff ? "Edit Staff Member" : "Add New Staff Member"}
-        </CardTitle>
-      </CardHeader>
-
-      <CardContent className="space-y-6">
-        {/* Basic Information */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="firstName">First Name*</Label>
-            <Input
-              id="firstName"
-              value={formData.firstName}
-              onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-              className={errors.firstName ? "border-red-500" : ""}
-            />
-            {errors.firstName && (
-              <p className="text-red-500 text-sm">{errors.firstName}</p>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="lastName">Last Name*</Label>
-            <Input
-              id="lastName"
-              value={formData.lastName}
-              onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-              className={errors.lastName ? "border-red-500" : ""}
-            />
-            {errors.lastName && (
-              <p className="text-red-500 text-sm">{errors.lastName}</p>
-            )}
-          </div>
-        </div>
-
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <h2 className="text-xl font-semibold">Add New Staff</h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="email">Email Address*</Label>
-          <Input
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
-            className={errors.email ? "border-red-500" : ""}
-          />
-          {errors.email && (
-            <p className="text-red-500 text-sm">{errors.email}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="phone">Phone Number</Label>
-          <Input
-            id="phone"
-            value={formData.phone}
-            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+          <label className="block text-sm font-medium">First Name:</label>
+          <input
+            type="text"
+            name="first_name"
+            value={staffData.first_name}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
           />
         </div>
-
-        {/* Roles Section */}
+        
         <div className="space-y-2">
-          <Label>Roles*</Label>
-          <div className="border rounded-md p-4 space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Each user can have multiple roles. Select all that apply:
-            </p>
-            
-            {Object.entries(ROLE_CATEGORIES).map(([categoryKey, categoryName]) => (
-              <div key={categoryKey} className="space-y-2">
-                <h3 className="font-medium">{categoryName}</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(USER_ROLES)
-                    .filter(([_, roleName]) => ROLE_DETAILS[roleName]?.category === categoryName)
-                    .map(([roleKey, roleName]) => (
-                      <div key={roleKey} className="flex items-start space-x-2">
-                        <Checkbox 
-                          id={`role-${roleKey}`}
-                          checked={formData.roles?.includes(roleName) || false}
-                          onCheckedChange={() => handleRoleToggle(roleName)}
-                        />
-                        <div>
-                          <Label 
-                            htmlFor={`role-${roleKey}`}
-                            className="font-normal cursor-pointer"
-                          >
-                            {roleName}
-                          </Label>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            ))}
-            
-            {errors.roles && (
-              <p className="text-red-500 text-sm">{errors.roles}</p>
-            )}
-          </div>
+          <label className="block text-sm font-medium">Middle Name:</label>
+          <input
+            type="text"
+            name="middle_name"
+            value={staffData.middle_name}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
         </div>
-
-        {/* Clinician Fields */}
-        {showClinicianFields && (
-          <div className="space-y-4 border rounded-md p-4">
-            <h3 className="font-medium">Clinician Information</h3>
-            
-            <div className="space-y-2">
-              <Label htmlFor="licenseType">License Type*</Label>
-              <Select 
-                value={formData.licenseType || ""} 
-                onValueChange={(value) => setFormData({...formData, licenseType: value})}
-              >
-                <SelectTrigger className={errors.licenseType ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Select license type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LICENSE_TYPES.map((license) => (
-                    <SelectItem key={license} value={license}>
-                      {license}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.licenseType && (
-                <p className="text-red-500 text-sm">{errors.licenseType}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="licenseNumber">License Number*</Label>
-              <Input
-                id="licenseNumber"
-                value={formData.licenseNumber || ""}
-                onChange={(e) => setFormData({...formData, licenseNumber: e.target.value})}
-                className={errors.licenseNumber ? "border-red-500" : ""}
-              />
-              {errors.licenseNumber && (
-                <p className="text-red-500 text-sm">{errors.licenseNumber}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="formalName">Formal Name with Credentials</Label>
-              <Input
-                id="formalName"
-                placeholder='e.g., "Dr. Jane Smith, Ph.D."'
-                value={formData.formalName || ""}
-                onChange={(e) => setFormData({...formData, formalName: e.target.value})}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="title">Professional Title</Label>
-              <Input
-                id="title"
-                placeholder="e.g., Licensed Clinical Psychologist"
-                value={formData.title || ""}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
-              />
-            </div>
-          </div>
+        
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">Last Name:</label>
+          <input
+            type="text"
+            name="last_name"
+            value={staffData.last_name}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">Suffix:</label>
+          <input
+            type="text"
+            name="suffix"
+            value={staffData.suffix}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">Type of Clinician:</label>
+        <select
+          name="type_of_clinician"
+          value={staffData.type_of_clinician}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        >
+          <option value="">--Select--</option>
+          <option value="Licensed Clinical Psychologist">
+            Licensed Clinical Psychologist
+          </option>
+          <option value="Licensed Professional Counselor">
+            Licensed Professional Counselor
+          </option>
+          <option value="Clinical Social Worker">
+            Clinical Social Worker
+          </option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">NPI Number:</label>
+        <input
+          type="text"
+          name="npi_number"
+          value={staffData.npi_number}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">Supervisor ID (if any):</label>
+        <input
+          type="number"
+          name="supervisor_id"
+          value={staffData.supervisor_id}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">Role:</label>
+        <select 
+          name="role" 
+          value={staffData.role} 
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        >
+          <option value="">--Select--</option>
+          <option value="Practice Administrator">Practice Administrator</option>
+          <option value="Clinician">Clinician</option>
+          <option value="Intern/Assistant/Associate">
+            Intern/Assistant/Associate
+          </option>
+          <option value="Supervisor">Supervisor</option>
+          <option value="Clinical Administrator">Clinical Administrator</option>
+          <option value="Scheduler">Scheduler</option>
+          <option value="Biller">Biller</option>
+        </select>
+      </div>
+      
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">Email:</label>
+        <input
+          type="email"
+          name="email"
+          value={staffData.email}
+          onChange={handleChange}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">Phone:</label>
+          <input
+            type="text"
+            name="phone"
+            value={staffData.phone}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+        
+        <div className="flex items-center space-x-2 mt-8">
+          <input
+            type="checkbox"
+            name="can_receive_texts"
+            checked={staffData.can_receive_texts}
+            onChange={handleChange}
+            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+          />
+          <label className="text-sm font-medium">Can Receive Texts</label>
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">Work Phone:</label>
+        <input
+          type="text"
+          name="work_phone"
+          value={staffData.work_phone}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">Address:</label>
+        <input
+          type="text"
+          name="address"
+          value={staffData.address}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">City/State:</label>
+          <input
+            type="text"
+            name="city_state"
+            value={staffData.city_state}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">Zip Code:</label>
+          <input
+            type="text"
+            name="zip_code"
+            value={staffData.zip_code}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+      </div>
+      
+      <hr className="my-6" />
+      <h3 className="text-lg font-medium mb-4">License Information</h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">License State:</label>
+          <input
+            type="text"
+            name="license_state"
+            value={staffData.license_state}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">Taxonomy:</label>
+          <input
+            type="text"
+            name="license_taxonomy"
+            value={staffData.license_taxonomy}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">License Expiration (mm/dd/yyyy):</label>
+        <input
+          type="text"
+          name="license_expiration"
+          value={staffData.license_expiration}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
+      
+      <div className="flex justify-end space-x-4 mt-8">
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
         )}
-
-        {/* Additional Contact Information */}
-        <div className="space-y-4 border rounded-md p-4">
-          <h3 className="font-medium">Additional Contact Information</h3>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="workPhone">Work Phone</Label>
-              <Input
-                id="workPhone"
-                value={formData.workPhone || ""}
-                onChange={(e) => setFormData({...formData, workPhone: e.target.value})}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="homePhone">Home Phone</Label>
-              <Input
-                id="homePhone"
-                value={formData.homePhone || ""}
-                onChange={(e) => setFormData({...formData, homePhone: e.target.value})}
-              />
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-2 mt-2">
-            <Checkbox 
-              id="canReceiveSMS"
-              checked={formData.canReceiveSMS || false}
-              onCheckedChange={(checked) => 
-                setFormData({...formData, canReceiveSMS: checked === true})
-              }
-            />
-            <Label htmlFor="canReceiveSMS">Can receive SMS notifications</Label>
-          </div>
-        </div>
-      </CardContent>
-
-      <CardFooter className="flex justify-end space-x-2">
-        <Button variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button onClick={handleSubmit}>
-          {editingStaff ? "Update Staff Member" : "Add Staff Member"}
-        </Button>
-      </CardFooter>
-    </Card>
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Save New Staff
+        </button>
+      </div>
+    </form>
   );
 }

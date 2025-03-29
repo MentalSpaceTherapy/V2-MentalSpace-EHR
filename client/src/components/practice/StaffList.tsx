@@ -97,9 +97,7 @@ export function StaffList({ initialStaff }: StaffListProps) {
   }
 
   const handleAddStaff = () => {
-    setEditingStaff(undefined);
-    setIsFormOpen(true);
-    console.log("Opening staff form", isFormOpen);
+    window.location.href = '/staff-form';
   };
 
   const handleEditStaff = (staffId: number) => {
