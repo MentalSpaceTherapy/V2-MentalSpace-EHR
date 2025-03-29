@@ -17,6 +17,7 @@ import Messages from "@/pages/messages";
 import Billing from "@/pages/billing";
 import Reports from "@/pages/reports";
 import Practice from "@/pages/practice";
+import SignaturePage from "@/pages/sign";
 import { AuthProvider } from "@/hooks/use-auth";
 import { CRMProvider } from "@/hooks/use-crm";
 // CRM pages
@@ -69,6 +70,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/password-reset" component={PasswordResetPage} />
       <Route path="/practice-registration" component={PracticeRegistrationPage} />
+      <Route path="/sign/:accessUrl" component={SignaturePage} />
       <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/clients" component={Clients} />

@@ -696,6 +696,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Signature request routes
+  app.post("/api/signature-requests", isAuthenticated, async (req, res, next) => {
+    try {
+      // Validate request body
+      const validatedData = insertSignatureRequestSchema.parse(req.body);
+      
+      const signatureRequest = await storage.createSignatureRequest(validatedData);
+      res.status(201).json(signatureRequest);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.get("/api/signature-requests/access/:accessUrl", async (req, res, next) => {
+    try {
+      const { accessUrl } = req.params;
+      const { accessCode } = req.query;
+      
+      const signatureRequest = await storage.getSignatureRequestByAccessUrl(accessUrl);
+      
+      if (!signatureRequest) {
+        return res.status(404).json({ message: "Signature request not found" });
+      }
+      
+      // If access code is required, check it
+      if (signatureRequest.accessCode && signatureRequest.accessCode !== accessCode) {
+        return res.status(403).json({ message: "Invalid access code" });
+      }
+      
+      // Get the document
+      const document = await storage.getDocument(signatureRequest.documentId);
+      
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Get signature fields
+      const fields = await storage.getSignatureFields(signatureRequest.id);
+      
+      res.json({
+        request: signatureRequest,
+        document,
+        fields
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/signature-requests/:id/complete", async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const signatureRequest = await storage.completeSignatureRequest(id);
+      
+      if (!signatureRequest) {
+        return res.status(404).json({ message: "Signature request not found" });
+      }
+      
+      res.json(signatureRequest);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/signature-requests/:id/reject", async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { rejectionReason } = req.body;
+      
+      if (!rejectionReason) {
+        return res.status(400).json({ message: "Rejection reason is required" });
+      }
+      
+      const signatureRequest = await storage.rejectSignatureRequest(id, rejectionReason);
+      
+      if (!signatureRequest) {
+        return res.status(404).json({ message: "Signature request not found" });
+      }
+      
+      res.json(signatureRequest);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/signature-events", async (req, res, next) => {
+    try {
+      // Validate request body
+      const validatedData = insertSignatureEventSchema.parse({
+        ...req.body,
+        ipAddress: req.body.ipAddress || req.ip || req.connection.remoteAddress || 'unknown',
+        userAgent: req.body.userAgent || req.headers['user-agent'] || 'unknown'
+      });
+      
+      const event = await storage.createSignatureEvent(validatedData);
+      res.status(201).json(event);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.patch("/api/signature-fields/:id", async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const fieldData = req.body;
+      
+      const field = await storage.updateSignatureField(id, fieldData);
+      
+      if (!field) {
+        return res.status(404).json({ message: "Signature field not found" });
+      }
+      
+      res.json(field);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+
   // Message routes
   app.get("/api/messages", isAuthenticated, canAccessClientId, async (req, res, next) => {
     try {

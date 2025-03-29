@@ -27,7 +27,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import TreatmentPlanSignature from "@/components/signatures/TreatmentPlanSignature";
 
 // Schema for the treatment plan form
 const treatmentPlanSchema = z.object({
@@ -74,9 +76,16 @@ const treatmentServiceOptions = [
   { id: "case", label: "Case Management" },
 ];
 
-export function TreatmentPlanForm() {
+interface TreatmentPlanFormProps {
+  clientId?: number;
+  therapistId?: number;
+}
+
+export function TreatmentPlanForm({ clientId = 1, therapistId = 1 }: TreatmentPlanFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [documentId, setDocumentId] = useState<number | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
   const [goals, setGoals] = useState([
     {
       id: 1,
@@ -159,6 +168,11 @@ export function TreatmentPlanForm() {
     // Simulate API call
     setTimeout(() => {
       console.log("Treatment Plan Data:", data);
+      
+      // Simulate getting a document ID from the server
+      const mockDocumentId = Math.floor(Math.random() * 1000) + 1;
+      setDocumentId(mockDocumentId);
+      setIsSaved(true);
       
       toast({
         title: "Treatment Plan Saved",
@@ -694,6 +708,8 @@ export function TreatmentPlanForm() {
                   </FormItem>
                 )}
               />
+                            
+
             </CardContent>
           </Card>
           
@@ -727,13 +743,32 @@ export function TreatmentPlanForm() {
                 )}
               />
             </CardContent>
-            <CardFooter className="flex justify-between pt-4">
-              <Button
-                type="button"
-                variant="outline"
-              >
-                Save as Draft
-              </Button>
+            <CardFooter className="flex flex-col sm:flex-row gap-4 pt-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                >
+                  Save as Draft
+                </Button>
+                
+                {documentId && isSaved && (
+                  <TreatmentPlanSignature 
+                    documentId={documentId}
+                    clientId={clientId} 
+                    clientName={form.getValues("clientName")}
+                    therapistId={therapistId}
+                    isDisabled={!form.getValues("clientAgreement")}
+                    onSignatureComplete={() => {
+                      toast({
+                        title: "Signature Request Sent",
+                        description: "The client has been notified to sign the treatment plan."
+                      });
+                    }}
+                  />
+                )}
+              </div>
+              
               <button
                 type="submit"
                 className="group relative overflow-hidden rounded-md bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-2 font-medium text-white shadow-lg transition-all duration-300 hover:shadow-green-500/25 hover:scale-105"
