@@ -181,7 +181,36 @@ router.get('/campaigns', isAuthenticated, async (req: Request, res: Response) =>
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     
     const campaigns = await constantContactService.getCampaigns(limit);
-    res.json(campaigns);
+    
+    // Get our internal marketing campaigns to add metadata and connection info
+    const internalCampaigns = await storage.getMarketingCampaigns();
+    
+    // Enrich the campaign data with our internal data for UI display
+    const enrichedCampaigns = campaigns.campaigns.map((campaign: any) => {
+      const internalCampaign = internalCampaigns.find((c: any) => c.ccCampaignId === campaign.campaign_id);
+      if (internalCampaign) {
+        return {
+          ...campaign,
+          internal_id: internalCampaign.id,
+          referral_source_id: internalCampaign.referralSourceId,
+          total_sent: internalCampaign.totalSent,
+          total_opened: internalCampaign.totalOpened,
+          total_clicked: internalCampaign.totalClicked,
+          total_bounced: internalCampaign.totalBounced,
+          total_unsubscribed: internalCampaign.totalUnsubscribed,
+          connected_to_internal: true
+        };
+      }
+      return {
+        ...campaign,
+        connected_to_internal: false
+      };
+    });
+    
+    res.json({
+      ...campaigns,
+      campaigns: enrichedCampaigns
+    });
   } catch (error) {
     console.error('Error fetching campaigns:', error);
     res.status(500).json({ error: 'Failed to fetch campaigns' });
@@ -191,14 +220,59 @@ router.get('/campaigns', isAuthenticated, async (req: Request, res: Response) =>
 // Create a campaign
 router.post('/campaigns', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const campaignData = req.body;
+    const { 
+      campaignData, 
+      internalCampaignData = {}, 
+      referralSourceId = null 
+    } = req.body;
     
     if (!campaignData.name || !campaignData.from_email || !campaignData.subject) {
       return res.status(400).json({ error: 'Name, from email, and subject are required' });
     }
 
-    const campaign = await constantContactService.createCampaign(campaignData);
-    res.status(201).json(campaign);
+    // First create the campaign in Constant Contact
+    const ccCampaign = await constantContactService.createCampaign(campaignData);
+    
+    // Then create or update our internal record
+    if (ccCampaign && ccCampaign.campaign_id) {
+      const internalCampaign = await storage.createMarketingCampaign({
+        name: campaignData.name,
+        type: campaignData.email_content?.type || "Email",
+        status: "Draft",
+        description: internalCampaignData.description || "",
+        audience: internalCampaignData.audience || "",
+        content: campaignData.email_content || {},
+        startDate: internalCampaignData.startDate || null,
+        endDate: internalCampaignData.endDate || null,
+        createdById: req.user?.id as number,
+        tags: internalCampaignData.tags || [],
+        stats: {},
+        
+        // Constant Contact specific fields
+        ccCampaignId: ccCampaign.campaign_id,
+        ccListIds: campaignData.list_ids || [],
+        ccTemplateId: campaignData.template_id || null,
+        
+        // Tracking analytics initially set to 0
+        totalSent: 0,
+        totalOpened: 0,
+        totalClicked: 0,
+        totalBounced: 0,
+        totalUnsubscribed: 0,
+        
+        // Link to referral source if provided
+        referralSourceId: referralSourceId
+      });
+      
+      // Return both the external and internal campaign data
+      res.status(201).json({
+        cc_campaign: ccCampaign,
+        internal_campaign: internalCampaign,
+        success: true
+      });
+    } else {
+      res.status(201).json(ccCampaign);
+    }
   } catch (error) {
     console.error('Error creating campaign:', error);
     res.status(500).json({ error: 'Failed to create campaign' });

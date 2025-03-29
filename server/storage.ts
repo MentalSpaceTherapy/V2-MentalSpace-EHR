@@ -105,10 +105,13 @@ export interface IStorage {
     status?: string;
     type?: string;
   }): Promise<MarketingCampaign[]>;
+  getMarketingCampaigns(): Promise<MarketingCampaign[]>; // Get all campaigns for integration purposes
   createCampaign(campaign: InsertMarketingCampaign): Promise<MarketingCampaign>;
+  createMarketingCampaign(campaign: InsertMarketingCampaign): Promise<MarketingCampaign>; // Alias for createCampaign for consistency
   updateCampaign(id: number, campaign: Partial<InsertMarketingCampaign>): Promise<MarketingCampaign | undefined>;
   deleteCampaign(id: number): Promise<boolean>;
   updateCampaignStats(id: number, stats: Record<string, any>): Promise<MarketingCampaign | undefined>;
+  getCampaignByConstantContactId(ccCampaignId: string): Promise<MarketingCampaign | undefined>; // Get by external ID
   
   // Marketing event methods
   getEvent(id: number): Promise<MarketingEvent | undefined>;

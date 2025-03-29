@@ -547,9 +547,34 @@ export class DatabaseStorage implements IStorage {
     );
   }
 
+  // Get all marketing campaigns for integration purposes
+  async getMarketingCampaigns(): Promise<MarketingCampaign[]> {
+    const result = await db.select().from(marketingCampaigns);
+    
+    // Sort by date, most recent first
+    return result.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+  
+  // Get campaign by Constant Contact ID
+  async getCampaignByConstantContactId(ccCampaignId: string): Promise<MarketingCampaign | undefined> {
+    const [campaign] = await db.select()
+      .from(marketingCampaigns)
+      .where(eq(marketingCampaigns.ccCampaignId, ccCampaignId))
+      .limit(1);
+    
+    return campaign;
+  }
+  
   async createCampaign(campaignData: InsertMarketingCampaign): Promise<MarketingCampaign> {
     const [campaign] = await db.insert(marketingCampaigns).values(campaignData).returning();
     return campaign;
+  }
+  
+  // Alias for createCampaign for consistency
+  async createMarketingCampaign(campaignData: InsertMarketingCampaign): Promise<MarketingCampaign> {
+    return this.createCampaign(campaignData);
   }
 
   async updateCampaign(id: number, campaignData: Partial<InsertMarketingCampaign>): Promise<MarketingCampaign | undefined> {

@@ -74,6 +74,11 @@ export const clients = pgTable("clients", {
   address: text("address"),
   status: text("status").default("active").notNull(),
   primaryTherapistId: integer("primary_therapist_id").references(() => users.id),
+  referralSourceId: integer("referral_source_id").references(() => referralSources.id), // Connect clients to referral sources
+  referralNotes: text("referral_notes"), // Notes about how the client was referred
+  leadId: integer("lead_id").references(() => leads.id), // Connect clients to their original lead record
+  conversionDate: timestamp("conversion_date"), // When they were converted from lead to client
+  originalMarketingCampaignId: integer("original_marketing_campaign_id").references(() => marketingCampaigns.id), // Track which campaign brought them in
 });
 
 export const insertClientSchema = createInsertSchema(clients).pick({
@@ -85,6 +90,11 @@ export const insertClientSchema = createInsertSchema(clients).pick({
   address: true,
   status: true,
   primaryTherapistId: true,
+  referralSourceId: true,
+  referralNotes: true,
+  leadId: true,
+  conversionDate: true,
+  originalMarketingCampaignId: true,
 });
 
 // Session/Appointment model
@@ -220,6 +230,21 @@ export const marketingCampaigns = pgTable("marketing_campaigns", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   tags: text("tags").array(),
   stats: jsonb("stats").default({}), // Campaign performance statistics
+  
+  // Integration with Constant Contact
+  ccCampaignId: text("cc_campaign_id"), // Constant Contact campaign ID
+  ccListIds: text("cc_list_ids").array(), // Constant Contact list IDs used in this campaign
+  ccTemplateId: text("cc_template_id"), // Constant Contact template ID
+  
+  // Tracking and analytics
+  totalSent: integer("total_sent").default(0),
+  totalOpened: integer("total_opened").default(0),
+  totalClicked: integer("total_clicked").default(0),
+  totalBounced: integer("total_bounced").default(0),
+  totalUnsubscribed: integer("total_unsubscribed").default(0),
+  
+  // Referral source connection
+  referralSourceId: integer("referral_source_id").references(() => referralSources.id),
 });
 
 // Marketing events
@@ -251,7 +276,7 @@ export const eventRegistrations = pgTable("event_registrations", {
   notes: text("notes"),
 });
 
-// Contact history for leads
+// Contact history for leads and clients
 export const contactHistory = pgTable("contact_history", {
   id: serial("id").primaryKey(),
   leadId: integer("lead_id").references(() => leads.id),
@@ -269,6 +294,13 @@ export const contactHistory = pgTable("contact_history", {
   followUpType: text("follow_up_type"),
   completedById: integer("completed_by_id").references(() => users.id).notNull(),
   campaignId: integer("campaign_id").references(() => marketingCampaigns.id),
+  // Track email campaign metrics
+  emailOpened: boolean("email_opened").default(false),
+  emailClicked: boolean("email_clicked").default(false),
+  emailDelivered: boolean("email_delivered").default(true),
+  emailBounced: boolean("email_bounced").default(false),
+  // For marketing connections
+  constantContactActivityId: text("constant_contact_activity_id"), // Track connection to Constant Contact
 });
 
 // Referral sources
@@ -443,6 +475,18 @@ export const insertMarketingCampaignSchema = createInsertSchema(marketingCampaig
   createdById: true,
   tags: true,
   stats: true,
+  // Add Constant Contact fields
+  ccCampaignId: true,
+  ccListIds: true,
+  ccTemplateId: true,
+  // Analytics fields
+  totalSent: true,
+  totalOpened: true,
+  totalClicked: true,
+  totalBounced: true,
+  totalUnsubscribed: true,
+  // Referral connection
+  referralSourceId: true,
 });
 
 export const insertMarketingEventSchema = createInsertSchema(marketingEvents).pick({
@@ -482,6 +526,12 @@ export const insertContactHistorySchema = createInsertSchema(contactHistory).pic
   followUpType: true,
   completedById: true,
   campaignId: true,
+  // Add new email tracking fields
+  emailOpened: true,
+  emailClicked: true, 
+  emailDelivered: true,
+  emailBounced: true,
+  constantContactActivityId: true,
 });
 
 export const insertReferralSourceSchema = createInsertSchema(referralSources).pick({
