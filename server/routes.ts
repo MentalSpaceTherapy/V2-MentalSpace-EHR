@@ -2264,36 +2264,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Constant Contact API routes
   app.use('/api/constant-contact', constantContactRoutes);
   
-  // Special route for Constant Contact OAuth callback at root URL
+  // Special route for Constant Contact OAuth callback
   // Note: OAuth callback should not require authentication as the user is being redirected from Constant Contact
-  app.get('/', async (req, res, next) => {
-    try {
-      const { code } = req.query;
-      
-      if (code && typeof code === 'string') {
-        // This is a Constant Contact OAuth callback
-        // Exchange code for tokens
-        await constantContactService.exchangeCodeForTokens(code);
-        
-        // Redirect to the marketing dashboard
-        return res.redirect('/crm/marketing');
-      }
-      
-      // If no code parameter, serve the regular app
-      next();
-    } catch (error) {
-      console.error('Error in OAuth callback:', error);
-      next();
-    }
-  });
-  
-  // Keep the original callback route for backward compatibility
   app.get('/api/auth/constant-contact/callback', async (req, res, next) => {
     try {
-      const { code } = req.query;
+      const { code, state } = req.query;
+      
+      console.log('OAuth callback received', { 
+        codePresent: !!code,
+        statePresent: !!state,
+        stateValue: state,
+        sessionExists: !!req.session,
+        sessionId: req.session?.id,
+        sessionState: req.session?.oauthState,
+        sessionOtherKeys: req.session ? Object.keys(req.session) : []
+      });
       
       if (!code || typeof code !== 'string') {
         return res.status(400).json({ error: 'Authorization code is required' });
+      }
+      
+      // Verify the state parameter to prevent CSRF attacks
+      // First try to validate from database
+      const isValidDBState = await storage.validateAndUseOAuthState(state as string, 'constant_contact');
+      
+      if (!isValidDBState) {
+        // Fallback to session validation
+        if (!state || typeof state !== 'string' || !req.session || req.session.oauthState !== state) {
+          console.error('OAuth state validation failed', { 
+            receivedState: state, 
+            sessionState: req.session?.oauthState,
+            sessionId: req.session?.id,
+            sessionKeys: req.session ? Object.keys(req.session) : []
+          });
+          return res.status(400).json({ error: 'Invalid state parameter' });
+        }
+        
+        console.warn('OAuth state valid in session but not in database, proceeding with caution.');
+      }
+      
+      // Clear the state from the session
+      if (req.session) {
+        delete req.session.oauthState;
+        console.log('Cleared oauthState from session');
       }
 
       // Exchange code for tokens

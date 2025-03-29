@@ -2,6 +2,7 @@ import {
   users, clients, sessions, documentation, notifications, messages,
   leads, marketingCampaigns, marketingEvents, eventRegistrations, contactHistory, referralSources,
   documentTemplates, templateVersions, signatureRequests, signatureFields, signatureEvents,
+  oauthStates,
   type User, type InsertUser,
   type Client, type InsertClient, type ExtendedClient,
   type Session, type InsertSession,
@@ -18,7 +19,8 @@ import {
   type TemplateVersion, type InsertTemplateVersion,
   type SignatureRequest, type InsertSignatureRequest,
   type SignatureField, type InsertSignatureField,
-  type SignatureEvent, type InsertSignatureEvent
+  type SignatureEvent, type InsertSignatureEvent,
+  type OAuthState, type InsertOAuthState
 } from "@shared/schema";
 import session from "express-session";
 
@@ -221,6 +223,11 @@ export interface IStorage {
   // Signature event methods
   getSignatureEvents(requestId: number): Promise<SignatureEvent[]>;
   createSignatureEvent(event: InsertSignatureEvent): Promise<SignatureEvent>;
+  
+  // OAuth state methods
+  createOAuthState(stateData: InsertOAuthState): Promise<OAuthState>;
+  getOAuthState(state: string): Promise<OAuthState | undefined>;
+  validateAndUseOAuthState(state: string, service: string): Promise<boolean>;
   
   // Session store for auth
   sessionStore: session.Store;

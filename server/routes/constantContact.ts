@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { constantContactService } from '../services/constantContact';
+import { storage } from '../storage';
+import crypto from 'crypto';
 
 const router = Router();
 
@@ -14,7 +16,42 @@ const isAuthenticated = (req: Request, res: Response, next: Function) => {
 // Route to initiate OAuth2 flow
 router.get('/authorize', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const authUrl = constantContactService.getAuthorizationUrl();
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'User ID not found' });
+    }
+    
+    // Generate a secure random state parameter to prevent CSRF attacks
+    const state = crypto.randomBytes(32).toString('hex');
+    
+    // Store the state in both the session and the database for redundancy
+    if (req.session) {
+      req.session.oauthState = state;
+      
+      // Save session immediately to ensure persistence
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Error saving session:', err);
+            reject(err);
+          } else {
+            console.log('Session saved with state', { state, sessionId: req.session?.id });
+            resolve();
+          }
+        });
+      });
+    }
+    
+    // Store state in database with expiration (30 minutes from now)
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    await storage.createOAuthState({
+      state,
+      service: 'constant_contact',
+      userId: req.user.id,
+      expiresAt,
+      used: false
+    });
+    
+    const authUrl = constantContactService.getAuthorizationUrl(state);
     res.json({ authUrl });
   } catch (error) {
     console.error('Error generating authorization URL:', error);
@@ -25,14 +62,40 @@ router.get('/authorize', isAuthenticated, async (req: Request, res: Response) =>
 // OAuth2 callback route
 router.get('/callback', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const { code } = req.query;
+    const { code, state } = req.query;
     
     if (!code || typeof code !== 'string') {
       return res.status(400).json({ error: 'Authorization code is required' });
     }
+    
+    if (!state || typeof state !== 'string') {
+      return res.status(400).json({ error: 'State parameter is missing' });
+    }
+    
+    // Validate state from database (this is more reliable than session-based validation)
+    const isValidState = await storage.validateAndUseOAuthState(state, 'constant_contact');
+    
+    if (!isValidState) {
+      // Also check session as fallback
+      const sessionState = req.session?.oauthState;
+      
+      if (!sessionState || sessionState !== state) {
+        return res.status(400).json({ 
+          error: 'Invalid state parameter. This could be due to an expired session or a security issue.'
+        });
+      }
+      
+      // If we got here, session state is valid but database state is not
+      console.warn('OAuth state valid in session but not in database, proceeding with caution.');
+    }
 
     // Exchange code for tokens
     await constantContactService.exchangeCodeForTokens(code);
+    
+    // Clear the OAuth state from session
+    if (req.session) {
+      delete req.session.oauthState;
+    }
     
     // Redirect to the marketing dashboard
     res.redirect('/crm/marketing');

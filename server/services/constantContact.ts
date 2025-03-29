@@ -30,8 +30,8 @@ export class ConstantContactService {
   private credentials: ConstantContactCredentials | null = null;
 
   // Generate the authorization URL for OAuth2 flow
-  getAuthorizationUrl(): string {
-    return `https://authz.constantcontact.com/oauth2/default/v1/authorize?client_id=${CONSTANT_CONTACT_CLIENT_ID}&redirect_uri=${encodeURIComponent(CONSTANT_CONTACT_REDIRECT_URI!)}&response_type=code&scope=contact_data campaign_data offline_access`;
+  getAuthorizationUrl(state: string): string {
+    return `https://authz.constantcontact.com/oauth2/default/v1/authorize?client_id=${CONSTANT_CONTACT_CLIENT_ID}&redirect_uri=${encodeURIComponent(CONSTANT_CONTACT_REDIRECT_URI!)}&response_type=code&scope=contact_data campaign_data offline_access&state=${encodeURIComponent(state)}`;
   }
 
   // Exchange the authorization code for access and refresh tokens

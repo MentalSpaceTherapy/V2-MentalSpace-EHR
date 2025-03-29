@@ -708,3 +708,25 @@ export const insertIntegrationSchema = createInsertSchema(integrations).pick({
 
 export type Integration = typeof integrations.$inferSelect;
 export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;
+
+// OAuth state tracking for proper redirection and security
+export const oauthStates = pgTable("oauth_states", {
+  id: serial("id").primaryKey(),
+  state: text("state").notNull().unique(), // The state parameter sent in OAuth request
+  service: text("service").notNull(), // Service name: "constant_contact", "google", etc.
+  userId: integer("user_id").notNull(), // The user who initiated the request
+  expiresAt: timestamp("expires_at").notNull(), // When this state expires
+  createdAt: timestamp("created_at").defaultNow(),
+  used: boolean("used").default(false), // Whether this state has been used
+});
+
+export const insertOAuthStateSchema = createInsertSchema(oauthStates).pick({
+  state: true,
+  service: true,
+  userId: true,
+  expiresAt: true,
+  used: true,
+});
+
+export type OAuthState = typeof oauthStates.$inferSelect;
+export type InsertOAuthState = z.infer<typeof insertOAuthStateSchema>;

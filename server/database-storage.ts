@@ -2,6 +2,7 @@ import {
   users, clients, sessions, documentation, notifications, messages,
   leads, marketingCampaigns, marketingEvents, eventRegistrations, contactHistory, referralSources,
   documentTemplates, templateVersions, signatureRequests, signatureFields, signatureEvents,
+  oauthStates,
   type User, type InsertUser,
   type Client, type InsertClient, type ExtendedClient,
   type Session, type InsertSession,
@@ -18,7 +19,8 @@ import {
   type TemplateVersion, type InsertTemplateVersion,
   type SignatureRequest, type InsertSignatureRequest,
   type SignatureField, type InsertSignatureField,
-  type SignatureEvent, type InsertSignatureEvent
+  type SignatureEvent, type InsertSignatureEvent,
+  type OAuthState, type InsertOAuthState
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -1561,5 +1563,36 @@ export class DatabaseStorage implements IStorage {
   async createSignatureEvent(event: InsertSignatureEvent): Promise<SignatureEvent> {
     const [signatureEvent] = await db.insert(signatureEvents).values(event).returning();
     return signatureEvent;
+  }
+  
+  // OAuth state methods
+  async createOAuthState(stateData: InsertOAuthState): Promise<OAuthState> {
+    const [result] = await db.insert(oauthStates).values(stateData).returning();
+    return result;
+  }
+  
+  async getOAuthState(state: string): Promise<OAuthState | undefined> {
+    const results = await db.select().from(oauthStates).where(eq(oauthStates.state, state));
+    return results[0];
+  }
+  
+  async validateAndUseOAuthState(state: string, service: string): Promise<boolean> {
+    // Get the state record
+    const stateRecord = await this.getOAuthState(state);
+    
+    // If it doesn't exist, is already used, or is expired, return false
+    if (!stateRecord || 
+        stateRecord.used || 
+        stateRecord.service !== service || 
+        stateRecord.expiresAt < new Date()) {
+      return false;
+    }
+    
+    // Mark as used
+    await db.update(oauthStates)
+      .set({ used: true })
+      .where(eq(oauthStates.id, stateRecord.id));
+    
+    return true;
   }
 }

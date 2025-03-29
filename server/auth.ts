@@ -37,11 +37,13 @@ async function comparePasswords(supplied: string, stored: string) {
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "mentalspace-ehr-session-secret",
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Changed to true to ensure session is saved back to the store
+    saveUninitialized: true, // Changed to true to save new sessions
     store: storage.sessionStore,
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      maxAge: 1000 * 60 * 60 * 24 * 7, // Extended to 7 days
+      secure: false, // Set to false for development
+      sameSite: 'lax' // Allow cookies for same-site and cross-site requests
     }
   };
 
@@ -60,7 +62,7 @@ export function setupAuth(app: Express) {
           return done(null, user);
         }
         
-        if (!user || !(await comparePasswords(password, user.password))) {
+        if (!user || !(await comparePasswords(password, user.passwordHash))) {
           return done(null, false);
         } else {
           return done(null, user);
@@ -90,7 +92,7 @@ export function setupAuth(app: Express) {
 
       const user = await storage.createUser({
         ...req.body,
-        password: await hashPassword(req.body.password),
+        passwordHash: await hashPassword(req.body.password),
       });
 
       req.login(user, (err) => {
