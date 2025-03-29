@@ -55,7 +55,21 @@ import {
   FileWarning,
   StickyNote,
   BadgeAlert,
-  ClipboardList
+  ClipboardList,
+  Code,
+  Link,
+  Laptop,
+  KeyRound,
+  Webhook,
+  Video,
+  MonitorPlay,
+  ServerIcon,
+  KeySquare,
+  Plug,
+  PlugZap,
+  Cable,
+  ListPlus,
+  ScrollText
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -302,6 +316,30 @@ const complianceMetrics = {
   supervisionCompliance: 97
 };
 
+// Integration ecosystem data
+const integrationData = {
+  ehrIntegrations: [
+    { name: "Epic Systems", status: "Not Connected", icon: "ServerIcon" },
+    { name: "Cerner", status: "Not Connected", icon: "ServerIcon" },
+    { name: "Athenahealth", status: "Not Connected", icon: "ServerIcon" },
+    { name: "eClinicalWorks", status: "Not Connected", icon: "ServerIcon" },
+    { name: "NextGen Healthcare", status: "Not Connected", icon: "ServerIcon" }
+  ],
+  telehealthProviders: [
+    { name: "Zoom for Healthcare", status: "Not Connected", icon: "Video" },
+    { name: "Doxy.me", status: "Not Connected", icon: "Video" },
+    { name: "Teladoc", status: "Not Connected", icon: "Video" },
+    { name: "Amwell", status: "Not Connected", icon: "Video" },
+    { name: "VSee", status: "Not Connected", icon: "Video" }
+  ],
+  apiDocumentation: {
+    endpointCount: 35,
+    authMethod: "OAuth 2.0 & API Keys",
+    supportedFormats: ["JSON", "XML"],
+    hasSwaggerDocs: false
+  }
+};
+
 // Colors for pie charts
 const COLORS = ['#4db6bc', '#2c7a7b', '#4fd1c5', '#32a39a', '#9cdbd8', '#d1edec'];
 
@@ -474,6 +512,10 @@ export default function Reports() {
               <TabsTrigger value="security-compliance" className="flex items-center">
                 <Shield className="h-4 w-4 mr-2" />
                 Security & Compliance
+              </TabsTrigger>
+              <TabsTrigger value="integrations" className="flex items-center">
+                <Globe className="h-4 w-4 mr-2" />
+                Integrations
               </TabsTrigger>
             </TabsList>
 
@@ -2122,6 +2164,314 @@ export default function Reports() {
                           </tr>
                         </tbody>
                       </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            
+            {/* Integrations */}
+            <TabsContent value="integrations" className="mt-4">
+              <div className="grid grid-cols-1 gap-6">
+                {/* EHR Integration */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-lg">EHR System Integration</CardTitle>
+                    <div className="flex space-x-2">
+                      <Button>
+                        <Plug className="h-4 w-4 mr-2" />
+                        Connect EHR System
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-md p-4 mb-4">
+                      <div className="flex">
+                        <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium">No EHR System Connected</p>
+                          <p className="text-sm mt-1">
+                            Connect to an EHR system to enable seamless data exchange. This will allow for bidirectional 
+                            synchronization of patient records, appointment information, and clinical documentation.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="rounded-md border">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/60">
+                            <th className="py-3 px-4 text-left">EHR System</th>
+                            <th className="py-3 px-4 text-left">Status</th>
+                            <th className="py-3 px-4 text-left">Features</th>
+                            <th className="py-3 px-4 text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {integrationData.ehrIntegrations.map((ehr, index) => (
+                            <tr key={index} className="border-b">
+                              <td className="py-3 px-4">
+                                <div className="flex items-center">
+                                  <div className="h-8 w-8 rounded-md bg-primary-100 flex items-center justify-center mr-3">
+                                    <ServerIcon className="h-4 w-4 text-primary-600" />
+                                  </div>
+                                  {ehr.name}
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                                  {ehr.status}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex space-x-1">
+                                  <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-800">
+                                    Patient Records
+                                  </span>
+                                  <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-800">
+                                    Appointments
+                                  </span>
+                                  <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-800">
+                                    Billing
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <Button variant="outline" size="sm">
+                                  <Plug className="h-4 w-4 mr-2" />
+                                  Connect
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Telehealth Integration */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-lg">Telehealth Integration</CardTitle>
+                    <div className="flex space-x-2">
+                      <Button>
+                        <Video className="h-4 w-4 mr-2" />
+                        Configure Telehealth
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-md p-4 mb-4">
+                      <div className="flex">
+                        <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium">No Telehealth Provider Connected</p>
+                          <p className="text-sm mt-1">
+                            Connect to a telehealth provider to enable video sessions directly within MentalSpace. 
+                            This integration will allow you to conduct secure HIPAA-compliant video therapy sessions 
+                            without requiring clients to use external applications.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="rounded-md border">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/60">
+                            <th className="py-3 px-4 text-left">Telehealth Provider</th>
+                            <th className="py-3 px-4 text-left">Status</th>
+                            <th className="py-3 px-4 text-left">Features</th>
+                            <th className="py-3 px-4 text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {integrationData.telehealthProviders.map((provider, index) => (
+                            <tr key={index} className="border-b">
+                              <td className="py-3 px-4">
+                                <div className="flex items-center">
+                                  <div className="h-8 w-8 rounded-md bg-primary-100 flex items-center justify-center mr-3">
+                                    <Video className="h-4 w-4 text-primary-600" />
+                                  </div>
+                                  {provider.name}
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                                  {provider.status}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex space-x-1">
+                                  <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-800">
+                                    Video
+                                  </span>
+                                  <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-800">
+                                    Chat
+                                  </span>
+                                  <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-800">
+                                    Screen Sharing
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <Button variant="outline" size="sm">
+                                  <Video className="h-4 w-4 mr-2" />
+                                  Connect
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* API Access */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-lg">API Access & Developer Resources</CardTitle>
+                    <div className="flex space-x-2">
+                      <Button>
+                        <KeySquare className="h-4 w-4 mr-2" />
+                        Generate API Key
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                      <Card>
+                        <CardContent className="p-6">
+                          <div className="flex items-center justify-center mb-4">
+                            <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center">
+                              <Code className="h-6 w-6 text-primary-600" />
+                            </div>
+                          </div>
+                          <h3 className="text-lg font-medium text-center mb-2">API Documentation</h3>
+                          <p className="text-sm text-neutral-600 text-center mb-4">
+                            Comprehensive documentation for our REST API with examples and interactive testing tools.
+                          </p>
+                          <div className="flex justify-center">
+                            <Button variant="outline" className="w-full">
+                              <ScrollText className="h-4 w-4 mr-2" />
+                              View Documentation
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardContent className="p-6">
+                          <div className="flex items-center justify-center mb-4">
+                            <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center">
+                              <KeyRound className="h-6 w-6 text-primary-600" />
+                            </div>
+                          </div>
+                          <h3 className="text-lg font-medium text-center mb-2">API Keys</h3>
+                          <p className="text-sm text-neutral-600 text-center mb-4">
+                            Generate and manage API keys for secure access to MentalSpace data and functionality.
+                          </p>
+                          <div className="flex justify-center">
+                            <Button variant="outline" className="w-full">
+                              <KeySquare className="h-4 w-4 mr-2" />
+                              Manage API Keys
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardContent className="p-6">
+                          <div className="flex items-center justify-center mb-4">
+                            <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center">
+                              <Webhook className="h-6 w-6 text-primary-600" />
+                            </div>
+                          </div>
+                          <h3 className="text-lg font-medium text-center mb-2">Webhooks</h3>
+                          <p className="text-sm text-neutral-600 text-center mb-4">
+                            Set up webhooks to receive real-time notifications when events occur in your MentalSpace account.
+                          </p>
+                          <div className="flex justify-center">
+                            <Button variant="outline" className="w-full">
+                              <PlugZap className="h-4 w-4 mr-2" />
+                              Configure Webhooks
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    <div className="space-y-4 mt-4">
+                      <div className="flex items-center justify-between p-4 border rounded-md">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-md bg-primary-100 flex items-center justify-center mr-3">
+                            <ListPlus className="h-5 w-5 text-primary-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium">API Endpoints</h3>
+                            <p className="text-sm text-neutral-600">
+                              {integrationData.apiDocumentation.endpointCount} endpoints available for integration
+                            </p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          View Endpoints
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-4 border rounded-md">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-md bg-primary-100 flex items-center justify-center mr-3">
+                            <Lock className="h-5 w-5 text-primary-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium">Authentication</h3>
+                            <p className="text-sm text-neutral-600">
+                              {integrationData.apiDocumentation.authMethod} authentication supported
+                            </p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          View Details
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-4 border rounded-md">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-md bg-primary-100 flex items-center justify-center mr-3">
+                            <Code className="h-5 w-5 text-primary-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium">Response Formats</h3>
+                            <p className="text-sm text-neutral-600">
+                              {integrationData.apiDocumentation.supportedFormats.join(", ")} formats supported
+                            </p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          View Examples
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-4 border rounded-md">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-md bg-primary-100 flex items-center justify-center mr-3">
+                            <Cable className="h-5 w-5 text-primary-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium">SDK Libraries</h3>
+                            <p className="text-sm text-neutral-600">
+                              Client libraries for JavaScript, Python, PHP, and Ruby
+                            </p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          Download SDKs
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
