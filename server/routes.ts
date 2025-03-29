@@ -2272,20 +2272,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Telehealth API routes
   app.use('/api/telehealth', telehealthRoutes);
   
-  // Legacy route for Constant Contact OAuth callback - redirects to marketing dashboard
-  // This route remains to handle any lingering callbacks but is now simplified
-  app.get('/api/auth/constant-contact/callback', async (req, res) => {
-    // Log the callback attempt
-    console.log('Legacy Constant Contact OAuth callback received - redirecting to marketing dashboard');
-    
-    // Clear any OAuth state from session
-    if (req.session && req.session.oauthState) {
-      delete req.session.oauthState;
-    }
-    
-    // Redirect to the marketing dashboard with migration notice
-    res.redirect('/crm/marketing?migration=complete');
-  });
+  // Note: Constant Contact integration has been fully migrated to SendGrid.
+  // If any lingering callbacks need to be handled, uncomment this route.
+  // 
+  // app.get('/api/auth/constant-contact/callback', async (req, res) => {
+  //   // Log the callback attempt
+  //   console.log('Legacy Constant Contact OAuth callback received - redirecting to marketing dashboard');
+  //   
+  //   // Clear any OAuth state from session
+  //   if (req.session && req.session.oauthState) {
+  //     delete req.session.oauthState;
+  //   }
+  //   
+  //   // Redirect to the marketing dashboard with migration notice
+  //   res.redirect('/crm/marketing?migration=complete');
+  // });
 
   const httpServer = createServer(app);
   
