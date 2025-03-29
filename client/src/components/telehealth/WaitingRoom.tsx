@@ -1,94 +1,64 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Calendar, Clock, Video, Phone } from "lucide-react";
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, VideoIcon } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface WaitingRoomProps {
-  session: {
-    clientName: string;
-    sessionType: string;
-    scheduledStartTime: Date;
-    duration: number;
-  };
-  onAdmitClient: () => void;
-  onEndSession: () => void;
+  clientName: string;
+  therapistName?: string;
+  isTherapist: boolean;
+  onCancel: () => void;
 }
 
-const WaitingRoom: React.FC<WaitingRoomProps> = ({
-  session,
-  onAdmitClient,
-  onEndSession
+const WaitingRoom: React.FC<WaitingRoomProps> = ({ 
+  clientName, 
+  therapistName = 'your therapist',
+  isTherapist,
+  onCancel
 }) => {
-  const formatSessionTime = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    }).format(date);
-  };
-  
-  const formatSessionDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric'
-    }).format(date);
-  };
-  
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-100 p-6">
-      <Card className="max-w-md w-full">
-        <CardHeader>
-          <CardTitle className="text-xl">Waiting Room</CardTitle>
+    <div className="w-full max-w-md mx-auto mt-10">
+      <Card className="border-blue-200">
+        <CardHeader className="bg-blue-50 border-b border-blue-100">
+          <CardTitle className="text-blue-800">
+            {isTherapist ? 'Waiting for client' : 'Waiting Room'}
+          </CardTitle>
           <CardDescription>
-            You're in the session waiting room. Your client will be notified.
+            {isTherapist 
+              ? `Waiting for ${clientName} to join the session`
+              : `Waiting for ${therapistName} to admit you`}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="mb-6">
-            <div className="flex flex-col items-center justify-center py-6">
-              <div className="h-20 w-20 rounded-full bg-primary-100 flex items-center justify-center mb-4">
-                <User className="h-10 w-10 text-primary-600" />
-              </div>
-              <h2 className="text-xl font-bold">{session.clientName}</h2>
-              <p className="text-neutral-500">{session.sessionType}</p>
-            </div>
+        
+        <CardContent className="pt-6 text-center">
+          <div className="bg-gray-800 rounded-lg p-10 mb-6 flex items-center justify-center">
+            <VideoIcon size={64} className="text-gray-400" />
           </div>
           
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <Calendar className="h-5 w-5 text-neutral-500 mr-3" />
-              <div>
-                <p className="text-sm font-medium">Session Date</p>
-                <p className="text-neutral-600">{formatSessionDate(session.scheduledStartTime)}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center">
-              <Clock className="h-5 w-5 text-neutral-500 mr-3" />
-              <div>
-                <p className="text-sm font-medium">Session Time</p>
-                <p className="text-neutral-600">
-                  {formatSessionTime(session.scheduledStartTime)} ({session.duration} minutes)
-                </p>
-              </div>
-            </div>
+          <div className="flex items-center justify-center gap-2 text-blue-600 mb-6">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>
+              {isTherapist 
+                ? 'Waiting for client to connect...' 
+                : 'Waiting to be admitted to the session...'}
+            </span>
+          </div>
+          
+          <Alert className="bg-blue-50 border-blue-200 mb-4">
+            <AlertDescription className="text-blue-700">
+              {isTherapist
+                ? 'You will be notified when your client joins the session. Keep this window open.'
+                : 'Your therapist has been notified of your arrival. Please wait to be admitted to the session.'}
+            </AlertDescription>
+          </Alert>
+          
+          <div className="text-sm text-gray-500 mt-2">
+            {isTherapist 
+              ? `The session invitation has been sent to ${clientName}.`
+              : `Your appointment with ${therapistName} is being prepared.`}
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={onEndSession}>
-            <Phone className="h-4 w-4 mr-2 transform rotate-135" />
-            End Session
-          </Button>
-          <Button onClick={onAdmitClient}>
-            <Video className="h-4 w-4 mr-2" />
-            Admit Client
-          </Button>
-        </CardFooter>
       </Card>
-      
-      <div className="mt-8 text-center text-neutral-500">
-        <p>The session is secure and end-to-end encrypted</p>
-      </div>
     </div>
   );
 };

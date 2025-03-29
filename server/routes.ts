@@ -7,6 +7,8 @@ import constantContactRoutes from './routes/constantContact';
 import { constantContactService } from './services/constantContact';
 import sendGridRoutes from './routes/sendGrid';
 import reportsRoutes from './routes/reports';
+import telehealthRoutes from './routes/telehealth';
+import { telehealthService } from './services/telehealth';
 import { 
   insertClientSchema, 
   insertSessionSchema, 
@@ -2272,6 +2274,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Reports API routes
   app.use('/api/reports', reportsRoutes);
   
+  // Register Telehealth API routes
+  app.use('/api/telehealth', telehealthRoutes);
+  
   // Special route for Constant Contact OAuth callback
   // Note: OAuth callback should not require authentication as the user is being redirected from Constant Contact
   app.get('/api/auth/constant-contact/callback', async (req, res, next) => {
@@ -2329,6 +2334,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Initialize telehealth service with the HTTP server
+  telehealthService.initialize(httpServer);
+  console.log('Telehealth service initialized with WebSocket signaling');
 
   return httpServer;
 }

@@ -270,23 +270,26 @@ export default function Telehealth() {
     return (
       <div className="h-screen flex flex-col bg-neutral-900">
         {/* Encryption Notice */}
-        <EncryptionBanner enabled={encryptionEnabled} />
+        <EncryptionBanner isEncrypted={encryptionEnabled} />
         
         {/* Main video area */}
         <div className="flex-1 flex">
           {isWaitingRoom ? (
             <WaitingRoom 
-              session={activeSession}
-              onAdmitClient={handleAdmitClient}
-              onEndSession={handleEndCall}
+              clientName={activeSession?.clientName || "Client"}
+              therapistName={user?.firstName ? `${user.firstName} ${user.lastName}` : "Therapist"}
+              isTherapist={true}
+              onCancel={handleEndCall}
             />
           ) : (
             <div className="flex-1 flex flex-col">
               <div className="flex-1 relative">
                 <VideoCall 
-                  isVideoMuted={isVideoMuted}
-                  isScreenSharing={isScreenSharing}
-                  clientName={activeSession.clientName}
+                  roomId={activeSession?.id?.toString() || "room1"}
+                  userId={user?.id || 0}
+                  username={user?.username || "Therapist"}
+                  isTherapist={true} 
+                  onEndCall={handleEndCall}
                 />
               </div>
               
