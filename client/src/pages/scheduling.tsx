@@ -125,8 +125,6 @@ export default function Scheduling() {
   const [view, setView] = useState<"day" | "week" | "month">("week");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [appointments, setAppointments] = useState(mockAppointments);
-  
   // Fetch clients from API
   const { data: clients = [], isLoading: isLoadingClients } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
@@ -138,6 +136,41 @@ export default function Scheduling() {
       return response.json();
     },
   });
+  
+  // Fetch sessions from API
+  const { data: sessionData = [], isLoading: isLoadingSessions, refetch: refetchSessions } = useQuery<any[]>({
+    queryKey: ['/api/sessions'],
+    queryFn: async () => {
+      const response = await fetch('/api/sessions');
+      if (!response.ok) {
+        throw new Error('Failed to fetch sessions');
+      }
+      return response.json();
+    },
+  });
+  
+  // Transform session data to appointment format
+  const transformSessionToAppointment = (session: any) => {
+    const client = clients.find(c => c.id === session.clientId);
+    const clientName = client ? `${client.firstName} ${client.lastName}` : "Unknown Client";
+    
+    const startDate = new Date(session.startTime);
+    const endDate = new Date(session.endTime);
+    
+    return {
+      id: session.id,
+      clientName,
+      date: startDate,
+      startTime: format(startDate, "h:mm a").toUpperCase(),
+      endTime: format(endDate, "h:mm a").toUpperCase(),
+      type: session.sessionType,
+      medium: session.medium,
+      status: session.status
+    };
+  };
+  
+  // Apply the transformation to session data
+  const appointments = sessionData.map(transformSessionToAppointment);
 
   // Generate time slots for the schedule
   const timeSlots = Array.from({ length: 12 }, (_, i) => {
@@ -243,10 +276,7 @@ export default function Scheduling() {
     notes?: string;
   };
   
-  const handleCreateAppointment = (formData: AppointmentFormData) => {
-    // Generate a unique ID for the new appointment
-    const newId = Math.max(...appointments.map(a => a.id)) + 1;
-    
+  const handleCreateAppointment = async (formData: AppointmentFormData) => {
     // Extract hours and minutes from the time
     const startTimeMatch = formData.startTime.match(/(\d+):(\d+)\s(AM|PM)/);
     if (!startTimeMatch || startTimeMatch.length < 4) {
@@ -265,7 +295,7 @@ export default function Scheduling() {
     // Calculate duration in minutes
     const durationInMinutes = parseInt(formData.duration.split(' ')[0]);
     
-    // Calculate end time (adding duration to start time)
+    // Calculate start and end times
     const startDate = new Date(formData.date);
     let startHours = hours;
     if (period === "PM" && hours < 12) startHours += 12;
@@ -275,32 +305,54 @@ export default function Scheduling() {
     
     const endDate = new Date(startDate.getTime() + durationInMinutes * 60000);
     
-    // Format start and end times for display
-    const startTimeFormatted = formData.startTime;
-    const endTimeFormatted = format(endDate, "h:mm a").toUpperCase();
-    
-    // Create the new appointment object
-    const client = clients.find(c => c.id.toString() === formData.clientId);
-    const clientName = client ? `${client.firstName} ${client.lastName}` : "Unknown Client";
-    
-    const newAppointment = {
-      id: newId,
-      clientName,
-      date: formData.date,
-      startTime: startTimeFormatted,
-      endTime: endTimeFormatted,
-      type: formData.sessionType,
+    // Create the session data to send to the API
+    const sessionData = {
+      clientId: parseInt(formData.clientId),
+      therapistId: user?.id, // Current user ID
+      startTime: startDate.toISOString(),
+      endTime: endDate.toISOString(),
+      sessionType: formData.sessionType,
       medium: formData.medium,
-      status: formData.status
+      status: formData.status,
+      notes: formData.notes || "",
+      location: formData.medium === "In-person" ? "Main Office" : "HIPAA Compliant Telehealth Platform"
     };
     
-    // Add the new appointment to the state
-    setAppointments([...appointments, newAppointment]);
-    
-    toast({
-      title: "Appointment Scheduled",
-      description: `${newAppointment.type} with ${newAppointment.clientName} on ${format(newAppointment.date, "MMMM d")} at ${newAppointment.startTime}`,
-    });
+    try {
+      // Send the session data to the API
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sessionData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create session');
+      }
+      
+      const newSession = await response.json();
+      
+      // Refresh the sessions data
+      refetchSessions();
+      
+      // Get client name for the toast message
+      const client = clients.find(c => c.id.toString() === formData.clientId);
+      const clientName = client ? `${client.firstName} ${client.lastName}` : "Unknown Client";
+      
+      toast({
+        title: "Appointment Scheduled",
+        description: `${formData.sessionType} with ${clientName} on ${format(startDate, "MMMM d")} at ${formData.startTime}`,
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "There was an error scheduling the appointment",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleAppointmentClick = (appointment: typeof mockAppointments[0]) => {
@@ -308,26 +360,68 @@ export default function Scheduling() {
     setIsAppointmentDetailsOpen(true);
   };
 
-  const handleConfirmAppointment = (appointmentId: number) => {
-    setAppointments(appointments.map(app => 
-      app.id === appointmentId ? { ...app, status: "Confirmed" } : app
-    ));
-    
-    toast({
-      title: "Appointment Confirmed",
-      description: "The appointment has been confirmed.",
-    });
+  const handleConfirmAppointment = async (appointmentId: number) => {
+    try {
+      // Update session status through API
+      const response = await fetch(`/api/sessions/${appointmentId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: "Confirmed" }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update session');
+      }
+      
+      // Refresh the sessions data
+      refetchSessions();
+      
+      toast({
+        title: "Appointment Confirmed",
+        description: "The appointment has been confirmed.",
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "There was an error confirming the appointment",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleCancelAppointment = (appointmentId: number) => {
-    setAppointments(appointments.map(app => 
-      app.id === appointmentId ? { ...app, status: "Cancelled" } : app
-    ));
-    
-    toast({
-      title: "Appointment Cancelled",
-      description: "The appointment has been cancelled.",
-    });
+  const handleCancelAppointment = async (appointmentId: number) => {
+    try {
+      // Update session status through API
+      const response = await fetch(`/api/sessions/${appointmentId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: "Cancelled" }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update session');
+      }
+      
+      // Refresh the sessions data
+      refetchSessions();
+      
+      toast({
+        title: "Appointment Cancelled",
+        description: "The appointment has been cancelled.",
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "There was an error cancelling the appointment",
+        variant: "destructive"
+      });
+    }
   };
 
   // If user is not authenticated, show login form
