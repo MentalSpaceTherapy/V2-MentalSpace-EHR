@@ -8,7 +8,13 @@ import {
   insertDocumentationSchema, 
   insertNotificationSchema,
   insertMessageSchema,
-  extendedClientSchema
+  extendedClientSchema,
+  insertLeadSchema,
+  insertMarketingCampaignSchema,
+  insertMarketingEventSchema,
+  insertEventRegistrationSchema,
+  insertContactHistorySchema,
+  insertReferralSourceSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -730,6 +736,859 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(message);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Lead Management routes
+  app.get("/api/leads", isAuthenticated, async (req, res, next) => {
+    try {
+      const filters: {
+        assignedToId?: number;
+        status?: string;
+        stage?: string;
+        source?: string;
+        sourceId?: number;
+      } = {};
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // If not an admin, only show leads assigned to this user
+      if (user.role !== "administrator") {
+        filters.assignedToId = user.id;
+      } else if (req.query.assignedToId) {
+        // If admin and assignedToId is provided, filter by that
+        filters.assignedToId = parseInt(req.query.assignedToId as string);
+      }
+      
+      if (req.query.status) {
+        filters.status = req.query.status as string;
+      }
+      
+      if (req.query.stage) {
+        filters.stage = req.query.stage as string;
+      }
+      
+      if (req.query.source) {
+        filters.source = req.query.source as string;
+      }
+      
+      if (req.query.sourceId) {
+        filters.sourceId = parseInt(req.query.sourceId as string);
+      }
+      
+      const leads = await storage.getLeads(filters);
+      res.json(leads);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.get("/api/leads/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const lead = await storage.getLead(id);
+      
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check if lead is assigned to this user
+      if (user.role !== "administrator" && lead.assignedToId !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have access to this lead" });
+      }
+      
+      res.json(lead);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/leads", isAuthenticated, async (req, res, next) => {
+    try {
+      // Validate request body
+      const validatedData = insertLeadSchema.parse(req.body);
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // If no assignedToId is set, assign to current user
+      if (!validatedData.assignedToId) {
+        validatedData.assignedToId = user.id;
+      }
+      
+      const lead = await storage.createLead(validatedData);
+      res.status(201).json(lead);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.patch("/api/leads/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify lead exists
+      const lead = await storage.getLead(id);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check if lead is assigned to this user
+      if (user.role !== "administrator" && lead.assignedToId !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have access to modify this lead" });
+      }
+      
+      // Partial validation of update data
+      const validatedData = insertLeadSchema.partial().parse(req.body);
+      
+      // If user is not admin, they cannot reassign leads to other users
+      if (user.role !== "administrator" && validatedData.assignedToId && 
+          validatedData.assignedToId !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You cannot reassign leads to other users" });
+      }
+      
+      const updatedLead = await storage.updateLead(id, validatedData);
+      res.json(updatedLead);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.delete("/api/leads/:id", isAuthenticated, hasRole(["administrator", "therapist"]), async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify lead exists
+      const lead = await storage.getLead(id);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check if lead is assigned to this user
+      if (user.role !== "administrator" && lead.assignedToId !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have access to delete this lead" });
+      }
+      
+      const deleted = await storage.deleteLead(id);
+      
+      if (deleted) {
+        res.status(204).end();
+      } else {
+        res.status(500).json({ message: "Failed to delete lead" });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/leads/:id/convert", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify lead exists
+      const lead = await storage.getLead(id);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check if lead is assigned to this user
+      if (user.role !== "administrator" && lead.assignedToId !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have access to convert this lead" });
+      }
+      
+      // If already converted, return error
+      if (lead.status === "converted") {
+        return res.status(400).json({ message: "Lead has already been converted to a client" });
+      }
+      
+      // Validate client data
+      const validatedData = extendedClientSchema.parse(req.body);
+      
+      // Set primary therapist to current user if not provided
+      if (!validatedData.primaryTherapistId) {
+        validatedData.primaryTherapistId = user.id;
+      }
+      
+      // Convert lead to client
+      const result = await storage.convertLeadToClient(id, validatedData);
+      
+      res.status(201).json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  // Marketing Campaign routes
+  app.get("/api/campaigns", isAuthenticated, async (req, res, next) => {
+    try {
+      const filters: {
+        createdById?: number;
+        status?: string;
+        type?: string;
+      } = {};
+      
+      if (req.query.createdById) {
+        filters.createdById = parseInt(req.query.createdById as string);
+      }
+      
+      if (req.query.status) {
+        filters.status = req.query.status as string;
+      }
+      
+      if (req.query.type) {
+        filters.type = req.query.type as string;
+      }
+      
+      const campaigns = await storage.getCampaigns(filters);
+      res.json(campaigns);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.get("/api/campaigns/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const campaign = await storage.getCampaign(id);
+      
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+      
+      res.json(campaign);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/campaigns", isAuthenticated, hasRole(["administrator", "therapist"]), async (req, res, next) => {
+    try {
+      // Validate request body
+      const validatedData = insertMarketingCampaignSchema.parse(req.body);
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // Set created by to current user
+      validatedData.createdById = user.id;
+      
+      const campaign = await storage.createCampaign(validatedData);
+      res.status(201).json(campaign);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.patch("/api/campaigns/:id", isAuthenticated, hasRole(["administrator", "therapist"]), async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify campaign exists
+      const campaign = await storage.getCampaign(id);
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check if campaign was created by this user
+      if (user.role !== "administrator" && campaign.createdById !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have access to modify this campaign" });
+      }
+      
+      // Partial validation of update data
+      const validatedData = insertMarketingCampaignSchema.partial().parse(req.body);
+      
+      const updatedCampaign = await storage.updateCampaign(id, validatedData);
+      res.json(updatedCampaign);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.patch("/api/campaigns/:id/stats", isAuthenticated, hasRole(["administrator", "therapist"]), async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify campaign exists
+      const campaign = await storage.getCampaign(id);
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check if campaign was created by this user
+      if (user.role !== "administrator" && campaign.createdById !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have access to modify this campaign" });
+      }
+      
+      // Validate that the request body is an object
+      if (typeof req.body !== 'object' || req.body === null) {
+        return res.status(400).json({ message: "Invalid stats data" });
+      }
+      
+      const updatedCampaign = await storage.updateCampaignStats(id, req.body);
+      
+      if (!updatedCampaign) {
+        return res.status(500).json({ message: "Failed to update campaign stats" });
+      }
+      
+      res.json(updatedCampaign);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.delete("/api/campaigns/:id", isAuthenticated, hasRole(["administrator", "therapist"]), async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify campaign exists
+      const campaign = await storage.getCampaign(id);
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check if campaign was created by this user
+      if (user.role !== "administrator" && campaign.createdById !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have access to delete this campaign" });
+      }
+      
+      const deleted = await storage.deleteCampaign(id);
+      
+      if (deleted) {
+        res.status(204).end();
+      } else {
+        res.status(500).json({ message: "Failed to delete campaign" });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Marketing Event routes
+  app.get("/api/events", isAuthenticated, async (req, res, next) => {
+    try {
+      const filters: {
+        createdById?: number;
+        status?: string;
+        type?: string;
+        startDate?: Date;
+        endDate?: Date;
+      } = {};
+      
+      if (req.query.createdById) {
+        filters.createdById = parseInt(req.query.createdById as string);
+      }
+      
+      if (req.query.status) {
+        filters.status = req.query.status as string;
+      }
+      
+      if (req.query.type) {
+        filters.type = req.query.type as string;
+      }
+      
+      if (req.query.startDate) {
+        filters.startDate = new Date(req.query.startDate as string);
+      }
+      
+      if (req.query.endDate) {
+        filters.endDate = new Date(req.query.endDate as string);
+      }
+      
+      const events = await storage.getEvents(filters);
+      res.json(events);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.get("/api/events/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const event = await storage.getEvent(id);
+      
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      res.json(event);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/events", isAuthenticated, hasRole(["administrator", "therapist"]), async (req, res, next) => {
+    try {
+      // Validate request body
+      const validatedData = insertMarketingEventSchema.parse(req.body);
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // Set created by to current user
+      validatedData.createdById = user.id;
+      
+      const event = await storage.createEvent(validatedData);
+      res.status(201).json(event);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.patch("/api/events/:id", isAuthenticated, hasRole(["administrator", "therapist"]), async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify event exists
+      const event = await storage.getEvent(id);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check if event was created by this user
+      if (user.role !== "administrator" && event.createdById !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have access to modify this event" });
+      }
+      
+      // Partial validation of update data
+      const validatedData = insertMarketingEventSchema.partial().parse(req.body);
+      
+      const updatedEvent = await storage.updateEvent(id, validatedData);
+      res.json(updatedEvent);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.delete("/api/events/:id", isAuthenticated, hasRole(["administrator", "therapist"]), async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify event exists
+      const event = await storage.getEvent(id);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check if event was created by this user
+      if (user.role !== "administrator" && event.createdById !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have access to delete this event" });
+      }
+      
+      const deleted = await storage.deleteEvent(id);
+      
+      if (deleted) {
+        res.status(204).end();
+      } else {
+        res.status(500).json({ message: "Failed to delete event" });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Event Registration routes
+  app.get("/api/event-registrations", isAuthenticated, async (req, res, next) => {
+    try {
+      const filters: {
+        eventId?: number;
+        leadId?: number;
+        clientId?: number;
+        email?: string;
+        status?: string;
+      } = {};
+      
+      if (req.query.eventId) {
+        filters.eventId = parseInt(req.query.eventId as string);
+      }
+      
+      if (req.query.leadId) {
+        filters.leadId = parseInt(req.query.leadId as string);
+      }
+      
+      if (req.query.clientId) {
+        filters.clientId = parseInt(req.query.clientId as string);
+      }
+      
+      if (req.query.email) {
+        filters.email = req.query.email as string;
+      }
+      
+      if (req.query.status) {
+        filters.status = req.query.status as string;
+      }
+      
+      const registrations = await storage.getEventRegistrations(filters);
+      res.json(registrations);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/event-registrations", isAuthenticated, async (req, res, next) => {
+    try {
+      // Validate request body
+      const validatedData = insertEventRegistrationSchema.parse(req.body);
+      
+      const registration = await storage.createEventRegistration(validatedData);
+      res.status(201).json(registration);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.patch("/api/event-registrations/:id", isAuthenticated, hasRole(["administrator", "therapist"]), async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify registration exists
+      const registration = await storage.getEventRegistration(id);
+      if (!registration) {
+        return res.status(404).json({ message: "Registration not found" });
+      }
+      
+      // Partial validation of update data
+      const validatedData = insertEventRegistrationSchema.partial().parse(req.body);
+      
+      const updatedRegistration = await storage.updateEventRegistration(id, validatedData);
+      res.json(updatedRegistration);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  // Contact History routes
+  app.get("/api/contact-history", isAuthenticated, async (req, res, next) => {
+    try {
+      const filters: {
+        leadId?: number;
+        clientId?: number;
+        completedById?: number;
+        contactType?: string;
+        outcome?: string;
+        startDate?: Date;
+        endDate?: Date;
+        campaignId?: number;
+      } = {};
+      
+      if (req.query.leadId) {
+        filters.leadId = parseInt(req.query.leadId as string);
+      }
+      
+      if (req.query.clientId) {
+        filters.clientId = parseInt(req.query.clientId as string);
+      }
+      
+      if (req.query.completedById) {
+        filters.completedById = parseInt(req.query.completedById as string);
+      } else {
+        // Use type assertion for user since we verified isAuthenticated
+        const user = req.user as AuthenticatedUser;
+        if (user.role !== "administrator") {
+          // Non-admins only see their own contact history by default
+          filters.completedById = user.id;
+        }
+      }
+      
+      if (req.query.contactType) {
+        filters.contactType = req.query.contactType as string;
+      }
+      
+      if (req.query.outcome) {
+        filters.outcome = req.query.outcome as string;
+      }
+      
+      if (req.query.campaignId) {
+        filters.campaignId = parseInt(req.query.campaignId as string);
+      }
+      
+      if (req.query.startDate) {
+        filters.startDate = new Date(req.query.startDate as string);
+      }
+      
+      if (req.query.endDate) {
+        filters.endDate = new Date(req.query.endDate as string);
+      }
+      
+      const contacts = await storage.getContactHistory(filters);
+      res.json(contacts);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/contact-history", isAuthenticated, async (req, res, next) => {
+    try {
+      // Validate request body
+      const validatedData = insertContactHistorySchema.parse(req.body);
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // Set completed by to current user if not provided
+      if (!validatedData.completedById) {
+        validatedData.completedById = user.id;
+      }
+      
+      // Non-admins can only create contact records as themselves
+      if (user.role !== "administrator" && validatedData.completedById !== user.id) {
+        validatedData.completedById = user.id;
+      }
+      
+      const contact = await storage.createContactHistory(validatedData);
+      res.status(201).json(contact);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.patch("/api/contact-history/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify contact record exists
+      const contact = await storage.getContactHistoryRecord(id);
+      if (!contact) {
+        return res.status(404).json({ message: "Contact history record not found" });
+      }
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check if contact was created by this user
+      if (user.role !== "administrator" && contact.completedById !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have access to modify this contact record" });
+      }
+      
+      // Partial validation of update data
+      const validatedData = insertContactHistorySchema.partial().parse(req.body);
+      
+      // Non-admins cannot change completedById
+      if (user.role !== "administrator" && validatedData.completedById && validatedData.completedById !== user.id) {
+        delete validatedData.completedById;
+      }
+      
+      const updatedContact = await storage.updateContactHistory(id, validatedData);
+      res.json(updatedContact);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  // Referral Source routes
+  app.get("/api/referral-sources", isAuthenticated, async (req, res, next) => {
+    try {
+      const filters: {
+        type?: string;
+        activeStatus?: string;
+        createdById?: number;
+      } = {};
+      
+      if (req.query.type) {
+        filters.type = req.query.type as string;
+      }
+      
+      if (req.query.activeStatus) {
+        filters.activeStatus = req.query.activeStatus as string;
+      }
+      
+      if (req.query.createdById) {
+        filters.createdById = parseInt(req.query.createdById as string);
+      }
+      
+      const sources = await storage.getReferralSources(filters);
+      res.json(sources);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.get("/api/referral-sources/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const source = await storage.getReferralSource(id);
+      
+      if (!source) {
+        return res.status(404).json({ message: "Referral source not found" });
+      }
+      
+      res.json(source);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/referral-sources", isAuthenticated, hasRole(["administrator", "therapist"]), async (req, res, next) => {
+    try {
+      // Validate request body
+      const validatedData = insertReferralSourceSchema.parse(req.body);
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // Set created by to current user
+      validatedData.createdById = user.id;
+      
+      const source = await storage.createReferralSource(validatedData);
+      res.status(201).json(source);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.patch("/api/referral-sources/:id", isAuthenticated, hasRole(["administrator", "therapist"]), async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify source exists
+      const source = await storage.getReferralSource(id);
+      if (!source) {
+        return res.status(404).json({ message: "Referral source not found" });
+      }
+      
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check if source was created by this user
+      if (user.role !== "administrator" && source.createdById !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have access to modify this referral source" });
+      }
+      
+      // Partial validation of update data
+      const validatedData = insertReferralSourceSchema.partial().parse(req.body);
+      
+      const updatedSource = await storage.updateReferralSource(id, validatedData);
+      res.json(updatedSource);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.delete("/api/referral-sources/:id", isAuthenticated, hasRole(["administrator"]), async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify source exists
+      const source = await storage.getReferralSource(id);
+      if (!source) {
+        return res.status(404).json({ message: "Referral source not found" });
+      }
+      
+      // Only admins can delete referral sources (enforced by hasRole middleware)
+      const deleted = await storage.deleteReferralSource(id);
+      
+      if (deleted) {
+        res.status(204).end();
+      } else {
+        res.status(500).json({ message: "Failed to delete referral source" });
+      }
     } catch (error) {
       next(error);
     }

@@ -158,6 +158,115 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
   link: true,
 });
 
+// Leads model
+export const leads = pgTable("leads", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  source: text("source"), // Where lead came from (website, referral, etc.)
+  sourceId: integer("source_id"), // Reference to referral_sources if applicable
+  status: text("status").default("new").notNull(), // new, contacted, qualified, converted, etc.
+  notes: text("notes"),
+  stage: text("stage").default("inquiry").notNull(), // inquiry, consultation, assessment, etc.
+  assignedToId: integer("assigned_to_id").references(() => users.id),
+  dateAdded: timestamp("date_added").defaultNow().notNull(),
+  lastContactDate: timestamp("last_contact_date").defaultNow().notNull(),
+  interestedServices: jsonb("interested_services").default([]),
+  demographicInfo: jsonb("demographic_info").default({}),
+  conversionDate: timestamp("conversion_date"), // When lead was converted to client
+  convertedToClientId: integer("converted_to_client_id").references(() => clients.id),
+  marketingCampaignId: integer("marketing_campaign_id"),
+  leadScore: integer("lead_score").default(0),
+  conversionProbability: integer("conversion_probability").default(0),
+  lastActivityDate: timestamp("last_activity_date").defaultNow(),
+  tags: text("tags").array(),
+});
+
+// Marketing campaigns
+export const marketingCampaigns = pgTable("marketing_campaigns", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // Email, SMS, Social, Multi-channel
+  status: text("status").default("draft").notNull(), // Draft, Scheduled, Running, Completed, Paused
+  description: text("description"),
+  audience: text("audience"), // Target audience description
+  content: jsonb("content").default({}), // Campaign content (templates, messages, etc.)
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  tags: text("tags").array(),
+  stats: jsonb("stats").default({}), // Campaign performance statistics
+});
+
+// Marketing events
+export const marketingEvents = pgTable("marketing_events", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // Webinar, Workshop, Conference, Open House, Group Session
+  description: text("description"),
+  date: timestamp("date").notNull(),
+  duration: integer("duration"), // Duration in minutes
+  location: text("location").notNull(),
+  capacity: integer("capacity").default(0),
+  status: text("status").default("upcoming").notNull(), // Upcoming, In Progress, Completed, Cancelled
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Event registrations
+export const eventRegistrations = pgTable("event_registrations", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id").references(() => marketingEvents.id).notNull(),
+  leadId: integer("lead_id").references(() => leads.id),
+  clientId: integer("client_id").references(() => clients.id),
+  email: text("email").notNull(),
+  name: text("name").notNull(),
+  status: text("status").default("registered").notNull(), // registered, attended, cancelled, no-show
+  registrationDate: timestamp("registration_date").defaultNow().notNull(),
+  notes: text("notes"),
+});
+
+// Contact history for leads
+export const contactHistory = pgTable("contact_history", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id").references(() => leads.id),
+  clientId: integer("client_id").references(() => clients.id),
+  contactType: text("contact_type").notNull(), // Email, Phone, In-Person, Video, Text, Social Media
+  direction: text("direction").notNull(), // inbound, outbound
+  subject: text("subject"),
+  content: text("content"),
+  contactNumber: integer("contact_number").default(1), // 1st, 2nd, 3rd contact, etc.
+  date: timestamp("date").defaultNow().notNull(),
+  duration: integer("duration"), // Duration in minutes if applicable
+  notes: text("notes"),
+  outcome: text("outcome"), // Positive, Neutral, Negative, No Response
+  followUpDate: timestamp("follow_up_date"),
+  followUpType: text("follow_up_type"),
+  completedById: integer("completed_by_id").references(() => users.id).notNull(),
+  campaignId: integer("campaign_id").references(() => marketingCampaigns.id),
+});
+
+// Referral sources
+export const referralSources = pgTable("referral_sources", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // Healthcare Provider, Community Organization, Former Client, Business, Educational Institution, Other
+  details: jsonb("details").default({}),
+  activeSince: timestamp("active_since").defaultNow(),
+  activeStatus: text("active_status").default("active").notNull(), // Active, Inactive, Potential
+  contactPerson: text("contact_person"),
+  contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
+  notes: text("notes"),
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Messages model
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
@@ -275,5 +384,110 @@ export type EmergencyContact = z.infer<typeof emergencyContactSchema>;
 export type InsuranceInfo = z.infer<typeof insuranceInfoSchema>;
 export type PaymentCard = z.infer<typeof paymentCardSchema>;
 
+// Create insert schemas for the new models
+export const insertLeadSchema = createInsertSchema(leads).pick({
+  name: true,
+  email: true,
+  phone: true,
+  source: true,
+  sourceId: true,
+  status: true,
+  notes: true,
+  stage: true,
+  assignedToId: true,
+  interestedServices: true,
+  demographicInfo: true,
+  marketingCampaignId: true,
+  conversionDate: true,
+  convertedToClientId: true,
+  leadScore: true,
+  conversionProbability: true,
+  tags: true,
+});
+
+export const insertMarketingCampaignSchema = createInsertSchema(marketingCampaigns).pick({
+  name: true,
+  type: true,
+  status: true,
+  description: true,
+  audience: true,
+  content: true,
+  startDate: true,
+  endDate: true,
+  createdById: true,
+  tags: true,
+  stats: true,
+});
+
+export const insertMarketingEventSchema = createInsertSchema(marketingEvents).pick({
+  name: true,
+  type: true,
+  description: true,
+  date: true,
+  duration: true,
+  location: true,
+  capacity: true,
+  status: true,
+  createdById: true,
+});
+
+export const insertEventRegistrationSchema = createInsertSchema(eventRegistrations).pick({
+  eventId: true,
+  leadId: true,
+  clientId: true,
+  email: true,
+  name: true,
+  status: true,
+  notes: true,
+});
+
+export const insertContactHistorySchema = createInsertSchema(contactHistory).pick({
+  leadId: true,
+  clientId: true,
+  contactType: true,
+  direction: true,
+  subject: true,
+  content: true,
+  contactNumber: true,
+  duration: true,
+  notes: true,
+  outcome: true,
+  followUpDate: true,
+  followUpType: true,
+  completedById: true,
+  campaignId: true,
+});
+
+export const insertReferralSourceSchema = createInsertSchema(referralSources).pick({
+  name: true,
+  type: true,
+  details: true,
+  activeStatus: true,
+  contactPerson: true,
+  contactEmail: true,
+  contactPhone: true,
+  notes: true,
+  createdById: true,
+});
+
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+// Export types for new models
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = z.infer<typeof insertLeadSchema>;
+
+export type MarketingCampaign = typeof marketingCampaigns.$inferSelect;
+export type InsertMarketingCampaign = z.infer<typeof insertMarketingCampaignSchema>;
+
+export type MarketingEvent = typeof marketingEvents.$inferSelect;
+export type InsertMarketingEvent = z.infer<typeof insertMarketingEventSchema>;
+
+export type EventRegistration = typeof eventRegistrations.$inferSelect;
+export type InsertEventRegistration = z.infer<typeof insertEventRegistrationSchema>;
+
+export type ContactHistoryRecord = typeof contactHistory.$inferSelect;
+export type InsertContactHistory = z.infer<typeof insertContactHistorySchema>;
+
+export type ReferralSource = typeof referralSources.$inferSelect;
+export type InsertReferralSource = z.infer<typeof insertReferralSourceSchema>;

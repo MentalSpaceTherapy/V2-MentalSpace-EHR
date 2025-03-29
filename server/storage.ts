@@ -1,11 +1,18 @@
 import { 
   users, clients, sessions, documentation, notifications, messages,
+  leads, marketingCampaigns, marketingEvents, eventRegistrations, contactHistory, referralSources,
   type User, type InsertUser,
   type Client, type InsertClient, type ExtendedClient,
   type Session, type InsertSession,
   type Documentation, type InsertDocumentation,
   type Notification, type InsertNotification,
-  type Message, type InsertMessage
+  type Message, type InsertMessage,
+  type Lead, type InsertLead,
+  type MarketingCampaign, type InsertMarketingCampaign,
+  type MarketingEvent, type InsertMarketingEvent,
+  type EventRegistration, type InsertEventRegistration,
+  type ContactHistoryRecord, type InsertContactHistory,
+  type ReferralSource, type InsertReferralSource
 } from "@shared/schema";
 import session from "express-session";
 
@@ -59,6 +66,88 @@ export interface IStorage {
   getUnreadMessages(therapistId: number): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
   markMessageAsRead(id: number): Promise<Message | undefined>;
+  
+  // Lead management methods
+  getLead(id: number): Promise<Lead | undefined>;
+  getLeads(filters?: {
+    assignedToId?: number;
+    status?: string;
+    stage?: string;
+    source?: string;
+    sourceId?: number;
+  }): Promise<Lead[]>;
+  createLead(lead: InsertLead): Promise<Lead>;
+  updateLead(id: number, lead: Partial<InsertLead>): Promise<Lead | undefined>;
+  deleteLead(id: number): Promise<boolean>;
+  convertLeadToClient(leadId: number, clientData: ExtendedClient): Promise<{
+    lead: Lead;
+    client: Client;
+  }>;
+  
+  // Marketing campaign methods
+  getCampaign(id: number): Promise<MarketingCampaign | undefined>;
+  getCampaigns(filters?: {
+    createdById?: number;
+    status?: string;
+    type?: string;
+  }): Promise<MarketingCampaign[]>;
+  createCampaign(campaign: InsertMarketingCampaign): Promise<MarketingCampaign>;
+  updateCampaign(id: number, campaign: Partial<InsertMarketingCampaign>): Promise<MarketingCampaign | undefined>;
+  deleteCampaign(id: number): Promise<boolean>;
+  updateCampaignStats(id: number, stats: Record<string, any>): Promise<MarketingCampaign | undefined>;
+  
+  // Marketing event methods
+  getEvent(id: number): Promise<MarketingEvent | undefined>;
+  getEvents(filters?: {
+    createdById?: number;
+    status?: string;
+    type?: string;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<MarketingEvent[]>;
+  createEvent(event: InsertMarketingEvent): Promise<MarketingEvent>;
+  updateEvent(id: number, event: Partial<InsertMarketingEvent>): Promise<MarketingEvent | undefined>;
+  deleteEvent(id: number): Promise<boolean>;
+  
+  // Event registration methods
+  getEventRegistration(id: number): Promise<EventRegistration | undefined>;
+  getEventRegistrations(filters?: {
+    eventId?: number;
+    leadId?: number;
+    clientId?: number;
+    email?: string;
+    status?: string;
+  }): Promise<EventRegistration[]>;
+  createEventRegistration(registration: InsertEventRegistration): Promise<EventRegistration>;
+  updateEventRegistration(id: number, registration: Partial<InsertEventRegistration>): Promise<EventRegistration | undefined>;
+  deleteEventRegistration(id: number): Promise<boolean>;
+  
+  // Contact history methods
+  getContactHistoryRecord(id: number): Promise<ContactHistoryRecord | undefined>;
+  getContactHistory(filters?: {
+    leadId?: number;
+    clientId?: number;
+    completedById?: number;
+    contactType?: string;
+    outcome?: string;
+    startDate?: Date;
+    endDate?: Date;
+    campaignId?: number;
+  }): Promise<ContactHistoryRecord[]>;
+  createContactHistory(contactRecord: InsertContactHistory): Promise<ContactHistoryRecord>;
+  updateContactHistory(id: number, contactRecord: Partial<InsertContactHistory>): Promise<ContactHistoryRecord | undefined>;
+  deleteContactHistory(id: number): Promise<boolean>;
+  
+  // Referral source methods
+  getReferralSource(id: number): Promise<ReferralSource | undefined>;
+  getReferralSources(filters?: {
+    type?: string;
+    activeStatus?: string;
+    createdById?: number;
+  }): Promise<ReferralSource[]>;
+  createReferralSource(source: InsertReferralSource): Promise<ReferralSource>;
+  updateReferralSource(id: number, source: Partial<InsertReferralSource>): Promise<ReferralSource | undefined>;
+  deleteReferralSource(id: number): Promise<boolean>;
   
   // Session store for auth
   sessionStore: session.Store;
