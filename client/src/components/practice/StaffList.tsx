@@ -23,7 +23,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, isAfter, subDays } from "date-fns";
 import { USER_ROLES, ROLE_DETAILS } from "@/lib/constants";
-import { StaffForm } from "./StaffForm";
+import { StaffModal } from "./StaffModal";
 import { useToast } from "@/hooks/use-toast";
 
 interface StaffMember {
@@ -387,8 +387,8 @@ export function StaffList({ initialStaff }: StaffListProps) {
         </div>
       </CardContent>
       
-      {/* Staff Form Dialog */}
-      <StaffForm 
+      {/* Staff Modal */}
+      <StaffModal 
         isOpen={isFormOpen} 
         onClose={() => setIsFormOpen(false)}
         onSave={handleSaveStaff}
