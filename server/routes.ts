@@ -2264,8 +2264,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Constant Contact API routes
   app.use('/api/constant-contact', constantContactRoutes);
   
-  // Special route for Constant Contact OAuth callback
+  // Special route for Constant Contact OAuth callback at root URL
   // Note: OAuth callback should not require authentication as the user is being redirected from Constant Contact
+  app.get('/', async (req, res, next) => {
+    try {
+      const { code } = req.query;
+      
+      if (code && typeof code === 'string') {
+        // This is a Constant Contact OAuth callback
+        // Exchange code for tokens
+        await constantContactService.exchangeCodeForTokens(code);
+        
+        // Redirect to the marketing dashboard
+        return res.redirect('/crm/marketing');
+      }
+      
+      // If no code parameter, serve the regular app
+      next();
+    } catch (error) {
+      console.error('Error in OAuth callback:', error);
+      next();
+    }
+  });
+  
+  // Keep the original callback route for backward compatibility
   app.get('/api/auth/constant-contact/callback', async (req, res, next) => {
     try {
       const { code } = req.query;
