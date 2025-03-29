@@ -1,34 +1,53 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { USER_ROLES, ROLE_CATEGORIES, ROLE_DETAILS, LICENSE_TYPES } from "@/lib/constants";
-import { Search, AlertCircle, Info } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-interface StaffFormProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (staffData: any) => void;
-  editingStaff?: any;
+interface StaffMember {
+  id?: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  role?: string;
+  roles?: string[];
+  licenseType?: string | null;
+  licenseNumber?: string | null;
+  licenseExpiration?: Date | null;
+  status?: string;
+  formalName?: string;
+  title?: string;
+  npiNumber?: string;
+  supervision?: string;
+  languages?: string[];
+  canReceiveSMS?: boolean;
+  workPhone?: string;
+  homePhone?: string;
+  address1?: string;
+  address2?: string;
+  zip?: string;
+  city?: string;
+  state?: string;
 }
 
-export function StaffForm({ isOpen, onClose, onSave, editingStaff }: StaffFormProps) {
-  const isEditing = !!editingStaff;
-  const [formData, setFormData] = useState({
+interface StaffFormProps {
+  onSave: (staffData: StaffMember) => void;
+  onCancel: () => void;
+  editingStaff?: StaffMember;
+}
+
+export function StaffForm({ onSave, onCancel, editingStaff }: StaffFormProps) {
+  // Initialize form data
+  const [formData, setFormData] = useState<StaffMember>({
     firstName: "",
     lastName: "",
     email: "",
-    username: "",
-    password: "",
-    confirmPassword: "",
     phone: "",
-    roles: [] as string[],
+    roles: [],
     licenseType: "",
     licenseNumber: "",
     formalName: "",
@@ -46,573 +65,291 @@ export function StaffForm({ isOpen, onClose, onSave, editingStaff }: StaffFormPr
     state: "",
   });
 
-  const [activeTab, setActiveTab] = useState("roles");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [showClinicianFields, setShowClinicianFields] = useState(false);
-  const [npiSearchQuery, setNpiSearchQuery] = useState("");
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   
+  // Update form data when editing an existing staff member
   useEffect(() => {
     if (editingStaff) {
-      // For editing, pre-populate the form with existing data
       setFormData({
-        firstName: editingStaff.firstName || "",
-        lastName: editingStaff.lastName || "",
-        email: editingStaff.email || "",
-        username: editingStaff.username || editingStaff.email || "",
-        password: "",
-        confirmPassword: "",
-        phone: editingStaff.phone || "",
-        roles: editingStaff.role ? [editingStaff.role] : [],
-        licenseType: editingStaff.licenseType || "",
-        licenseNumber: editingStaff.licenseNumber || "",
-        formalName: editingStaff.formalName || "",
-        title: editingStaff.title || "",
-        npiNumber: editingStaff.npiNumber || "",
-        supervision: editingStaff.supervision || "Not Supervised",
-        languages: editingStaff.languages || ["English (primary)"],
-        canReceiveSMS: editingStaff.canReceiveSMS || false,
-        workPhone: editingStaff.workPhone || "",
-        homePhone: editingStaff.homePhone || "",
-        address1: editingStaff.address1 || "",
-        address2: editingStaff.address2 || "",
-        zip: editingStaff.zip || "",
-        city: editingStaff.city || "",
-        state: editingStaff.state || "",
-      });
-    } else {
-      // Reset form for new staff member
-      setFormData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        username: "",
-        password: "",
-        confirmPassword: "",
-        phone: "",
-        roles: [],
-        licenseType: "",
-        licenseNumber: "",
-        formalName: "",
-        title: "",
-        npiNumber: "",
-        supervision: "Not Supervised",
-        languages: ["English (primary)"],
-        canReceiveSMS: false,
-        workPhone: "",
-        homePhone: "",
-        address1: "",
-        address2: "",
-        zip: "",
-        city: "",
-        state: "",
+        ...editingStaff,
+        roles: editingStaff.roles || (editingStaff.role ? [editingStaff.role] : []),
       });
     }
-  }, [editingStaff, isOpen]);
+  }, [editingStaff]);
 
   // Update showClinicianFields based on selected roles
   useEffect(() => {
-    setShowClinicianFields(
-      formData.roles.includes(USER_ROLES.CLINICIAN) || 
-      formData.roles.includes(USER_ROLES.INTERN) ||
-      formData.roles.includes(USER_ROLES.SUPERVISOR) ||
-      formData.roles.includes(USER_ROLES.CLINICAL_ADMIN)
-    );
+    const hasClinicianRole = 
+      formData.roles?.includes(USER_ROLES.CLINICIAN) || 
+      formData.roles?.includes(USER_ROLES.INTERN) ||
+      formData.roles?.includes(USER_ROLES.SUPERVISOR) ||
+      formData.roles?.includes(USER_ROLES.CLINICAL_ADMIN);
+    
+    setShowClinicianFields(hasClinicianRole || false);
   }, [formData.roles]);
 
+  // Validate form before saving
   const validateForm = () => {
-    const errors: Record<string, string> = {};
-
-    if (!formData.firstName) errors.firstName = "First name is required";
-    if (!formData.lastName) errors.lastName = "Last name is required";
-    if (!formData.email) errors.email = "Email is required";
-    if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = "Email is invalid";
+    const newErrors: Record<string, string> = {};
     
-    if (!isEditing) {
-      if (!formData.password) errors.password = "Password is required";
-      if (formData.password !== formData.confirmPassword) errors.confirmPassword = "Passwords do not match";
+    if (!formData.firstName) newErrors.firstName = "First name is required";
+    if (!formData.lastName) newErrors.lastName = "Last name is required";
+    if (!formData.email) newErrors.email = "Email is required";
+    
+    if (!formData.roles || formData.roles.length === 0) {
+      newErrors.roles = "At least one role is required";
     }
-    
-    if (formData.roles.length === 0) errors.roles = "At least one role is required";
     
     if (showClinicianFields) {
-      if (!formData.licenseType) errors.licenseType = "License type is required for clinical roles";
-      if (!formData.licenseNumber) errors.licenseNumber = "License number is required for clinical roles";
-      
-      if (formData.roles.includes(USER_ROLES.INTERN) && !formData.supervision) {
-        errors.supervision = "Supervision is required for interns";
+      if (!formData.licenseType) {
+        newErrors.licenseType = "License type is required for clinical roles";
+      }
+      if (!formData.licenseNumber) {
+        newErrors.licenseNumber = "License number is required for clinical roles";
       }
     }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
-    if (validateForm()) {
-      onSave({
-        ...formData,
-        id: editingStaff?.id
-      });
-    }
-  };
-
+  // Handle role toggle
   const handleRoleToggle = (role: string) => {
     setFormData(prev => {
-      const roleExists = prev.roles.includes(role);
-      let newRoles;
+      const roles = prev.roles || [];
+      const roleExists = roles.includes(role);
       
       if (roleExists) {
-        newRoles = prev.roles.filter(r => r !== role);
+        return {
+          ...prev,
+          roles: roles.filter(r => r !== role)
+        };
       } else {
-        newRoles = [...prev.roles, role];
+        return {
+          ...prev,
+          roles: [...roles, role]
+        };
       }
-      
-      return {
-        ...prev,
-        roles: newRoles
-      };
     });
   };
 
-  const handleNpiSearch = () => {
-    // In a real implementation, this would call an API to search the NPI registry
-    console.log("Searching NPI registry for:", npiSearchQuery);
-    
-    // Mock example of filling data from NPI lookup
-    if (npiSearchQuery.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        npiNumber: "1234567890", // This would be returned from the API
-        formalName: `${prev.firstName} ${prev.lastName}, PhD`, // Example of format
-        title: "Licensed Clinical Psychologist" // Example of retrieved title
-      }));
+  // Handle form submission
+  const handleSubmit = () => {
+    if (validateForm()) {
+      onSave(formData);
     }
   };
 
-  const categorizedRoles: Record<string, string[]> = Object.values(USER_ROLES).reduce((acc, role) => {
-    const category = Object.values(ROLE_DETAILS).find(detail => detail.description.includes(role))?.category || "";
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(role);
-    return acc;
-  }, {} as Record<string, string[]>);
-
-  useEffect(() => {
-    console.log("StaffForm isOpen changed:", isOpen);
-  }, [isOpen]);
-
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      console.log("Dialog open state changed:", open);
-      if (!open) onClose();
-    }}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Staff Member" : "Add New Staff Member"}</DialogTitle>
-        </DialogHeader>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid grid-cols-3">
-            <TabsTrigger value="roles">Roles & Access</TabsTrigger>
-            <TabsTrigger value="user">User Information</TabsTrigger>
-            <TabsTrigger value="credentials">
-              Credentials
-              {showClinicianFields && <span className="ml-1 text-primary">*</span>}
-            </TabsTrigger>
-          </TabsList>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>
+          {editingStaff ? "Edit Staff Member" : "Add New Staff Member"}
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className="space-y-6">
+        {/* Basic Information */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="firstName">First Name*</Label>
+            <Input
+              id="firstName"
+              value={formData.firstName}
+              onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+              className={errors.firstName ? "border-red-500" : ""}
+            />
+            {errors.firstName && (
+              <p className="text-red-500 text-sm">{errors.firstName}</p>
+            )}
+          </div>
           
-          {/* Roles & Access Tab */}
-          <TabsContent value="roles" className="space-y-4 mt-4">
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Each user can have multiple roles. A user's roles determine what they can access within MentalSpace.
-              </p>
-              
-              {Object.entries(ROLE_CATEGORIES).map(([categoryKey, categoryName]) => (
-                <Card key={categoryKey} className="overflow-hidden">
-                  <div className="bg-muted p-3">
-                    <h3 className="font-medium">{categoryName}</h3>
-                  </div>
-                  <CardContent className="p-4 space-y-3">
-                    {Object.entries(USER_ROLES)
-                      .filter(([_, roleName]) => ROLE_DETAILS[roleName]?.category === categoryName)
-                      .map(([roleKey, roleName]) => (
-                        <div key={roleKey} className="flex items-start space-x-3">
-                          <Checkbox 
-                            id={`role-${roleKey}`}
-                            checked={formData.roles.includes(roleName)}
-                            onCheckedChange={() => handleRoleToggle(roleName)}
-                          />
-                          <div className="space-y-1">
-                            <Label 
-                              htmlFor={`role-${roleKey}`}
-                              className="font-medium cursor-pointer"
-                            >
-                              {roleName}
-                            </Label>
-                            <p className="text-sm text-muted-foreground">
-                              {ROLE_DETAILS[roleName]?.description}
-                            </p>
-                          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Last Name*</Label>
+            <Input
+              id="lastName"
+              value={formData.lastName}
+              onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+              className={errors.lastName ? "border-red-500" : ""}
+            />
+            {errors.lastName && (
+              <p className="text-red-500 text-sm">{errors.lastName}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="email">Email Address*</Label>
+          <Input
+            id="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({...formData, email: e.target.value})}
+            className={errors.email ? "border-red-500" : ""}
+          />
+          {errors.email && (
+            <p className="text-red-500 text-sm">{errors.email}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="phone">Phone Number</Label>
+          <Input
+            id="phone"
+            value={formData.phone}
+            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+          />
+        </div>
+
+        {/* Roles Section */}
+        <div className="space-y-2">
+          <Label>Roles*</Label>
+          <div className="border rounded-md p-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Each user can have multiple roles. Select all that apply:
+            </p>
+            
+            {Object.entries(ROLE_CATEGORIES).map(([categoryKey, categoryName]) => (
+              <div key={categoryKey} className="space-y-2">
+                <h3 className="font-medium">{categoryName}</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(USER_ROLES)
+                    .filter(([_, roleName]) => ROLE_DETAILS[roleName]?.category === categoryName)
+                    .map(([roleKey, roleName]) => (
+                      <div key={roleKey} className="flex items-start space-x-2">
+                        <Checkbox 
+                          id={`role-${roleKey}`}
+                          checked={formData.roles?.includes(roleName) || false}
+                          onCheckedChange={() => handleRoleToggle(roleName)}
+                        />
+                        <div>
+                          <Label 
+                            htmlFor={`role-${roleKey}`}
+                            className="font-normal cursor-pointer"
+                          >
+                            {roleName}
+                          </Label>
                         </div>
-                      ))}
-                  </CardContent>
-                </Card>
-              ))}
-              
-              {validationErrors.roles && (
-                <div className="text-red-500 text-sm flex items-center gap-1">
-                  <AlertCircle className="h-4 w-4" />
-                  {validationErrors.roles}
+                      </div>
+                    ))}
                 </div>
-              )}
-            </div>
-          </TabsContent>
-          
-          {/* User Information Tab */}
-          <TabsContent value="user" className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name*</Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                  className={validationErrors.firstName ? "border-red-500" : ""}
-                />
-                {validationErrors.firstName && (
-                  <p className="text-red-500 text-sm">{validationErrors.firstName}</p>
-                )}
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name*</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                  className={validationErrors.lastName ? "border-red-500" : ""}
-                />
-                {validationErrors.lastName && (
-                  <p className="text-red-500 text-sm">{validationErrors.lastName}</p>
-                )}
-              </div>
-            </div>
+            ))}
+            
+            {errors.roles && (
+              <p className="text-red-500 text-sm">{errors.roles}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Clinician Fields */}
+        {showClinicianFields && (
+          <div className="space-y-4 border rounded-md p-4">
+            <h3 className="font-medium">Clinician Information</h3>
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email*</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className={validationErrors.email ? "border-red-500" : ""}
-              />
-              {validationErrors.email && (
-                <p className="text-red-500 text-sm">{validationErrors.email}</p>
+              <Label htmlFor="licenseType">License Type*</Label>
+              <Select 
+                value={formData.licenseType || ""} 
+                onValueChange={(value) => setFormData({...formData, licenseType: value})}
+              >
+                <SelectTrigger className={errors.licenseType ? "border-red-500" : ""}>
+                  <SelectValue placeholder="Select license type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LICENSE_TYPES.map((license) => (
+                    <SelectItem key={license} value={license}>
+                      {license}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.licenseType && (
+                <p className="text-red-500 text-sm">{errors.licenseType}</p>
               )}
             </div>
             
-            {!isEditing && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    value={formData.username}
-                    onChange={(e) => setFormData({...formData, username: e.target.value})}
-                    placeholder="Leave blank to use email"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password*</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
-                      className={validationErrors.password ? "border-red-500" : ""}
-                    />
-                    {validationErrors.password && (
-                      <p className="text-red-500 text-sm">{validationErrors.password}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password*</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                      className={validationErrors.confirmPassword ? "border-red-500" : ""}
-                    />
-                    {validationErrors.confirmPassword && (
-                      <p className="text-red-500 text-sm">{validationErrors.confirmPassword}</p>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Mobile Phone</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                />
-              </div>
-              
-              <div className="flex items-center pl-4 mt-8">
-                <Checkbox 
-                  id="canReceiveSMS"
-                  checked={formData.canReceiveSMS}
-                  onCheckedChange={(checked) => 
-                    setFormData({...formData, canReceiveSMS: checked === true})
-                  }
-                />
-                <Label htmlFor="canReceiveSMS" className="ml-2 cursor-pointer">
-                  Can receive text messages
-                </Label>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="workPhone">Work Phone</Label>
-                <Input
-                  id="workPhone"
-                  value={formData.workPhone}
-                  onChange={(e) => setFormData({...formData, workPhone: e.target.value})}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="homePhone">Home Phone</Label>
-                <Input
-                  id="homePhone"
-                  value={formData.homePhone}
-                  onChange={(e) => setFormData({...formData, homePhone: e.target.value})}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="licenseNumber">License Number*</Label>
+              <Input
+                id="licenseNumber"
+                value={formData.licenseNumber || ""}
+                onChange={(e) => setFormData({...formData, licenseNumber: e.target.value})}
+                className={errors.licenseNumber ? "border-red-500" : ""}
+              />
+              {errors.licenseNumber && (
+                <p className="text-red-500 text-sm">{errors.licenseNumber}</p>
+              )}
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="address1">Address 1</Label>
+              <Label htmlFor="formalName">Formal Name with Credentials</Label>
               <Input
-                id="address1"
-                value={formData.address1}
-                onChange={(e) => setFormData({...formData, address1: e.target.value})}
+                id="formalName"
+                placeholder='e.g., "Dr. Jane Smith, Ph.D."'
+                value={formData.formalName || ""}
+                onChange={(e) => setFormData({...formData, formalName: e.target.value})}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="address2">Address 2</Label>
+              <Label htmlFor="title">Professional Title</Label>
               <Input
-                id="address2"
-                value={formData.address2}
-                onChange={(e) => setFormData({...formData, address2: e.target.value})}
+                id="title"
+                placeholder="e.g., Licensed Clinical Psychologist"
+                value={formData.title || ""}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
               />
             </div>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="zip">Zip</Label>
-                <Input
-                  id="zip"
-                  value={formData.zip}
-                  onChange={(e) => setFormData({...formData, zip: e.target.value})}
-                  placeholder="zip code"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="city">City/State</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => setFormData({...formData, city: e.target.value})}
-                  placeholder="city"
-                />
-              </div>
-              
-              <div className="space-y-2 pt-8">
-                <Select 
-                  value={formData.state} 
-                  onValueChange={(value) => setFormData({...formData, state: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="---" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="AL">Alabama</SelectItem>
-                    <SelectItem value="AK">Alaska</SelectItem>
-                    <SelectItem value="AZ">Arizona</SelectItem>
-                    {/* Add other states as needed */}
-                    <SelectItem value="CA">California</SelectItem>
-                    <SelectItem value="NY">New York</SelectItem>
-                    <SelectItem value="TX">Texas</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </TabsContent>
+          </div>
+        )}
+
+        {/* Additional Contact Information */}
+        <div className="space-y-4 border rounded-md p-4">
+          <h3 className="font-medium">Additional Contact Information</h3>
           
-          {/* Credentials Tab */}
-          <TabsContent value="credentials" className="space-y-4 mt-4">
-            {showClinicianFields ? (
-              <>
-                <div className="p-4 bg-primary/10 rounded-md mb-4">
-                  <h3 className="text-md font-medium mb-2">Look Up Clinician in NPI Registry</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Search the public NPI registry to speed up user account creation. We will import details, including the clinician's name and licenses. You can review and update this information below. This step is optional if you do not have the clinician's NPI number handy.
-                  </p>
-                  
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        placeholder="Individual NPI - Type 1"
-                        value={npiSearchQuery}
-                        onChange={(e) => setNpiSearchQuery(e.target.value)}
-                      />
-                    </div>
-                    <Button onClick={handleNpiSearch}>
-                      <Search className="h-4 w-4 mr-2" />
-                      Search
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="clinician-type">Type of Clinician*</Label>
-                    <Select 
-                      value={formData.licenseType} 
-                      onValueChange={(value) => setFormData({...formData, licenseType: value})}
-                    >
-                      <SelectTrigger className={validationErrors.licenseType ? "border-red-500" : ""}>
-                        <SelectValue placeholder="-- Select Clinician Type --" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LICENSE_TYPES.map((license) => (
-                          <SelectItem key={license} value={license}>
-                            {license}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {validationErrors.licenseType && (
-                      <p className="text-red-500 text-sm">{validationErrors.licenseType}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="formal-name">Formal Name</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="relative">
-                            <Input
-                              id="formal-name"
-                              placeholder='Example: "John Smith, Ph.D."'
-                              value={formData.formalName}
-                              onChange={(e) => setFormData({...formData, formalName: e.target.value})}
-                            />
-                            <Info className="h-4 w-4 absolute right-3 top-3 text-muted-foreground" />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">
-                            The clinician's formal name with credentials as it should appear on forms, notes, and letterhead.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Title</Label>
-                    <Input
-                      id="title"
-                      placeholder="Example: Licensed Clinical Psychologist"
-                      value={formData.title}
-                      onChange={(e) => setFormData({...formData, title: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="npi">NPI</Label>
-                    <Input
-                      id="npi"
-                      placeholder="Individual NPI - Type 1"
-                      value={formData.npiNumber}
-                      onChange={(e) => setFormData({...formData, npiNumber: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2 col-span-2">
-                      <Label htmlFor="license-number">License Number*</Label>
-                      <Input
-                        id="license-number"
-                        value={formData.licenseNumber}
-                        onChange={(e) => setFormData({...formData, licenseNumber: e.target.value})}
-                        className={validationErrors.licenseNumber ? "border-red-500" : ""}
-                      />
-                      {validationErrors.licenseNumber && (
-                        <p className="text-red-500 text-sm">{validationErrors.licenseNumber}</p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {formData.roles.includes(USER_ROLES.INTERN) && (
-                    <div className="space-y-2">
-                      <Label htmlFor="supervision">Supervision*</Label>
-                      <Select 
-                        value={formData.supervision} 
-                        onValueChange={(value) => setFormData({...formData, supervision: value})}
-                      >
-                        <SelectTrigger className={validationErrors.supervision ? "border-red-500" : ""}>
-                          <SelectValue placeholder="Not Supervised" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Not Supervised">Not Supervised</SelectItem>
-                          {/* This would typically be populated with a list of eligible supervisors */}
-                          <SelectItem value="Dr. Sarah Johnson">Dr. Sarah Johnson</SelectItem>
-                          <SelectItem value="Dr. Michael Williams">Dr. Michael Williams</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {validationErrors.supervision && (
-                        <p className="text-red-500 text-sm">{validationErrors.supervision}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
-                <h3 className="text-amber-800 font-medium mb-2 flex items-center">
-                  <AlertCircle className="h-5 w-5 mr-2" />
-                  Credential information not required
-                </h3>
-                <p className="text-amber-700 text-sm">
-                  The selected role(s) do not require professional credential information.
-                  If this user will be providing clinical services, please add the
-                  Clinician role in the "Roles & Access" tab.
-                </p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>{isEditing ? "Update Staff Member" : "Add Staff Member"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="workPhone">Work Phone</Label>
+              <Input
+                id="workPhone"
+                value={formData.workPhone || ""}
+                onChange={(e) => setFormData({...formData, workPhone: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="homePhone">Home Phone</Label>
+              <Input
+                id="homePhone"
+                value={formData.homePhone || ""}
+                onChange={(e) => setFormData({...formData, homePhone: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2 mt-2">
+            <Checkbox 
+              id="canReceiveSMS"
+              checked={formData.canReceiveSMS || false}
+              onCheckedChange={(checked) => 
+                setFormData({...formData, canReceiveSMS: checked === true})
+              }
+            />
+            <Label htmlFor="canReceiveSMS">Can receive SMS notifications</Label>
+          </div>
+        </div>
+      </CardContent>
+
+      <CardFooter className="flex justify-end space-x-2">
+        <Button variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit}>
+          {editingStaff ? "Update Staff Member" : "Add Staff Member"}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

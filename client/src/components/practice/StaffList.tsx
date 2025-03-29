@@ -23,7 +23,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, isAfter, subDays } from "date-fns";
 import { USER_ROLES, ROLE_DETAILS } from "@/lib/constants";
-import { SimplifiedStaffModal } from "./SimplifiedStaffModal";
+import { StaffForm } from "./StaffForm";
 import { useToast } from "@/hooks/use-toast";
 
 interface StaffMember {
@@ -297,7 +297,11 @@ export function StaffList({ initialStaff }: StaffListProps) {
             <TableBody>
               {filteredStaff.length > 0 ? (
                 filteredStaff.map((staffMember) => (
-                  <TableRow key={staffMember.id}>
+                  <TableRow 
+                    key={staffMember.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleEditStaff(staffMember.id)}
+                  >
                     <TableCell>
                       <div className="flex items-center">
                         <Avatar className="h-10 w-10 mr-3">
@@ -387,13 +391,20 @@ export function StaffList({ initialStaff }: StaffListProps) {
         </div>
       </CardContent>
       
-      {/* Staff Modal */}
-      <SimplifiedStaffModal 
-        isOpen={isFormOpen} 
-        onClose={() => setIsFormOpen(false)}
-        onSave={handleSaveStaff}
-        editingStaff={editingStaff}
-      />
+      {/* Display the form when adding or editing */}
+      {isFormOpen && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4">
+              <StaffForm
+                onCancel={() => setIsFormOpen(false)}
+                onSave={handleSaveStaff}
+                editingStaff={editingStaff}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
