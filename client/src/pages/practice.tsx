@@ -7,27 +7,26 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { 
-  UserPlus, 
-  Settings, 
-  Shield, 
-  FileText,
   Users,
   Building,
+  FileText,
+  Shield,
   Edit,
-  Trash,
-  Search,
   Plus,
   Copy,
   ShieldCheck,
   AlertCircle,
+  Trash,
+  ArrowDownToLine,
+  UserPlus,
+  Search,
+  Archive, 
   RefreshCw,
-  Archive,
   MoreHorizontal,
-  ArrowDownToLine
+  Settings
 } from "lucide-react";
 import { format, addDays, addMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -37,8 +36,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { LICENSE_TYPES, USER_ROLES } from "@/lib/constants";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LICENSE_TYPES, USER_ROLES, ROLE_CATEGORIES, ROLE_DETAILS } from "@/lib/constants";
 import { DEFAULT_AVATAR } from "@/lib/constants";
+import { StaffList } from "@/components/practice/StaffList";
 
 // Mock staff data
 const mockStaff = [
@@ -362,131 +363,7 @@ export default function Practice() {
 
             {/* Staff Management Tab */}
             <TabsContent value="staff" className="mt-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-center">
-                    <CardTitle>Staff Management</CardTitle>
-                    <Button onClick={handleAddStaff}>
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Add Staff Member
-                    </Button>
-                  </div>
-                </CardHeader>
-                
-                <CardContent>
-                  <div className="flex justify-between items-center mb-6">
-                    <div className="relative w-full max-w-sm">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                      <Input 
-                        placeholder="Search staff..." 
-                        className="pl-10"
-                        value={staffSearch}
-                        onChange={(e) => setStaffSearch(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="border rounded-md">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Staff Member</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>Contact Info</TableHead>
-                          <TableHead>License</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredStaff.length > 0 ? (
-                          filteredStaff.map((staffMember) => (
-                            <TableRow key={staffMember.id}>
-                              <TableCell>
-                                <div className="flex items-center">
-                                  <Avatar className="h-10 w-10 mr-3">
-                                    <AvatarImage src={staffMember.profileImage || undefined} />
-                                    <AvatarFallback>{`${staffMember.firstName[0]}${staffMember.lastName[0]}`}</AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <div className="font-medium">{staffMember.firstName} {staffMember.lastName}</div>
-                                    <div className="text-sm text-neutral-500">Staff ID: {staffMember.id}</div>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>{staffMember.role}</TableCell>
-                              <TableCell>
-                                <div className="text-sm">{staffMember.email}</div>
-                                <div className="text-sm text-neutral-500">{staffMember.phone}</div>
-                              </TableCell>
-                              <TableCell>
-                                {staffMember.licenseType ? (
-                                  <div>
-                                    <div className="text-sm">{staffMember.licenseType}</div>
-                                    <div className="text-sm text-neutral-500">
-                                      {staffMember.licenseNumber} • Exp: {format(staffMember.licenseExpiration!, "MMM d, yyyy")}
-                                      {isLicenseExpiringSoon(staffMember.licenseExpiration) && (
-                                        <Badge variant="outline" className="ml-2 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-                                          Expiring Soon
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <span className="text-sm text-neutral-500">N/A</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className={
-                                  staffMember.status === "Active" 
-                                    ? "bg-green-100 text-green-800 hover:bg-green-100" 
-                                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-100"
-                                }>
-                                  {staffMember.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleEditStaff(staffMember.id)}>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDeactivateStaff(staffMember.id)}>
-                                      {staffMember.status === "Active" ? (
-                                        <>
-                                          <Archive className="h-4 w-4 mr-2" />
-                                          Deactivate
-                                        </>
-                                      ) : (
-                                        <>
-                                          <RefreshCw className="h-4 w-4 mr-2" />
-                                          Activate
-                                        </>
-                                      )}
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={6} className="text-center py-4 text-neutral-500">
-                              No staff members found matching your search.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
+              <StaffList initialStaff={mockStaff} />
             </TabsContent>
 
             {/* Document Templates Tab */}
