@@ -517,3 +517,76 @@ export type InsertContactHistory = z.infer<typeof insertContactHistorySchema>;
 
 export type ReferralSource = typeof referralSources.$inferSelect;
 export type InsertReferralSource = z.infer<typeof insertReferralSourceSchema>;
+
+// Document template system with version control
+export const documentTemplates = pgTable("document_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // Progress Note, Treatment Plan, Assessment, etc.
+  status: text("status").default("draft").notNull(), // draft, active, inactive, archived
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  organizationId: integer("organization_id"), // For multi-tenant systems
+  isGlobal: boolean("is_global").default(false).notNull(), // Whether this template is available to all users
+  requiresApproval: boolean("requires_approval").default(false).notNull(), // Whether changes to this template need approval
+  approvalStatus: text("approval_status").default("not-submitted").notNull(), // not-submitted, pending, approved, rejected
+  approvedById: integer("approved_by_id").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  currentVersionId: integer("current_version_id"), // FK to be set after creation of the version
+});
+
+// Version history for document templates
+export const templateVersions = pgTable("template_versions", {
+  id: serial("id").primaryKey(),
+  templateId: integer("template_id").references(() => documentTemplates.id).notNull(),
+  versionNumber: integer("version_number").notNull(),
+  content: text("content").notNull(), // Could be JSON or HTML content
+  metadata: jsonb("metadata").default({}), // Additional fields specific to template type
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isLatest: boolean("is_latest").default(false).notNull(),
+  notes: text("notes"), // Change notes or comments for this version
+  approvalStatus: text("approval_status").default("not-submitted").notNull(), // not-submitted, pending, approved, rejected
+  approvedById: integer("approved_by_id").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  rejectionReason: text("rejection_reason"),
+});
+
+// Create insert schemas for document templates
+export const insertDocumentTemplateSchema = createInsertSchema(documentTemplates).pick({
+  name: true,
+  description: true,
+  type: true,
+  status: true,
+  createdById: true,
+  organizationId: true,
+  isGlobal: true,
+  requiresApproval: true,
+  approvalStatus: true,
+  approvedById: true,
+  approvedAt: true,
+});
+
+// Create insert schema for template versions
+export const insertTemplateVersionSchema = createInsertSchema(templateVersions).pick({
+  templateId: true,
+  versionNumber: true,
+  content: true,
+  metadata: true,
+  createdById: true,
+  isLatest: true,
+  notes: true,
+  approvalStatus: true,
+  approvedById: true,
+  approvedAt: true,
+  rejectionReason: true,
+});
+
+// Types for document templates and versions
+export type DocumentTemplate = typeof documentTemplates.$inferSelect;
+export type InsertDocumentTemplate = z.infer<typeof insertDocumentTemplateSchema>;
+
+export type TemplateVersion = typeof templateVersions.$inferSelect;
+export type InsertTemplateVersion = z.infer<typeof insertTemplateVersionSchema>;

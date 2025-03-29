@@ -1,6 +1,7 @@
 import { 
   users, clients, sessions, documentation, notifications, messages,
   leads, marketingCampaigns, marketingEvents, eventRegistrations, contactHistory, referralSources,
+  documentTemplates, templateVersions,
   type User, type InsertUser,
   type Client, type InsertClient, type ExtendedClient,
   type Session, type InsertSession,
@@ -12,7 +13,9 @@ import {
   type MarketingEvent, type InsertMarketingEvent,
   type EventRegistration, type InsertEventRegistration,
   type ContactHistoryRecord, type InsertContactHistory,
-  type ReferralSource, type InsertReferralSource
+  type ReferralSource, type InsertReferralSource,
+  type DocumentTemplate, type InsertDocumentTemplate,
+  type TemplateVersion, type InsertTemplateVersion
 } from "@shared/schema";
 import session from "express-session";
 
@@ -154,6 +157,38 @@ export interface IStorage {
   createReferralSource(source: InsertReferralSource): Promise<ReferralSource>;
   updateReferralSource(id: number, source: Partial<InsertReferralSource>): Promise<ReferralSource | undefined>;
   deleteReferralSource(id: number): Promise<boolean>;
+  
+  // Document template methods
+  getDocumentTemplate(id: number): Promise<DocumentTemplate | undefined>;
+  getDocumentTemplates(filters?: {
+    type?: string;
+    status?: string;
+    createdById?: number;
+    isGlobal?: boolean;
+    requiresApproval?: boolean;
+    approvalStatus?: string;
+    organizationId?: number;
+  }): Promise<DocumentTemplate[]>;
+  createDocumentTemplate(template: InsertDocumentTemplate): Promise<DocumentTemplate>;
+  updateDocumentTemplate(id: number, template: Partial<InsertDocumentTemplate>): Promise<DocumentTemplate | undefined>;
+  deleteDocumentTemplate(id: number): Promise<boolean>;
+  
+  // Template version methods
+  getTemplateVersion(id: number): Promise<TemplateVersion | undefined>;
+  getTemplateVersions(filters?: {
+    templateId?: number;
+    isLatest?: boolean;
+    createdById?: number;
+    approvalStatus?: string;
+  }): Promise<TemplateVersion[]>;
+  createTemplateVersion(version: InsertTemplateVersion): Promise<TemplateVersion>;
+  updateTemplateVersion(id: number, version: Partial<InsertTemplateVersion>): Promise<TemplateVersion | undefined>;
+  deleteTemplateVersion(id: number): Promise<boolean>;
+  
+  // Template version workflows
+  setLatestTemplateVersion(templateId: number, versionId: number): Promise<DocumentTemplate>;
+  approveTemplateVersion(versionId: number, approverId: number, notes?: string): Promise<TemplateVersion>;
+  rejectTemplateVersion(versionId: number, approverId: number, reason: string): Promise<TemplateVersion>;
   
   // Session store for auth
   sessionStore: session.Store;

@@ -15,7 +15,9 @@ import {
   insertMarketingEventSchema,
   insertEventRegistrationSchema,
   insertContactHistorySchema,
-  insertReferralSourceSchema
+  insertReferralSourceSchema,
+  insertDocumentTemplateSchema,
+  insertTemplateVersionSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -1674,6 +1676,359 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: "Failed to delete referral source" });
       }
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Document Template routes
+  app.get("/api/document-templates", isAuthenticated, async (req, res, next) => {
+    try {
+      // Parse filters from query parameters
+      const filters: Record<string, any> = {};
+      const { type, status, createdById, isGlobal, requiresApproval, approvalStatus, organizationId } = req.query;
+      
+      if (type) filters.type = type as string;
+      if (status) filters.status = status as string;
+      if (createdById) filters.createdById = parseInt(createdById as string);
+      if (isGlobal !== undefined) filters.isGlobal = isGlobal === 'true';
+      if (requiresApproval !== undefined) filters.requiresApproval = requiresApproval === 'true';
+      if (approvalStatus) filters.approvalStatus = approvalStatus as string;
+      if (organizationId) filters.organizationId = parseInt(organizationId as string);
+      
+      const templates = await storage.getDocumentTemplates(filters);
+      res.json(templates);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.get("/api/document-templates/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const template = await storage.getDocumentTemplate(id);
+      
+      if (!template) {
+        return res.status(404).json({ message: "Document template not found" });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/document-templates", isAuthenticated, async (req, res, next) => {
+    try {
+      // Validate request body
+      const validatedData = insertDocumentTemplateSchema.parse(req.body);
+      
+      // Add the authenticated user as creator
+      const user = req.user as AuthenticatedUser;
+      validatedData.createdById = user.id;
+      
+      const newTemplate = await storage.createDocumentTemplate(validatedData);
+      res.status(201).json(newTemplate);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.patch("/api/document-templates/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify template exists
+      const template = await storage.getDocumentTemplate(id);
+      if (!template) {
+        return res.status(404).json({ message: "Document template not found" });
+      }
+      
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check if template was created by this user
+      if (user.role !== "administrator" && template.createdById !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have access to modify this template" });
+      }
+      
+      // Partial validation of update data
+      const validatedData = insertDocumentTemplateSchema.partial().parse(req.body);
+      
+      const updatedTemplate = await storage.updateDocumentTemplate(id, validatedData);
+      res.json(updatedTemplate);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.delete("/api/document-templates/:id", isAuthenticated, hasRole(["administrator"]), async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify template exists
+      const template = await storage.getDocumentTemplate(id);
+      if (!template) {
+        return res.status(404).json({ message: "Document template not found" });
+      }
+      
+      // Only admins can delete templates (enforced by hasRole middleware)
+      const deleted = await storage.deleteDocumentTemplate(id);
+      
+      if (deleted) {
+        res.status(204).end();
+      } else {
+        res.status(500).json({ message: "Failed to delete document template" });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Template Version routes
+  app.get("/api/template-versions", isAuthenticated, async (req, res, next) => {
+    try {
+      // Parse filters from query parameters
+      const filters: Record<string, any> = {};
+      const { templateId, isLatest, createdById, approvalStatus } = req.query;
+      
+      if (templateId) filters.templateId = parseInt(templateId as string);
+      if (isLatest !== undefined) filters.isLatest = isLatest === 'true';
+      if (createdById) filters.createdById = parseInt(createdById as string);
+      if (approvalStatus) filters.approvalStatus = approvalStatus as string;
+      
+      const versions = await storage.getTemplateVersions(filters);
+      res.json(versions);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.get("/api/template-versions/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const version = await storage.getTemplateVersion(id);
+      
+      if (!version) {
+        return res.status(404).json({ message: "Template version not found" });
+      }
+      
+      res.json(version);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/template-versions", isAuthenticated, async (req, res, next) => {
+    try {
+      // Validate request body
+      const validatedData = insertTemplateVersionSchema.parse(req.body);
+      
+      // Add the authenticated user as creator
+      const user = req.user as AuthenticatedUser;
+      validatedData.createdById = user.id;
+      
+      // Verify the template exists first
+      const template = await storage.getDocumentTemplate(validatedData.templateId);
+      if (!template) {
+        return res.status(404).json({ message: "Referenced document template not found" });
+      }
+      
+      // Get the current highest version number for this template
+      const existingVersions = await storage.getTemplateVersions({ templateId: validatedData.templateId });
+      let highestVersion = 0;
+      existingVersions.forEach(version => {
+        if (version.versionNumber > highestVersion) {
+          highestVersion = version.versionNumber;
+        }
+      });
+      
+      // Increment version number
+      validatedData.versionNumber = highestVersion + 1;
+      
+      // Set as not latest by default
+      if (validatedData.isLatest === undefined) {
+        validatedData.isLatest = false;
+      }
+      
+      const newVersion = await storage.createTemplateVersion(validatedData);
+      
+      // If this is marked as latest, update the template and other versions
+      if (newVersion.isLatest) {
+        await storage.setLatestTemplateVersion(template.id, newVersion.id);
+      }
+      
+      res.status(201).json(newVersion);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.patch("/api/template-versions/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify version exists
+      const version = await storage.getTemplateVersion(id);
+      if (!version) {
+        return res.status(404).json({ message: "Template version not found" });
+      }
+      
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check if version was created by this user
+      if (user.role !== "administrator" && version.createdById !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have access to modify this template version" });
+      }
+      
+      // Partial validation of update data
+      const validatedData = insertTemplateVersionSchema.partial().parse(req.body);
+      
+      // Check if we're changing the isLatest flag
+      const isChangingLatestStatus = 
+        validatedData.isLatest !== undefined && 
+        validatedData.isLatest !== version.isLatest &&
+        validatedData.isLatest === true;
+      
+      // Update the version
+      const updatedVersion = await storage.updateTemplateVersion(id, validatedData);
+      
+      // If we're setting this as the latest version, update the template and other versions
+      if (isChangingLatestStatus && updatedVersion?.isLatest) {
+        await storage.setLatestTemplateVersion(version.templateId, id);
+      }
+      
+      res.json(updatedVersion);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
+  app.delete("/api/template-versions/:id", isAuthenticated, hasRole(["administrator"]), async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify version exists
+      const version = await storage.getTemplateVersion(id);
+      if (!version) {
+        return res.status(404).json({ message: "Template version not found" });
+      }
+      
+      // Check if this is the latest version
+      if (version.isLatest) {
+        return res.status(400).json({ 
+          message: "Cannot delete the latest version of a template. Set another version as latest first." 
+        });
+      }
+      
+      // Only admins can delete versions (enforced by hasRole middleware)
+      const deleted = await storage.deleteTemplateVersion(id);
+      
+      if (deleted) {
+        res.status(204).end();
+      } else {
+        res.status(500).json({ message: "Failed to delete template version" });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Template Version Workflow routes
+  app.post("/api/template-versions/:id/set-latest", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify version exists
+      const version = await storage.getTemplateVersion(id);
+      if (!version) {
+        return res.status(404).json({ message: "Template version not found" });
+      }
+      
+      const user = req.user as AuthenticatedUser;
+      
+      // If not admin, check permissions based on template
+      const template = await storage.getDocumentTemplate(version.templateId);
+      if (!template) {
+        return res.status(404).json({ message: "Document template not found" });
+      }
+      
+      if (user.role !== "administrator" && template.createdById !== user.id) {
+        return res.status(403).json({ message: "Forbidden - You don't have permission to set template versions" });
+      }
+      
+      // Set as latest version
+      const updatedTemplate = await storage.setLatestTemplateVersion(version.templateId, id);
+      res.json(updatedTemplate);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/template-versions/:id/approve", isAuthenticated, hasRole(["administrator"]), async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify version exists
+      const version = await storage.getTemplateVersion(id);
+      if (!version) {
+        return res.status(404).json({ message: "Template version not found" });
+      }
+      
+      const user = req.user as AuthenticatedUser;
+      const { notes } = req.body;
+      
+      // Approve the version
+      const approvedVersion = await storage.approveTemplateVersion(id, user.id, notes);
+      res.json(approvedVersion);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/template-versions/:id/reject", isAuthenticated, hasRole(["administrator"]), async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verify version exists
+      const version = await storage.getTemplateVersion(id);
+      if (!version) {
+        return res.status(404).json({ message: "Template version not found" });
+      }
+      
+      const user = req.user as AuthenticatedUser;
+      const { reason } = req.body;
+      
+      if (!reason) {
+        return res.status(400).json({ message: "Rejection reason is required" });
+      }
+      
+      // Reject the version
+      const rejectedVersion = await storage.rejectTemplateVersion(id, user.id, reason);
+      res.json(rejectedVersion);
     } catch (error) {
       next(error);
     }

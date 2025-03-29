@@ -58,6 +58,7 @@ export function Sidebar({ className }: SidebarProps) {
   // Documentation submenu items
   const documentTypes: SubMenuItemType[] = [
     { name: "Dashboard", href: "/documentation/dashboard", icon: LayoutDashboard },
+    { name: "Templates", href: "/templates", icon: FileText },
     { name: "Intake Forms", href: "/documentation/intake", icon: FilePlus },
     { name: "Progress Notes", href: "/documentation/progress-notes", icon: FileSignature },
     { name: "Treatment Plans", href: "/documentation/treatment-plans", icon: ClipboardCheck },

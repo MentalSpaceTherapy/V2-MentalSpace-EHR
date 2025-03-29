@@ -1,6 +1,7 @@
 import { 
   users, clients, sessions, documentation, notifications, messages,
   leads, marketingCampaigns, marketingEvents, eventRegistrations, contactHistory, referralSources,
+  documentTemplates, templateVersions,
   type User, type InsertUser,
   type Client, type InsertClient, type ExtendedClient,
   type Session, type InsertSession,
@@ -12,7 +13,9 @@ import {
   type MarketingEvent, type InsertMarketingEvent,
   type EventRegistration, type InsertEventRegistration,
   type ContactHistoryRecord, type InsertContactHistory,
-  type ReferralSource, type InsertReferralSource
+  type ReferralSource, type InsertReferralSource,
+  type DocumentTemplate, type InsertDocumentTemplate,
+  type TemplateVersion, type InsertTemplateVersion
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -924,5 +927,372 @@ export class DatabaseStorage implements IStorage {
       console.error("Error deleting referral source:", error);
       return false;
     }
+  }
+
+  //----------------------
+  // Document Template Methods
+  //----------------------
+  async getDocumentTemplate(id: number): Promise<DocumentTemplate | undefined> {
+    const [template] = await db.select().from(documentTemplates).where(eq(documentTemplates.id, id));
+    return template;
+  }
+
+  async getDocumentTemplates(filters?: {
+    type?: string;
+    status?: string;
+    createdById?: number;
+    isGlobal?: boolean;
+    requiresApproval?: boolean;
+    approvalStatus?: string;
+    organizationId?: number;
+  }): Promise<DocumentTemplate[]> {
+    const result = await db.select().from(documentTemplates);
+    
+    // Filter in memory to avoid typing issues
+    let filteredTemplates = result;
+    
+    if (filters) {
+      if (filters.type !== undefined) {
+        filteredTemplates = filteredTemplates.filter(template => 
+          template.type === filters.type
+        );
+      }
+      
+      if (filters.status !== undefined) {
+        filteredTemplates = filteredTemplates.filter(template => 
+          template.status === filters.status
+        );
+      }
+      
+      if (filters.createdById !== undefined) {
+        filteredTemplates = filteredTemplates.filter(template => 
+          template.createdById === filters.createdById
+        );
+      }
+      
+      if (filters.isGlobal !== undefined) {
+        filteredTemplates = filteredTemplates.filter(template => 
+          template.isGlobal === filters.isGlobal
+        );
+      }
+      
+      if (filters.requiresApproval !== undefined) {
+        filteredTemplates = filteredTemplates.filter(template => 
+          template.requiresApproval === filters.requiresApproval
+        );
+      }
+      
+      if (filters.approvalStatus !== undefined) {
+        filteredTemplates = filteredTemplates.filter(template => 
+          template.approvalStatus === filters.approvalStatus
+        );
+      }
+      
+      if (filters.organizationId !== undefined) {
+        filteredTemplates = filteredTemplates.filter(template => 
+          template.organizationId === filters.organizationId
+        );
+      }
+    }
+    
+    // Sort by name
+    return filteredTemplates.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async createDocumentTemplate(templateData: InsertDocumentTemplate): Promise<DocumentTemplate> {
+    const [template] = await db.insert(documentTemplates).values(templateData).returning();
+    return template;
+  }
+
+  async updateDocumentTemplate(id: number, templateData: Partial<InsertDocumentTemplate>): Promise<DocumentTemplate | undefined> {
+    const [updatedTemplate] = await db
+      .update(documentTemplates)
+      .set(templateData)
+      .where(eq(documentTemplates.id, id))
+      .returning();
+    
+    return updatedTemplate;
+  }
+
+  async deleteDocumentTemplate(id: number): Promise<boolean> {
+    try {
+      // First check if there are any template versions
+      const versions = await db.select()
+        .from(templateVersions)
+        .where(eq(templateVersions.templateId, id));
+      
+      if (versions.length > 0) {
+        // Delete all template versions first
+        await db.delete(templateVersions).where(eq(templateVersions.templateId, id));
+      }
+      
+      // Then delete the template
+      await db.delete(documentTemplates).where(eq(documentTemplates.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting document template:", error);
+      return false;
+    }
+  }
+
+  //----------------------
+  // Template Version Methods
+  //----------------------
+  async getTemplateVersion(id: number): Promise<TemplateVersion | undefined> {
+    const [version] = await db.select().from(templateVersions).where(eq(templateVersions.id, id));
+    return version;
+  }
+
+  async getTemplateVersions(filters?: {
+    templateId?: number;
+    isLatest?: boolean;
+    createdById?: number;
+    approvalStatus?: string;
+  }): Promise<TemplateVersion[]> {
+    const result = await db.select().from(templateVersions);
+    
+    // Filter in memory to avoid typing issues
+    let filteredVersions = result;
+    
+    if (filters) {
+      if (filters.templateId !== undefined) {
+        filteredVersions = filteredVersions.filter(version => 
+          version.templateId === filters.templateId
+        );
+      }
+      
+      if (filters.isLatest !== undefined) {
+        filteredVersions = filteredVersions.filter(version => 
+          version.isLatest === filters.isLatest
+        );
+      }
+      
+      if (filters.createdById !== undefined) {
+        filteredVersions = filteredVersions.filter(version => 
+          version.createdById === filters.createdById
+        );
+      }
+      
+      if (filters.approvalStatus !== undefined) {
+        filteredVersions = filteredVersions.filter(version => 
+          version.approvalStatus === filters.approvalStatus
+        );
+      }
+    }
+    
+    // Sort by version number, highest first
+    return filteredVersions.sort((a, b) => b.versionNumber - a.versionNumber);
+  }
+
+  async createTemplateVersion(versionData: InsertTemplateVersion): Promise<TemplateVersion> {
+    // Get the template ID
+    const templateId = versionData.templateId;
+    
+    // Find the latest version number for this template
+    const existingVersions = await this.getTemplateVersions({ templateId });
+    const versionNumber = existingVersions.length > 0 
+      ? Math.max(...existingVersions.map(v => v.versionNumber)) + 1 
+      : 1;
+    
+    // If this is the first version, set it as the latest
+    const isLatest = existingVersions.length === 0 || versionData.isLatest;
+    
+    // If we're setting this as the latest, unset all others
+    if (isLatest && existingVersions.length > 0) {
+      await db.update(templateVersions)
+        .set({ isLatest: false })
+        .where(eq(templateVersions.templateId, templateId));
+    }
+    
+    // Create the new version
+    const [version] = await db.insert(templateVersions)
+      .values({
+        ...versionData,
+        versionNumber,
+        isLatest
+      })
+      .returning();
+    
+    // Update the template's currentVersionId if this is latest
+    if (isLatest) {
+      await db.update(documentTemplates)
+        .set({ currentVersionId: version.id })
+        .where(eq(documentTemplates.id, templateId));
+    }
+    
+    return version;
+  }
+
+  async updateTemplateVersion(id: number, versionData: Partial<InsertTemplateVersion>): Promise<TemplateVersion | undefined> {
+    // Get the original version data
+    const originalVersion = await this.getTemplateVersion(id);
+    if (!originalVersion) {
+      return undefined;
+    }
+    
+    // If we're changing isLatest to true, update other versions
+    if (versionData.isLatest === true && !originalVersion.isLatest) {
+      await db.update(templateVersions)
+        .set({ isLatest: false })
+        .where(eq(templateVersions.templateId, originalVersion.templateId));
+      
+      // Update the template's currentVersionId
+      await db.update(documentTemplates)
+        .set({ currentVersionId: id })
+        .where(eq(documentTemplates.id, originalVersion.templateId));
+    }
+    
+    // Update the version
+    const [updatedVersion] = await db
+      .update(templateVersions)
+      .set(versionData)
+      .where(eq(templateVersions.id, id))
+      .returning();
+    
+    return updatedVersion;
+  }
+
+  async deleteTemplateVersion(id: number): Promise<boolean> {
+    try {
+      // Get the version to check if it's the latest
+      const version = await this.getTemplateVersion(id);
+      if (!version) {
+        return false;
+      }
+      
+      // Delete the version
+      await db.delete(templateVersions).where(eq(templateVersions.id, id));
+      
+      // If this was the latest version, update the template and set a new latest
+      if (version.isLatest) {
+        const remainingVersions = await this.getTemplateVersions({ 
+          templateId: version.templateId 
+        });
+        
+        if (remainingVersions.length > 0) {
+          // Find the highest version number
+          const latestVersion = remainingVersions.reduce((prev, current) => 
+            (prev.versionNumber > current.versionNumber) ? prev : current
+          );
+          
+          // Set as latest
+          await db.update(templateVersions)
+            .set({ isLatest: true })
+            .where(eq(templateVersions.id, latestVersion.id));
+          
+          // Update the template's currentVersionId
+          await db.update(documentTemplates)
+            .set({ currentVersionId: latestVersion.id })
+            .where(eq(documentTemplates.id, version.templateId));
+        } else {
+          // No versions left, set currentVersionId to null
+          await db.update(documentTemplates)
+            .set({ currentVersionId: null })
+            .where(eq(documentTemplates.id, version.templateId));
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error deleting template version:", error);
+      return false;
+    }
+  }
+
+  //----------------------
+  // Template Version Workflows
+  //----------------------
+  async setLatestTemplateVersion(templateId: number, versionId: number): Promise<DocumentTemplate> {
+    // Verify template and version exist
+    const template = await this.getDocumentTemplate(templateId);
+    const version = await this.getTemplateVersion(versionId);
+    
+    if (!template || !version || version.templateId !== templateId) {
+      throw new Error("Invalid template or version ID");
+    }
+    
+    // Update all versions to not be latest
+    await db.update(templateVersions)
+      .set({ isLatest: false })
+      .where(eq(templateVersions.templateId, templateId));
+    
+    // Set the specified version as latest
+    await db.update(templateVersions)
+      .set({ isLatest: true })
+      .where(eq(templateVersions.id, versionId));
+    
+    // Update the template's currentVersionId
+    const [updatedTemplate] = await db.update(documentTemplates)
+      .set({ 
+        currentVersionId: versionId,
+        updatedAt: new Date()
+      })
+      .where(eq(documentTemplates.id, templateId))
+      .returning();
+    
+    return updatedTemplate;
+  }
+
+  async approveTemplateVersion(versionId: number, approverId: number, notes?: string): Promise<TemplateVersion> {
+    // Get the version
+    const version = await this.getTemplateVersion(versionId);
+    if (!version) {
+      throw new Error(`Template version with ID ${versionId} not found`);
+    }
+    
+    // Update the version
+    const [updatedVersion] = await db.update(templateVersions)
+      .set({
+        approvalStatus: "approved",
+        approvedById: approverId,
+        approvedAt: new Date(),
+        notes: notes || version.notes
+      })
+      .where(eq(templateVersions.id, versionId))
+      .returning();
+    
+    // Also update the template's approval status if needed
+    const template = await this.getDocumentTemplate(version.templateId);
+    if (template && template.approvalStatus !== "approved") {
+      await db.update(documentTemplates)
+        .set({
+          approvalStatus: "approved",
+          approvedById: approverId,
+          approvedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(documentTemplates.id, version.templateId));
+    }
+    
+    return updatedVersion;
+  }
+
+  async rejectTemplateVersion(versionId: number, approverId: number, reason: string): Promise<TemplateVersion> {
+    // Get the version
+    const version = await this.getTemplateVersion(versionId);
+    if (!version) {
+      throw new Error(`Template version with ID ${versionId} not found`);
+    }
+    
+    // Update the version
+    const [updatedVersion] = await db.update(templateVersions)
+      .set({
+        approvalStatus: "rejected",
+        approvedById: approverId,
+        approvedAt: new Date(),
+        rejectionReason: reason
+      })
+      .where(eq(templateVersions.id, versionId))
+      .returning();
+    
+    // Also update the template's approval status
+    await db.update(documentTemplates)
+      .set({
+        approvalStatus: "rejected",
+        updatedAt: new Date()
+      })
+      .where(eq(documentTemplates.id, version.templateId));
+    
+    return updatedVersion;
   }
 }
