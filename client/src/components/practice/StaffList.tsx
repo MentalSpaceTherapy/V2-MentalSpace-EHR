@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Link } from "wouter";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -235,9 +236,11 @@ export function StaffList({ initialStaff }: StaffListProps) {
       <CardHeader className="pb-3">
         <div className="flex justify-between items-center">
           <CardTitle>Staff Management</CardTitle>
-          <Button onClick={handleAddStaff}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add Staff Member
+          <Button asChild>
+            <Link href="/add-staff">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Staff Member
+            </Link>
           </Button>
         </div>
       </CardHeader>

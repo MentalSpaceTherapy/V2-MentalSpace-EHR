@@ -32,6 +32,7 @@ import CRMAnalytics from "@/pages/crm/analytics";
 import CRMEvents from "@/pages/crm/events";
 import CRMReferralSources from "@/pages/crm/referral-sources";
 import CRMContactHistory from "@/pages/crm/contact-history";
+import AddStaffPage from "@/pages/add-staff";
 // PWA Components
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { UpdateNotification } from "@/components/pwa/UpdateNotification";
@@ -106,6 +107,7 @@ function Router() {
       <ProtectedRoute path="/reports" component={Reports} />
       <ProtectedRoute path="/practice" component={Practice} />
       <ProtectedRoute path="/telehealth" component={Telehealth} />
+      <ProtectedRoute path="/add-staff" component={AddStaffPage} />
       <Route component={NotFound} />
     </Switch>
   );
