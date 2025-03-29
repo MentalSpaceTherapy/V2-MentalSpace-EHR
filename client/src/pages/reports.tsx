@@ -47,7 +47,15 @@ import {
   CheckCircle,
   Archive, 
   RefreshCw, 
-  Settings
+  Settings,
+  Shield,
+  History,
+  Lock,
+  FileDigit,
+  FileWarning,
+  StickyNote,
+  BadgeAlert,
+  ClipboardList
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -462,6 +470,10 @@ export default function Reports() {
               <TabsTrigger value="reports-management" className="flex items-center">
                 <FileText className="h-4 w-4 mr-2" />
                 Reports Management
+              </TabsTrigger>
+              <TabsTrigger value="security-compliance" className="flex items-center">
+                <Shield className="h-4 w-4 mr-2" />
+                Security & Compliance
               </TabsTrigger>
             </TabsList>
 
@@ -1761,6 +1773,351 @@ export default function Reports() {
                               <Button variant="ghost" size="icon">
                                 <Settings className="h-4 w-4" />
                               </Button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            
+            {/* Security & Compliance */}
+            <TabsContent value="security-compliance" className="mt-4">
+              <div className="grid grid-cols-1 gap-6">
+                {/* Audit Logs */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-lg">System Audit Logs</CardTitle>
+                    <div className="flex space-x-2">
+                      <Select defaultValue="all">
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue placeholder="Log Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Logs</SelectItem>
+                          <SelectItem value="login">Login Events</SelectItem>
+                          <SelectItem value="data">Data Access</SelectItem>
+                          <SelectItem value="changes">Data Changes</SelectItem>
+                          <SelectItem value="exports">Data Exports</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button variant="outline" size="sm">
+                        <FileDigit className="h-4 w-4 mr-2" />
+                        Export Logs
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/60">
+                            <th className="py-3 px-4 text-left">Timestamp</th>
+                            <th className="py-3 px-4 text-left">User</th>
+                            <th className="py-3 px-4 text-left">Action</th>
+                            <th className="py-3 px-4 text-left">Resource</th>
+                            <th className="py-3 px-4 text-left">IP Address</th>
+                            <th className="py-3 px-4 text-center">Details</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b">
+                            <td className="py-3 px-4">2024-03-29 14:23:15</td>
+                            <td className="py-3 px-4">Dr. Johnson</td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-800">
+                                <History className="h-3 w-3 mr-1" />
+                                View
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">Client Record #42831</td>
+                            <td className="py-3 px-4">198.51.100.234</td>
+                            <td className="py-3 px-4 text-center">
+                              <Button variant="ghost" size="icon" title="View Details">
+                                <StickyNote className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                          <tr className="border-b">
+                            <td className="py-3 px-4">2024-03-29 13:45:07</td>
+                            <td className="py-3 px-4">Dr. Williams</td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center rounded-full bg-warning-100 px-2.5 py-0.5 text-xs font-medium text-warning-800">
+                                <FileWarning className="h-3 w-3 mr-1" />
+                                Edit
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">Session Note #78942</td>
+                            <td className="py-3 px-4">203.0.113.42</td>
+                            <td className="py-3 px-4 text-center">
+                              <Button variant="ghost" size="icon" title="View Details">
+                                <StickyNote className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                          <tr className="border-b">
+                            <td className="py-3 px-4">2024-03-29 12:36:21</td>
+                            <td className="py-3 px-4">Admin User</td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center rounded-full bg-error-100 px-2.5 py-0.5 text-xs font-medium text-error-800">
+                                <FileDigit className="h-3 w-3 mr-1" />
+                                Export
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">Client Database</td>
+                            <td className="py-3 px-4">192.0.2.187</td>
+                            <td className="py-3 px-4 text-center">
+                              <Button variant="ghost" size="icon" title="View Details">
+                                <StickyNote className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-3 px-4">2024-03-29 11:14:52</td>
+                            <td className="py-3 px-4">System</td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center rounded-full bg-info-100 px-2.5 py-0.5 text-xs font-medium text-info-800">
+                                <BadgeAlert className="h-3 w-3 mr-1" />
+                                Alert
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">Failed Login Attempt</td>
+                            <td className="py-3 px-4">198.51.100.118</td>
+                            <td className="py-3 px-4 text-center">
+                              <Button variant="ghost" size="icon" title="View Details">
+                                <StickyNote className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="mt-4 flex justify-between">
+                      <Button variant="outline" size="sm" disabled>Previous</Button>
+                      <div className="text-sm text-neutral-500">
+                        Page 1 of 24
+                      </div>
+                      <Button variant="outline" size="sm">Next</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Data Retention Policies */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-lg">Data Retention Policies</CardTitle>
+                    <Button size="sm">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Configure Policies
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/60">
+                            <th className="py-3 px-4 text-left">Data Category</th>
+                            <th className="py-3 px-4 text-left">Retention Period</th>
+                            <th className="py-3 px-4 text-left">Auto-Archive</th>
+                            <th className="py-3 px-4 text-left">Auto-Delete</th>
+                            <th className="py-3 px-4 text-left">Last Modified</th>
+                            <th className="py-3 px-4 text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b">
+                            <td className="py-3 px-4">Active Client Records</td>
+                            <td className="py-3 px-4">7 years after last session</td>
+                            <td className="py-3 px-4">
+                              <CheckCircle className="h-4 w-4 text-success-500" />
+                            </td>
+                            <td className="py-3 px-4">
+                              <AlertCircle className="h-4 w-4 text-error-500" />
+                            </td>
+                            <td className="py-3 px-4">2024-03-15</td>
+                            <td className="py-3 px-4 text-center">
+                              <Button variant="ghost" size="icon">
+                                <Settings className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                          <tr className="border-b">
+                            <td className="py-3 px-4">Inactive Client Records</td>
+                            <td className="py-3 px-4">10 years from discharge</td>
+                            <td className="py-3 px-4">
+                              <CheckCircle className="h-4 w-4 text-success-500" />
+                            </td>
+                            <td className="py-3 px-4">
+                              <CheckCircle className="h-4 w-4 text-success-500" />
+                            </td>
+                            <td className="py-3 px-4">2024-03-15</td>
+                            <td className="py-3 px-4 text-center">
+                              <Button variant="ghost" size="icon">
+                                <Settings className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                          <tr className="border-b">
+                            <td className="py-3 px-4">Session Documentation</td>
+                            <td className="py-3 px-4">7 years after session date</td>
+                            <td className="py-3 px-4">
+                              <CheckCircle className="h-4 w-4 text-success-500" />
+                            </td>
+                            <td className="py-3 px-4">
+                              <AlertCircle className="h-4 w-4 text-error-500" />
+                            </td>
+                            <td className="py-3 px-4">2024-03-15</td>
+                            <td className="py-3 px-4 text-center">
+                              <Button variant="ghost" size="icon">
+                                <Settings className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-3 px-4">System Audit Logs</td>
+                            <td className="py-3 px-4">3 years</td>
+                            <td className="py-3 px-4">
+                              <CheckCircle className="h-4 w-4 text-success-500" />
+                            </td>
+                            <td className="py-3 px-4">
+                              <CheckCircle className="h-4 w-4 text-success-500" />
+                            </td>
+                            <td className="py-3 px-4">2024-03-15</td>
+                            <td className="py-3 px-4 text-center">
+                              <Button variant="ghost" size="icon">
+                                <Settings className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Business Associate Agreements */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-lg">Business Associate Agreements</CardTitle>
+                    <Button size="sm">
+                      <FileText className="h-4 w-4 mr-2" />
+                      New BAA
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/60">
+                            <th className="py-3 px-4 text-left">Organization</th>
+                            <th className="py-3 px-4 text-left">Contact Person</th>
+                            <th className="py-3 px-4 text-left">Start Date</th>
+                            <th className="py-3 px-4 text-left">Expiration</th>
+                            <th className="py-3 px-4 text-left">Status</th>
+                            <th className="py-3 px-4 text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b">
+                            <td className="py-3 px-4">MedSecure Cloud Storage</td>
+                            <td className="py-3 px-4">Sarah Reynolds</td>
+                            <td className="py-3 px-4">2024-01-15</td>
+                            <td className="py-3 px-4">2026-01-14</td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center rounded-full bg-success-100 px-2.5 py-0.5 text-xs font-medium text-success-800">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Active
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <div className="flex justify-center space-x-2">
+                                <Button variant="ghost" size="icon" title="View">
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" title="Download">
+                                  <ArrowDownToLine className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" title="Renew">
+                                  <RefreshCw className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr className="border-b">
+                            <td className="py-3 px-4">TeleTherapy Pro</td>
+                            <td className="py-3 px-4">Michael Chen</td>
+                            <td className="py-3 px-4">2023-08-22</td>
+                            <td className="py-3 px-4">2025-08-21</td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center rounded-full bg-success-100 px-2.5 py-0.5 text-xs font-medium text-success-800">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Active
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <div className="flex justify-center space-x-2">
+                                <Button variant="ghost" size="icon" title="View">
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" title="Download">
+                                  <ArrowDownToLine className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" title="Renew">
+                                  <RefreshCw className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr className="border-b">
+                            <td className="py-3 px-4">HealthData Analytics, Inc.</td>
+                            <td className="py-3 px-4">Jessica Moore</td>
+                            <td className="py-3 px-4">2022-11-30</td>
+                            <td className="py-3 px-4">2022-11-29</td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center rounded-full bg-error-100 px-2.5 py-0.5 text-xs font-medium text-error-800">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Expired
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <div className="flex justify-center space-x-2">
+                                <Button variant="ghost" size="icon" title="View">
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" title="Download">
+                                  <ArrowDownToLine className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" title="Renew">
+                                  <RefreshCw className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-3 px-4">SecureRx Prescriptions</td>
+                            <td className="py-3 px-4">David Wilson</td>
+                            <td className="py-3 px-4">2024-02-18</td>
+                            <td className="py-3 px-4">2026-02-17</td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center rounded-full bg-warning-100 px-2.5 py-0.5 text-xs font-medium text-warning-800">
+                                <ClipboardList className="h-3 w-3 mr-1" />
+                                Pending Review
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <div className="flex justify-center space-x-2">
+                                <Button variant="ghost" size="icon" title="View">
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" title="Download">
+                                  <ArrowDownToLine className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" title="Approve">
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                         </tbody>
