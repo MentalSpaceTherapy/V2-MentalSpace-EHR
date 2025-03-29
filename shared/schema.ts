@@ -38,7 +38,7 @@ export const paymentCardSchema = z.object({
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  passwordHash: text("password_hash").notNull(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").notNull().unique(),
@@ -52,7 +52,7 @@ export const users = pgTable("users", {
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
-  password: true,
+  passwordHash: true,
   firstName: true,
   lastName: true,
   email: true,
@@ -404,6 +404,11 @@ export const insertLeadSchema = createInsertSchema(leads).pick({
   conversionProbability: true,
   tags: true,
 });
+
+// Adjust lead schema to handle nulls properly
+insertLeadSchema.shape.source = z.string().nullable();
+insertLeadSchema.shape.sourceId = z.number().nullable();
+insertLeadSchema.shape.marketingCampaignId = z.number().nullable();
 
 export const insertMarketingCampaignSchema = createInsertSchema(marketingCampaigns).pick({
   name: true,
