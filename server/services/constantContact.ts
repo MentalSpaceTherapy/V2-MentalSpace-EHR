@@ -146,6 +146,7 @@ export class ConstantContactService {
           expiresAt: this.credentials.expiresAt,
           active: true,
           metadata: {}
+          // userId is removed since it's not in the database schema
         });
       }
       

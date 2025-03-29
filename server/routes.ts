@@ -150,6 +150,14 @@ const canAccessClientId = async (req: Request, res: Response, next: NextFunction
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Temporary endpoint to get current hostname
+  app.get('/api/check-hostname', (req, res) => {
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const host = req.headers['host'] || 'localhost:3000';
+    const fullUrl = `${protocol}://${host}`;
+    res.send(`Current hostname: ${fullUrl}`);
+  });
   // Sets up /api/register, /api/login, /api/logout, /api/user
   setupAuth(app);
   

@@ -686,7 +686,7 @@ export type InsertSignatureEvent = z.infer<typeof insertSignatureEventSchema>;
 export const integrations = pgTable("integrations", {
   id: serial("id").primaryKey(),
   serviceName: text("service_name").notNull(), // "constant_contact", "google_calendar", etc.
-  userId: integer("user_id").references(() => users.id), // Which user this integration belongs to (null for practice-wide)
+  // userId field is removed to match database structure
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
   expiresAt: timestamp("expires_at"),
@@ -698,7 +698,7 @@ export const integrations = pgTable("integrations", {
 
 export const insertIntegrationSchema = createInsertSchema(integrations).pick({
   serviceName: true,
-  userId: true,
+  // userId: true, - removed to match database structure
   accessToken: true,
   refreshToken: true,
   expiresAt: true,
