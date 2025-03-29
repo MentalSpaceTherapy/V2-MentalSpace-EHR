@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
+import EmailCampaigns from "@/components/crm/EmailCampaigns";
 import {
   Card,
   CardContent,
@@ -398,6 +399,10 @@ export default function CRMCampaigns() {
                   {pausedCampaigns.length}
                 </span>
               </TabsTrigger>
+              <TabsTrigger value="sendgrid" className="text-sm">
+                <Mail className="h-4 w-4 mr-1.5" />
+                SendGrid
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="all">
@@ -555,6 +560,20 @@ export default function CRMCampaigns() {
             </TabsContent>
             
             {/* Other status tabs would follow the same pattern */}
+            
+            <TabsContent value="sendgrid">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Email Marketing with SendGrid</CardTitle>
+                  <CardDescription>
+                    Create and send email campaigns using our SendGrid integration
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <EmailCampaigns />
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </div>
       </div>

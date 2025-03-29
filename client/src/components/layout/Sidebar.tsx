@@ -10,7 +10,7 @@ import {
   FileSignature, ClipboardCheck, FilePlus, FileClock,
   FileSpreadsheet, Phone, FileQuestion, ChevronDown, Plus,
   BarChart, Target, LineChart, UserPlus, AtSign, Share2,
-  User as UserIcon, Copy
+  User as UserIcon, Copy, Video
 } from "lucide-react";
 import {
   Collapsible,
@@ -95,6 +95,7 @@ export function Sidebar({ className }: SidebarProps) {
     },
     { name: "Scheduling", href: "/scheduling", icon: Calendar },
     { name: "Messages", href: "/messages", icon: MessageSquare, badge: 3 },
+    { name: "Telehealth", href: "/telehealth", icon: Video, new: true },
     { 
       name: "CRM & Marketing", 
       href: "/crm", 

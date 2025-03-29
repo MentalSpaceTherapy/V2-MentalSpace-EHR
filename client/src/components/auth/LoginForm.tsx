@@ -12,16 +12,19 @@ export function LoginForm() {
   const [email, setEmail] = useState("therapist@mentalspace.com");
   const [password, setPassword] = useState("password123");
   const [rememberMe, setRememberMe] = useState(false);
-  const { login, isLoading } = useAuth();
+  const { loginMutation, isLoading } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
-      const success = await login(email, password);
+      const result = await loginMutation.mutateAsync({
+        username: email,
+        password
+      });
       
-      if (!success) {
+      if (!result) {
         toast({
           title: "Login Failed",
           description: "Invalid email or password. Please try again.",

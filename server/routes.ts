@@ -5,6 +5,7 @@ import { setupAuth } from "./auth";
 import { CalendarService } from "./services/calendar-service";
 import constantContactRoutes from './routes/constantContact';
 import { constantContactService } from './services/constantContact';
+import { registerSendGridRoutes } from './routes/sendGrid';
 import reportsRoutes from './routes/reports';
 import { 
   insertClientSchema, 
@@ -2264,6 +2265,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register Constant Contact API routes
   app.use('/api/constant-contact', constantContactRoutes);
+  
+  // Register SendGrid API routes
+  // Register SendGrid routes
+  registerSendGridRoutes(app);
   
   // Register Reports API routes
   app.use('/api/reports', reportsRoutes);

@@ -18,6 +18,7 @@ import Messages from "@/pages/messages";
 import Billing from "@/pages/billing";
 import Reports from "@/pages/reports";
 import Practice from "@/pages/practice";
+import Telehealth from "@/pages/telehealth";
 import SignaturePage from "@/pages/sign";
 import { AuthProvider } from "@/hooks/use-auth";
 import { CRMProvider } from "@/hooks/use-crm";
@@ -104,6 +105,7 @@ function Router() {
       <ProtectedRoute path="/billing" component={Billing} />
       <ProtectedRoute path="/reports" component={Reports} />
       <ProtectedRoute path="/practice" component={Practice} />
+      <ProtectedRoute path="/telehealth" component={Telehealth} />
       <Route component={NotFound} />
     </Switch>
   );
