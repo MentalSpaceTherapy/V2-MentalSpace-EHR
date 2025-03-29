@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -149,6 +149,29 @@ export function AppointmentForm({ open, onOpenChange, onSubmit, initialDate, ini
       alert: ""
     }
   });
+  
+  // Reset form when dialog opens or initialDate/initialTimeSlot changes
+  useEffect(() => {
+    if (open) {
+      // Calculate the date to use
+      const dateToUse = initialTimeSlot?.date || initialDate || new Date();
+      const formattedDate = format(dateToUse, "MM/dd/yyyy");
+      
+      // Calculate the time to use
+      const timeToUse = initialTimeSlot?.time 
+        ? formatTimeFor12Hour(initialTimeSlot.time) 
+        : "09:00 AM";
+        
+      // Reset the form with new values
+      form.reset({
+        ...form.getValues(),
+        scheduledDate: formattedDate,
+        scheduledTime: timeToUse
+      });
+      
+      console.log("AppointmentForm reset with date:", formattedDate, "time:", timeToUse);
+    }
+  }, [open, initialDate, initialTimeSlot, form]);
 
   const handleFormSubmit = async (data: AppointmentFormValues) => {
     setIsSubmitting(true);
