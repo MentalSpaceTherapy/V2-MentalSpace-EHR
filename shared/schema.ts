@@ -847,3 +847,83 @@ export type InsertSavedReport = z.infer<typeof insertSavedReportSchema>;
 
 export type AnalyticsDashboard = typeof analyticsDashboards.$inferSelect;
 export type InsertAnalyticsDashboard = z.infer<typeof insertAnalyticsDashboardSchema>;
+
+// Staff model
+export const staff = pgTable("staff", {
+  id: serial("id").primaryKey(),
+  firstName: text("first_name").notNull(),
+  middleName: text("middle_name"),
+  lastName: text("last_name").notNull(),
+  suffix: text("suffix"),
+  
+  // Clinician Info
+  typeOfClinician: text("type_of_clinician"),
+  npiNumber: text("npi_number"),
+  supervisorId: integer("supervisor_id"),
+  
+  // Role & Credentials
+  role: text("role"),
+  roles: text("roles").array(),
+  email: text("email").notNull().unique(),
+  phone: text("phone"),
+  canReceiveSMS: boolean("can_receive_texts").default(false),
+  workPhone: text("work_phone"),
+  homePhone: text("home_phone"),
+  
+  // Address
+  address1: text("address1"),
+  address2: text("address2"),
+  city: text("city"),
+  state: text("state"),
+  zipCode: text("zip_code"),
+  
+  // License Info
+  licenseState: text("license_state"),
+  licenseType: text("license_type"),
+  licenseNumber: text("license_number"),
+  licenseExpiration: timestamp("license_expiration"),
+  
+  // Additional fields
+  formalName: text("formal_name"),
+  title: text("professional_title"),
+  languages: text("languages").array(),
+  status: text("status").default("active").notNull(),
+  profileImage: text("profile_image"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertStaffSchema = createInsertSchema(staff).pick({
+  firstName: true,
+  middleName: true,
+  lastName: true,
+  suffix: true,
+  typeOfClinician: true,
+  npiNumber: true,
+  supervisorId: true,
+  role: true,
+  roles: true,
+  email: true,
+  phone: true,
+  canReceiveSMS: true,
+  workPhone: true,
+  homePhone: true,
+  address1: true,
+  address2: true,
+  city: true,
+  state: true,
+  zipCode: true,
+  licenseState: true,
+  licenseType: true,
+  licenseNumber: true,
+  licenseExpiration: true,
+  formalName: true,
+  title: true,
+  languages: true,
+  status: true,
+  profileImage: true,
+});
+
+export type Staff = typeof staff.$inferSelect;
+export type InsertStaff = z.infer<typeof insertStaffSchema>;

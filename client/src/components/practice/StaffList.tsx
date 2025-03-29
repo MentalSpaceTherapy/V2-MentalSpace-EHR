@@ -110,94 +110,149 @@ export function StaffList({ initialStaff }: StaffListProps) {
     }
   };
 
-  const handleDeactivateStaff = (staffId: number) => {
-    const staffMember = staff.find(s => s.id === staffId);
-    
-    if (staffMember) {
-      setStaff(staff.map(s => 
-        s.id === staffId ? { ...s, status: s.status === "Active" ? "Inactive" : "Active" } : s
-      ));
+  const handleDeactivateStaff = async (staffId: number) => {
+    try {
+      const staffMember = staff.find(s => s.id === staffId);
+      
+      if (!staffMember) return;
+      
+      const newStatus = staffMember.status === "Active" ? "Inactive" : "Active";
+      
+      const response = await fetch(`/api/staff/${staffId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: newStatus
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update staff status: ${response.statusText}`);
+      }
+      
+      const updatedStaffMember = await response.json();
+      
+      // Update local state
+      setStaff(staff.map(s => s.id === staffId ? updatedStaffMember : s));
       
       toast({
         title: staffMember.status === "Active" ? "Staff Deactivated" : "Staff Activated",
         description: `${staffMember.firstName} ${staffMember.lastName} has been ${staffMember.status === "Active" ? "deactivated" : "activated"}.`,
       });
+    } catch (error) {
+      console.error('Error updating staff status:', error);
+      toast({
+        title: "Error",
+        description: `Failed to update staff status: ${(error as Error).message}`,
+        variant: "destructive",
+      });
     }
   };
 
-  const handleSaveStaff = (staffData: any) => {
-    if (staffData.id) {
-      // Update existing staff member
-      setStaff(staff.map(s => 
-        s.id === staffData.id ? {
-          ...s,
-          firstName: staffData.firstName,
-          lastName: staffData.lastName,
-          email: staffData.email,
-          phone: staffData.phone,
-          role: staffData.roles[0] || "",  // For backward compatibility
-          roles: staffData.roles,
-          licenseType: staffData.licenseType,
-          licenseNumber: staffData.licenseNumber,
-          formalName: staffData.formalName,
-          title: staffData.title,
-          npiNumber: staffData.npiNumber,
-          supervision: staffData.supervision,
-          languages: staffData.languages,
-          canReceiveSMS: staffData.canReceiveSMS,
-          workPhone: staffData.workPhone,
-          homePhone: staffData.homePhone,
-          address1: staffData.address1,
-          address2: staffData.address2,
-          zip: staffData.zip,
-          city: staffData.city,
-          state: staffData.state,
-        } : s
-      ));
+  const handleSaveStaff = async (staffData: any) => {
+    try {
+      if (staffData.id) {
+        // Update existing staff member
+        const response = await fetch(`/api/staff/${staffData.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firstName: staffData.firstName,
+            lastName: staffData.lastName,
+            email: staffData.email,
+            phone: staffData.phone,
+            role: staffData.roles[0] || "",  // Primary role
+            roles: staffData.roles,
+            licenseType: staffData.licenseType,
+            licenseNumber: staffData.licenseNumber,
+            licenseExpiration: staffData.licenseExpiration,
+            formalName: staffData.formalName,
+            title: staffData.title,
+            npiNumber: staffData.npiNumber,
+            canReceiveSMS: staffData.canReceiveSMS,
+            workPhone: staffData.workPhone,
+            homePhone: staffData.homePhone,
+            address1: staffData.address1,
+            address2: staffData.address2,
+            zipCode: staffData.zip,
+            city: staffData.city,
+            state: staffData.state,
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to update staff member: ${response.statusText}`);
+        }
+        
+        const updatedStaffMember = await response.json();
+        
+        // Update local state
+        setStaff(staff.map(s => s.id === staffData.id ? updatedStaffMember : s));
+        
+        toast({
+          title: "Staff Updated",
+          description: `${staffData.firstName} ${staffData.lastName}'s information has been updated.`,
+        });
+      } else {
+        // Add new staff member
+        const response = await fetch('/api/staff', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firstName: staffData.firstName,
+            lastName: staffData.lastName,
+            email: staffData.email,
+            phone: staffData.phone,
+            role: staffData.roles[0] || "",  // Primary role
+            roles: staffData.roles,
+            licenseType: staffData.licenseType,
+            licenseNumber: staffData.licenseNumber,
+            licenseExpiration: staffData.licenseExpiration,
+            status: "Active",
+            formalName: staffData.formalName,
+            title: staffData.title,
+            npiNumber: staffData.npiNumber,
+            canReceiveSMS: staffData.canReceiveSMS,
+            workPhone: staffData.workPhone,
+            homePhone: staffData.homePhone,
+            address1: staffData.address1,
+            address2: staffData.address2,
+            zipCode: staffData.zip,
+            city: staffData.city,
+            state: staffData.state,
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to create staff member: ${response.statusText}`);
+        }
+        
+        const newStaffMember = await response.json();
+        
+        // Update local state
+        setStaff([...staff, newStaffMember]);
+        
+        toast({
+          title: "Staff Added",
+          description: `${staffData.firstName} ${staffData.lastName} has been added to your practice.`,
+        });
+      }
       
+      setIsFormOpen(false);
+    } catch (error) {
+      console.error('Error saving staff member:', error);
       toast({
-        title: "Staff Updated",
-        description: `${staffData.firstName} ${staffData.lastName}'s information has been updated.`,
-      });
-    } else {
-      // Add new staff member
-      const newStaff: StaffMember = {
-        id: Math.max(0, ...staff.map(s => s.id)) + 1,
-        firstName: staffData.firstName,
-        lastName: staffData.lastName,
-        email: staffData.email,
-        phone: staffData.phone,
-        role: staffData.roles[0] || "",  // For backward compatibility
-        roles: staffData.roles,
-        licenseType: staffData.licenseType,
-        licenseNumber: staffData.licenseNumber,
-        licenseExpiration: staffData.licenseExpirationDate,
-        status: "Active",
-        profileImage: null,
-        formalName: staffData.formalName,
-        title: staffData.title,
-        npiNumber: staffData.npiNumber,
-        supervision: staffData.supervision,
-        languages: staffData.languages,
-        canReceiveSMS: staffData.canReceiveSMS,
-        workPhone: staffData.workPhone,
-        homePhone: staffData.homePhone,
-        address1: staffData.address1,
-        address2: staffData.address2,
-        zip: staffData.zip,
-        city: staffData.city,
-        state: staffData.state,
-      };
-      
-      setStaff([...staff, newStaff]);
-      
-      toast({
-        title: "Staff Added",
-        description: `${staffData.firstName} ${staffData.lastName} has been added to your practice.`,
+        title: "Error",
+        description: `Failed to save staff member: ${(error as Error).message}`,
+        variant: "destructive",
       });
     }
-    
-    setIsFormOpen(false);
   };
   
   const getRoleBadges = (staffMember: StaffMember) => {

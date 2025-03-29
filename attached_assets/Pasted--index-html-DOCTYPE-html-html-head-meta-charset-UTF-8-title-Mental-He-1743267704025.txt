@@ -1,0 +1,130 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Mental Health Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <h1>Mental Health Dashboard</h1>
+
+  <!-- Existing sections here ... -->
+
+  <hr />
+  <h2>Add New Staff</h2>
+  <form id="staffForm">
+    <div>
+      <label for="first_name">First Name:</label>
+      <input type="text" id="first_name" name="first_name" required />
+    </div>
+
+    <div>
+      <label for="middle_name">Middle Name:</label>
+      <input type="text" id="middle_name" name="middle_name" />
+    </div>
+
+    <div>
+      <label for="last_name">Last Name:</label>
+      <input type="text" id="last_name" name="last_name" required />
+    </div>
+
+    <div>
+      <label for="suffix">Suffix:</label>
+      <input type="text" id="suffix" name="suffix" />
+    </div>
+
+    <div>
+      <label for="type_of_clinician">Type of Clinician:</label>
+      <select id="type_of_clinician" name="type_of_clinician">
+        <option value="">--Select--</option>
+        <option value="Licensed Clinical Psychologist">Licensed Clinical Psychologist</option>
+        <option value="Licensed Professional Counselor">Licensed Professional Counselor</option>
+        <option value="Clinical Social Worker">Clinical Social Worker</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="npi_number">NPI Number:</label>
+      <input type="text" id="npi_number" name="npi_number" />
+    </div>
+
+    <div>
+      <label for="supervisor_id">Supervisor ID (if any):</label>
+      <input type="number" id="supervisor_id" name="supervisor_id" />
+    </div>
+
+    <div>
+      <label for="role">Role:</label>
+      <select id="role" name="role">
+        <option value="">--Select--</option>
+        <option value="Practice Administrator">Practice Administrator</option>
+        <option value="Clinician">Clinician</option>
+        <option value="Intern/Assistant/Associate">Intern/Assistant/Associate</option>
+        <option value="Supervisor">Supervisor</option>
+        <option value="Clinical Administrator">Clinical Administrator</option>
+        <option value="Scheduler">Scheduler</option>
+        <option value="Biller">Biller</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required />
+    </div>
+
+    <div>
+      <label for="phone">Phone:</label>
+      <input type="text" id="phone" name="phone" />
+    </div>
+
+    <div>
+      <label for="can_receive_texts">Can Receive Texts:</label>
+      <input type="checkbox" id="can_receive_texts" name="can_receive_texts" />
+    </div>
+
+    <div>
+      <label for="work_phone">Work Phone:</label>
+      <input type="text" id="work_phone" name="work_phone" />
+    </div>
+
+    <div>
+      <label for="address">Address:</label>
+      <input type="text" id="address" name="address" />
+    </div>
+
+    <div>
+      <label for="city_state">City/State:</label>
+      <input type="text" id="city_state" name="city_state" />
+    </div>
+
+    <div>
+      <label for="zip_code">Zip Code:</label>
+      <input type="text" id="zip_code" name="zip_code" />
+    </div>
+
+    <hr />
+    <h3>License Information</h3>
+    <div>
+      <label for="license_state">License State:</label>
+      <input type="text" id="license_state" name="license_state" />
+    </div>
+
+    <div>
+      <label for="license_taxonomy">Taxonomy:</label>
+      <input type="text" id="license_taxonomy" name="license_taxonomy" />
+    </div>
+
+    <div>
+      <label for="license_expiration">License Expiration (mm/dd/yyyy):</label>
+      <input type="text" id="license_expiration" name="license_expiration" />
+    </div>
+
+    <button type="submit">Save New User</button>
+  </form>
+
+  <!-- Scripts -->
+  <script src="scripts.js"></script>
+</body>
+</html>

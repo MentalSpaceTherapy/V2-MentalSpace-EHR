@@ -2,7 +2,7 @@ import {
   users, clients, sessions, documentation, notifications, messages,
   leads, marketingCampaigns, marketingEvents, eventRegistrations, contactHistory, referralSources,
   documentTemplates, templateVersions, signatureRequests, signatureFields, signatureEvents,
-  oauthStates, reportTemplates, savedReports, analyticsDashboards,
+  oauthStates, reportTemplates, savedReports, analyticsDashboards, staff,
   type User, type InsertUser,
   type Client, type InsertClient, type ExtendedClient,
   type Session, type InsertSession,
@@ -23,7 +23,8 @@ import {
   type OAuthState, type InsertOAuthState,
   type ReportTemplate, type InsertReportTemplate,
   type SavedReport, type InsertSavedReport,
-  type AnalyticsDashboard, type InsertAnalyticsDashboard
+  type AnalyticsDashboard, type InsertAnalyticsDashboard,
+  type Staff, type InsertStaff
 } from "@shared/schema";
 import session from "express-session";
 
@@ -34,6 +35,17 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
+  
+  // Staff methods
+  getStaffMember(id: number): Promise<Staff | undefined>;
+  getStaffMembers(filters?: { 
+    role?: string;
+    status?: string;
+    supervisorId?: number;
+  }): Promise<Staff[]>;
+  createStaffMember(staff: InsertStaff): Promise<Staff>;
+  updateStaffMember(id: number, staff: Partial<InsertStaff>): Promise<Staff | undefined>;
+  deleteStaffMember(id: number): Promise<boolean>;
   
   // Client methods
   getClient(id: number): Promise<Client | undefined>;
@@ -271,6 +283,8 @@ export interface IStorage {
   
   // Session store for auth
   sessionStore: session.Store;
+  
+
 }
 
 // Import the database storage implementation

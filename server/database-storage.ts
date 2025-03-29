@@ -2,7 +2,7 @@ import {
   users, clients, sessions, documentation, notifications, messages,
   leads, marketingCampaigns, marketingEvents, eventRegistrations, contactHistory, referralSources,
   documentTemplates, templateVersions, signatureRequests, signatureFields, signatureEvents,
-  oauthStates, reportTemplates, savedReports, analyticsDashboards,
+  oauthStates, reportTemplates, savedReports, analyticsDashboards, staff,
   type User, type InsertUser,
   type Client, type InsertClient, type ExtendedClient,
   type Session, type InsertSession,
@@ -23,7 +23,8 @@ import {
   type OAuthState, type InsertOAuthState,
   type ReportTemplate, type InsertReportTemplate,
   type SavedReport, type InsertSavedReport,
-  type AnalyticsDashboard, type InsertAnalyticsDashboard
+  type AnalyticsDashboard, type InsertAnalyticsDashboard,
+  type Staff, type InsertStaff
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -1886,6 +1887,101 @@ export class DatabaseStorage implements IStorage {
       return result.rowCount > 0;
     } catch (error) {
       console.error("Error deleting analytics dashboard:", error);
+      throw error;
+    }
+  }
+
+  // Staff Management methods
+  async getStaffMembers(filters?: { 
+    role?: string; 
+    status?: string; 
+    supervisorId?: number;
+  }): Promise<Staff[]> {
+    try {
+      let query = db.select().from(staff);
+      
+      if (filters) {
+        if (filters.role) {
+          query = query.where(eq(staff.role, filters.role));
+        }
+        
+        if (filters.status) {
+          query = query.where(eq(staff.status, filters.status));
+        }
+        
+        if (filters.supervisorId) {
+          query = query.where(eq(staff.supervisorId, filters.supervisorId));
+        }
+      }
+      
+      return await query.orderBy(staff.lastName, staff.firstName);
+    } catch (error) {
+      console.error("Error retrieving staff members:", error);
+      throw error;
+    }
+  }
+
+  async getStaffMember(id: number): Promise<Staff | undefined> {
+    try {
+      const staffMember = await db.select().from(staff)
+        .where(eq(staff.id, id))
+        .limit(1);
+      
+      return staffMember.length ? staffMember[0] : undefined;
+    } catch (error) {
+      console.error("Error retrieving staff member:", error);
+      throw error;
+    }
+  }
+
+  async createStaffMember(staffData: InsertStaff): Promise<Staff> {
+    try {
+      const result = await db.insert(staff)
+        .values({
+          ...staffData,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      return result[0];
+    } catch (error) {
+      console.error("Error creating staff member:", error);
+      throw error;
+    }
+  }
+
+  async updateStaffMember(id: number, staffData: Partial<InsertStaff>): Promise<Staff | undefined> {
+    try {
+      // Check if staff member exists
+      const existing = await this.getStaffMember(id);
+      if (!existing) {
+        return undefined;
+      }
+      
+      const result = await db.update(staff)
+        .set({
+          ...staffData,
+          updatedAt: new Date()
+        })
+        .where(eq(staff.id, id))
+        .returning();
+      
+      return result[0];
+    } catch (error) {
+      console.error("Error updating staff member:", error);
+      throw error;
+    }
+  }
+
+  async deleteStaffMember(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(staff)
+        .where(eq(staff.id, id));
+      
+      return result.rowCount ? result.rowCount > 0 : false;
+    } catch (error) {
+      console.error("Error deleting staff member:", error);
       throw error;
     }
   }

@@ -1,0 +1,140 @@
+# routes/staff.py
+from flask import Blueprint, request, jsonify
+from ..models import Staff
+from ..utils.db import db
+
+staff_bp = Blueprint('staff_bp', __name__)
+
+# CREATE Staff
+@staff_bp.route('/staff', methods=['POST'])
+def create_staff():
+    data = request.json
+    if not data:
+        return jsonify({'message': 'No input data provided'}), 400
+
+    new_staff = Staff(
+        first_name=data.get('first_name'),
+        middle_name=data.get('middle_name'),
+        last_name=data.get('last_name'),
+        suffix=data.get('suffix'),
+        type_of_clinician=data.get('type_of_clinician'),
+        npi_number=data.get('npi_number'),
+        supervisor_id=data.get('supervisor_id'),
+        role=data.get('role'),
+        email=data.get('email'),
+        phone=data.get('phone'),
+        can_receive_texts=data.get('can_receive_texts', False),
+        work_phone=data.get('work_phone'),
+        address=data.get('address'),
+        city_state=data.get('city_state'),
+        zip_code=data.get('zip_code'),
+        license_state=data.get('license_state'),
+        license_taxonomy=data.get('license_taxonomy'),
+        license_expiration=data.get('license_expiration')
+    )
+
+    db.session.add(new_staff)
+    db.session.commit()
+    return jsonify({'message': 'Staff created successfully', 'staff_id': new_staff.id}), 201
+
+# READ All Staff
+@staff_bp.route('/staff', methods=['GET'])
+def get_all_staff():
+    staff_members = Staff.query.all()
+    staff_list = []
+    for s in staff_members:
+        staff_list.append({
+            'id': s.id,
+            'first_name': s.first_name,
+            'middle_name': s.middle_name,
+            'last_name': s.last_name,
+            'suffix': s.suffix,
+            'type_of_clinician': s.type_of_clinician,
+            'npi_number': s.npi_number,
+            'supervisor_id': s.supervisor_id,
+            'role': s.role,
+            'email': s.email,
+            'phone': s.phone,
+            'can_receive_texts': s.can_receive_texts,
+            'work_phone': s.work_phone,
+            'address': s.address,
+            'city_state': s.city_state,
+            'zip_code': s.zip_code,
+            'license_state': s.license_state,
+            'license_taxonomy': s.license_taxonomy,
+            'license_expiration': s.license_expiration
+        })
+    return jsonify(staff_list), 200
+
+# READ One Staff by ID
+@staff_bp.route('/staff/<int:staff_id>', methods=['GET'])
+def get_staff(staff_id):
+    staff_member = Staff.query.get(staff_id)
+    if not staff_member:
+        return jsonify({'message': 'Staff member not found'}), 404
+
+    return jsonify({
+        'id': staff_member.id,
+        'first_name': staff_member.first_name,
+        'middle_name': staff_member.middle_name,
+        'last_name': staff_member.last_name,
+        'suffix': staff_member.suffix,
+        'type_of_clinician': staff_member.type_of_clinician,
+        'npi_number': staff_member.npi_number,
+        'supervisor_id': staff_member.supervisor_id,
+        'role': staff_member.role,
+        'email': staff_member.email,
+        'phone': staff_member.phone,
+        'can_receive_texts': staff_member.can_receive_texts,
+        'work_phone': staff_member.work_phone,
+        'address': staff_member.address,
+        'city_state': staff_member.city_state,
+        'zip_code': staff_member.zip_code,
+        'license_state': staff_member.license_state,
+        'license_taxonomy': staff_member.license_taxonomy,
+        'license_expiration': staff_member.license_expiration
+    }), 200
+
+# UPDATE Staff
+@staff_bp.route('/staff/<int:staff_id>', methods=['PUT'])
+def update_staff(staff_id):
+    staff_member = Staff.query.get(staff_id)
+    if not staff_member:
+        return jsonify({'message': 'Staff member not found'}), 404
+
+    data = request.json
+    if not data:
+        return jsonify({'message': 'No input data provided'}), 400
+
+    staff_member.first_name = data.get('first_name', staff_member.first_name)
+    staff_member.middle_name = data.get('middle_name', staff_member.middle_name)
+    staff_member.last_name = data.get('last_name', staff_member.last_name)
+    staff_member.suffix = data.get('suffix', staff_member.suffix)
+    staff_member.type_of_clinician = data.get('type_of_clinician', staff_member.type_of_clinician)
+    staff_member.npi_number = data.get('npi_number', staff_member.npi_number)
+    staff_member.supervisor_id = data.get('supervisor_id', staff_member.supervisor_id)
+    staff_member.role = data.get('role', staff_member.role)
+    staff_member.email = data.get('email', staff_member.email)
+    staff_member.phone = data.get('phone', staff_member.phone)
+    staff_member.can_receive_texts = data.get('can_receive_texts', staff_member.can_receive_texts)
+    staff_member.work_phone = data.get('work_phone', staff_member.work_phone)
+    staff_member.address = data.get('address', staff_member.address)
+    staff_member.city_state = data.get('city_state', staff_member.city_state)
+    staff_member.zip_code = data.get('zip_code', staff_member.zip_code)
+    staff_member.license_state = data.get('license_state', staff_member.license_state)
+    staff_member.license_taxonomy = data.get('license_taxonomy', staff_member.license_taxonomy)
+    staff_member.license_expiration = data.get('license_expiration', staff_member.license_expiration)
+
+    db.session.commit()
+    return jsonify({'message': 'Staff updated successfully'}), 200
+
+# DELETE Staff
+@staff_bp.route('/staff/<int:staff_id>', methods=['DELETE'])
+def delete_staff(staff_id):
+    staff_member = Staff.query.get(staff_id)
+    if not staff_member:
+        return jsonify({'message': 'Staff member not found'}), 404
+
+    db.session.delete(staff_member)
+    db.session.commit()
+    return jsonify({'message': 'Staff deleted successfully'}), 200

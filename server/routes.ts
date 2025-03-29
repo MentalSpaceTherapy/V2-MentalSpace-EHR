@@ -21,7 +21,8 @@ import {
   insertContactHistorySchema,
   insertReferralSourceSchema,
   insertDocumentTemplateSchema,
-  insertTemplateVersionSchema
+  insertTemplateVersionSchema,
+  insertStaffSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -178,6 +179,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error processing session reminders:", error);
     }
   }, 60 * 1000); // Run every minute
+  
+  // Staff routes
+  app.get("/api/staff", isAuthenticated, async (req, res, next) => {
+    try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      // Construct filters from query parameters
+      const filters: {
+        role?: string;
+        status?: string;
+        supervisorId?: number;
+      } = {};
+      
+      if (req.query.role) {
+        filters.role = req.query.role as string;
+      }
+      
+      if (req.query.status) {
+        filters.status = req.query.status as string;
+      }
+      
+      if (req.query.supervisorId) {
+        filters.supervisorId = parseInt(req.query.supervisorId as string);
+      }
+      
+      const staffMembers = await storage.getStaffMembers(filters);
+      res.json(staffMembers);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.get("/api/staff/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const staffId = parseInt(req.params.id);
+      const staffMember = await storage.getStaffMember(staffId);
+      
+      if (!staffMember) {
+        return res.status(404).json({ message: "Staff member not found" });
+      }
+      
+      res.json(staffMember);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.post("/api/staff", isAuthenticated, async (req, res, next) => {
+    try {
+      // Validate request body against schema
+      const parsedData = insertStaffSchema.safeParse(req.body);
+      
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          message: "Invalid staff data",
+          errors: parsedData.error.format() 
+        });
+      }
+      
+      const staffData = parsedData.data;
+      const newStaffMember = await storage.createStaffMember(staffData);
+      
+      res.status(201).json(newStaffMember);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.patch("/api/staff/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const staffId = parseInt(req.params.id);
+      // Validate request body against partial schema
+      const parsedData = insertStaffSchema.partial().safeParse(req.body);
+      
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          message: "Invalid staff data",
+          errors: parsedData.error.format() 
+        });
+      }
+      
+      const staffData = parsedData.data;
+      const updatedStaffMember = await storage.updateStaffMember(staffId, staffData);
+      
+      if (!updatedStaffMember) {
+        return res.status(404).json({ message: "Staff member not found" });
+      }
+      
+      res.json(updatedStaffMember);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  app.delete("/api/staff/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const staffId = parseInt(req.params.id);
+      const user = req.user as AuthenticatedUser;
+      
+      // Only administrators can delete staff members
+      if (user.role !== "administrator") {
+        return res.status(403).json({ message: "You don't have permission to delete staff members" });
+      }
+      
+      const success = await storage.deleteStaffMember(staffId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Staff member not found or couldn't be deleted" });
+      }
+      
+      res.json({ message: "Staff member deleted successfully" });
+    } catch (error) {
+      next(error);
+    }
+  });
   
   // Client routes
   app.get("/api/clients", isAuthenticated, async (req, res, next) => {
