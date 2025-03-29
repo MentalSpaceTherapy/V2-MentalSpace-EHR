@@ -98,6 +98,20 @@ export const sessions = pgTable("sessions", {
   medium: text("medium").notNull(), // Telehealth, In-person
   status: text("status").default("scheduled").notNull(), // Scheduled, Confirmed, Completed, No-Show, Cancelled
   notes: text("notes"),
+  location: text("location"), // Physical location or virtual meeting link
+  cptCode: text("cpt_code"), // Billing code for the session
+  reminderSent: boolean("reminder_sent").default(false), // Track if reminder was sent
+  reminderTime: timestamp("reminder_time"), // When reminder should be sent
+  externalCalendarEventId: text("external_calendar_event_id"), // ID from external calendar (Google, Outlook)
+  externalCalendarType: text("external_calendar_type"), // Type of external calendar (google, outlook, etc.)
+  billingStatus: text("billing_status").default("unbilled"), // unbilled, billed, paid, etc.
+  documentationStatus: text("documentation_status").default("pending"), // pending, completed
+  documentationId: integer("documentation_id").references(() => documentation.id), // Link to documentation/notes
+  recurrenceRule: text("recurrence_rule"), // For recurring appointments (iCal format)
+  recurrenceEndDate: timestamp("recurrence_end_date"), // End date for recurring appointments
+  cancelReason: text("cancel_reason"), // Reason if cancelled or no-show
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const insertSessionSchema = createInsertSchema(sessions).pick({
@@ -109,6 +123,13 @@ export const insertSessionSchema = createInsertSchema(sessions).pick({
   medium: true,
   status: true,
   notes: true,
+  location: true,
+  cptCode: true,
+  reminderTime: true,
+  externalCalendarEventId: true,
+  externalCalendarType: true,
+  recurrenceRule: true,
+  recurrenceEndDate: true,
 });
 
 // Documentation/Notes model

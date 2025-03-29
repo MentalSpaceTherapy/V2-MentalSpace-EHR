@@ -38,9 +38,15 @@ export interface IStorage {
     startDate?: Date;
     endDate?: Date;
     status?: string;
+    reminderSent?: boolean;
+    reminderTime?: { lte?: Date; gte?: Date };
+    documentationStatus?: string;
+    billingStatus?: string;
+    externalCalendarType?: string;
   }): Promise<Session[]>;
   createSession(session: InsertSession): Promise<Session>;
   updateSession(id: number, session: Partial<InsertSession>): Promise<Session | undefined>;
+  deleteSession(id: number): Promise<boolean>;
   
   // Documentation methods
   getDocument(id: number): Promise<Documentation | undefined>;

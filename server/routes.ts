@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import { CalendarService } from "./services/calendar-service";
 import { 
   insertClientSchema, 
   insertSessionSchema, 
@@ -148,6 +149,21 @@ const canAccessClientId = async (req: Request, res: Response, next: NextFunction
 export async function registerRoutes(app: Express): Promise<Server> {
   // Sets up /api/register, /api/login, /api/logout, /api/user
   setupAuth(app);
+  
+  // Initialize calendar service
+  const calendarService = new CalendarService(storage);
+  
+  // Start a session reminder processor that runs every minute
+  setInterval(async () => {
+    try {
+      const remindersSent = await calendarService.processSessionReminders();
+      if (remindersSent > 0) {
+        console.log(`Processed ${remindersSent} session reminders`);
+      }
+    } catch (error) {
+      console.error("Error processing session reminders:", error);
+    }
+  }, 60 * 1000); // Run every minute
   
   // Client routes
   app.get("/api/clients", isAuthenticated, async (req, res, next) => {
@@ -328,7 +344,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.therapistId = user.id;
       }
       
-      const session = await storage.createSession(validatedData);
+      // Check if calendar integration is requested
+      const calendarType = req.body.calendarType as string | undefined;
+      
+      let session;
+      
+      if (calendarType) {
+        // Use calendar service to create session with calendar event
+        session = await calendarService.createSessionWithCalendarEvent(validatedData, calendarType);
+      } else {
+        // Standard session creation without calendar
+        session = await storage.createSession(validatedData);
+      }
+      
       res.status(201).json(session);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -372,7 +400,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const updatedSession = await storage.updateSession(id, validatedData);
+      // Use calendar service if the session has an external calendar event
+      let updatedSession;
+      
+      if (existingSession.externalCalendarEventId && existingSession.externalCalendarType) {
+        // Update session with calendar event
+        updatedSession = await calendarService.updateSessionWithCalendarEvent(id, validatedData);
+      } else {
+        // Standard session update without calendar integration
+        updatedSession = await storage.updateSession(id, validatedData);
+      }
+      
       res.json(updatedSession);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -381,6 +419,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           errors: error.errors 
         });
       }
+      next(error);
+    }
+  });
+  
+  app.delete("/api/sessions/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      
+      const id = parseInt(req.params.id);
+      
+      // Validate the session exists
+      const existingSession = await storage.getSession(id);
+      if (!existingSession) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      // Check if user has permission to delete this session
+      if (user.role !== "administrator" && existingSession.therapistId !== user.id) {
+        return res.status(403).json({ 
+          message: "Forbidden - You don't have access to delete this session" 
+        });
+      }
+      
+      // Use calendar service to handle deletion (will also delete calendar event if it exists)
+      const deleted = await calendarService.deleteSessionWithCalendarEvent(id);
+      
+      if (deleted) {
+        res.status(204).end();
+      } else {
+        res.status(500).json({ message: "Failed to delete session" });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Endpoint to manually trigger session reminders (admin only)
+  app.post("/api/sessions/process-reminders", isAuthenticated, hasRole("administrator"), async (req, res, next) => {
+    try {
+      const remindersSent = await calendarService.processSessionReminders();
+      res.json({ 
+        success: true, 
+        remindersSent,
+        message: `Processed ${remindersSent} session reminders`
+      });
+    } catch (error) {
       next(error);
     }
   });

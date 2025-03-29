@@ -199,6 +199,20 @@ export class DatabaseStorage implements IStorage {
     return updatedSession;
   }
 
+  async deleteSession(id: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(sessions)
+        .where(eq(sessions.id, id))
+        .returning({ id: sessions.id });
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error(`Error deleting session ${id}:`, error);
+      return false;
+    }
+  }
+
   // Documentation methods
   async getDocument(id: number): Promise<Documentation | undefined> {
     const [document] = await db.select().from(documentation).where(eq(documentation.id, id));
