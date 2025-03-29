@@ -44,6 +44,13 @@ export function StaffForm({ onSave, onCancel, editingStaff }: StaffFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Call onSave directly with the staffData if provided - the parent will handle the API call
+      if (onSave) {
+        onSave(staffData);
+        return;
+      }
+      
+      // Otherwise, handle the API call here
       const response = await fetch("/api/staff", {
         method: "POST",
         headers: {
@@ -87,11 +94,6 @@ export function StaffForm({ onSave, onCancel, editingStaff }: StaffFormProps) {
           license_taxonomy: "",
           license_expiration: "",
         });
-        
-        // If onSave prop is provided, call it with the staff data
-        if (onSave) {
-          onSave(result.staff);
-        }
       }
     } catch (error) {
       console.error("Error submitting form:", error);

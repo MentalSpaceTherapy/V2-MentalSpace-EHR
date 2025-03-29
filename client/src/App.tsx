@@ -113,6 +113,10 @@ function Router() {
       <ProtectedRoute path="/staff" component={Staff} />
       <ProtectedRoute path="/add-staff" component={AddStaffPage} />
       <ProtectedRoute path="/staff-form" component={StaffFormPage} />
+      <ProtectedRoute path="/staff-new" component={() => {
+        const StaffNewPage = require("./pages/staff-new").default;
+        return <StaffNewPage />;
+      }} />
       <Route component={NotFound} />
     </Switch>
   );
