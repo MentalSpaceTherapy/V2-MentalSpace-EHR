@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { CalendarService } from "./services/calendar-service";
+import constantContactRoutes from './routes/constantContact';
 import { 
   insertClientSchema, 
   insertSessionSchema, 
@@ -2250,6 +2251,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+
+  // Register Constant Contact API routes
+  app.use('/api/constant-contact', constantContactRoutes);
 
   const httpServer = createServer(app);
 

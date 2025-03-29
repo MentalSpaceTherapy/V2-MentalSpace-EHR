@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import axios from "axios";
 
 // Define types for our CRM data
 export type Campaign = {
@@ -99,6 +100,44 @@ export type Lead = {
 
 export type TimeRange = "week" | "month" | "quarter" | "year";
 
+// Constant Contact Integration Types
+export type ConstantContactStatus = {
+  connected: boolean;
+  authUrl?: string;
+};
+
+export type ContactList = {
+  id: string;
+  name: string;
+  description?: string;
+  memberCount: number;
+};
+
+export type EmailContact = {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  status: string;
+  lists?: string[];
+};
+
+export type EmailCampaign = {
+  id: string;
+  name: string;
+  subject: string;
+  fromEmail: string;
+  status: string;
+  scheduledDate?: string;
+  performance?: {
+    sends: number;
+    opens: number;
+    clicks: number;
+    bounces: number;
+    unsubscribes: number;
+  };
+};
+
 // CRM Context Type
 interface CRMContextType {
   // Campaign data and methods
@@ -152,6 +191,25 @@ interface CRMContextType {
   addMarketingTemplate: (template: Omit<MarketingTemplate, "id">) => void;
   updateMarketingTemplate: (id: string, template: Partial<MarketingTemplate>) => void;
   deleteMarketingTemplate: (id: string) => void;
+  
+  // Constant Contact Integration
+  ccStatus: ConstantContactStatus;
+  ccLists: ContactList[];
+  ccContacts: EmailContact[];
+  ccCampaigns: EmailCampaign[];
+  
+  // Constant Contact Methods
+  connectConstantContact: () => Promise<void>;
+  fetchCCStatus: () => Promise<void>;
+  fetchCCLists: () => Promise<void>;
+  createCCList: (name: string, description?: string) => Promise<void>;
+  fetchCCContacts: () => Promise<void>;
+  createCCContact: (contactData: any) => Promise<void>;
+  fetchCCCampaigns: () => Promise<void>;
+  createCCCampaign: (campaignData: any) => Promise<void>;
+  sendTestEmail: (campaignId: string, emailAddresses: string[]) => Promise<void>;
+  scheduleCampaign: (campaignId: string, scheduledTime: string) => Promise<void>;
+  isConstantContactConnected: boolean;
 }
 
 // Sample data
@@ -662,6 +720,131 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     setClientSegments([...clientSegments, newSegment]);
   };
   
+  // Constant Contact states
+  const [ccStatus, setCCStatus] = useState<ConstantContactStatus>({ connected: false });
+  const [ccLists, setCCLists] = useState<ContactList[]>([]);
+  const [ccContacts, setCCContacts] = useState<EmailContact[]>([]);
+  const [ccCampaigns, setCCCampaigns] = useState<EmailCampaign[]>([]);
+  const [isConstantContactConnected, setIsConstantContactConnected] = useState(false);
+  
+  // Fetch Constant Contact status
+  const fetchCCStatus = async () => {
+    try {
+      const response = await axios.get('/api/constant-contact/status');
+      setCCStatus(response.data);
+      setIsConstantContactConnected(response.data.connected);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching Constant Contact status:', error);
+      setCCStatus({ connected: false });
+      setIsConstantContactConnected(false);
+      return { connected: false };
+    }
+  };
+  
+  // Connect to Constant Contact
+  const connectConstantContact = async () => {
+    try {
+      const response = await axios.get('/api/constant-contact/authorize');
+      if (response.data.authUrl) {
+        window.location.href = response.data.authUrl;
+      }
+    } catch (error) {
+      console.error('Error connecting to Constant Contact:', error);
+    }
+  };
+  
+  // Fetch Constant Contact lists
+  const fetchCCLists = async () => {
+    try {
+      const response = await axios.get('/api/constant-contact/lists');
+      setCCLists(response.data);
+    } catch (error) {
+      console.error('Error fetching Constant Contact lists:', error);
+      setCCLists([]);
+    }
+  };
+  
+  // Create a new Constant Contact list
+  const createCCList = async (name: string, description?: string) => {
+    try {
+      await axios.post('/api/constant-contact/lists', { name, description });
+      // Refetch lists after creating a new one
+      await fetchCCLists();
+    } catch (error) {
+      console.error('Error creating Constant Contact list:', error);
+    }
+  };
+  
+  // Fetch Constant Contact contacts
+  const fetchCCContacts = async () => {
+    try {
+      const response = await axios.get('/api/constant-contact/contacts');
+      setCCContacts(response.data);
+    } catch (error) {
+      console.error('Error fetching Constant Contact contacts:', error);
+      setCCContacts([]);
+    }
+  };
+  
+  // Create a new Constant Contact contact
+  const createCCContact = async (contactData: any) => {
+    try {
+      await axios.post('/api/constant-contact/contacts', contactData);
+      // Refetch contacts after creating a new one
+      await fetchCCContacts();
+    } catch (error) {
+      console.error('Error creating Constant Contact contact:', error);
+    }
+  };
+  
+  // Fetch Constant Contact campaigns
+  const fetchCCCampaigns = async () => {
+    try {
+      const response = await axios.get('/api/constant-contact/campaigns');
+      setCCCampaigns(response.data);
+    } catch (error) {
+      console.error('Error fetching Constant Contact campaigns:', error);
+      setCCCampaigns([]);
+    }
+  };
+  
+  // Create a new Constant Contact campaign
+  const createCCCampaign = async (campaignData: any) => {
+    try {
+      await axios.post('/api/constant-contact/campaigns', campaignData);
+      // Refetch campaigns after creating a new one
+      await fetchCCCampaigns();
+    } catch (error) {
+      console.error('Error creating Constant Contact campaign:', error);
+    }
+  };
+  
+  // Send a test email for a campaign
+  const sendTestEmail = async (campaignId: string, emailAddresses: string[]) => {
+    try {
+      await axios.post(`/api/constant-contact/campaigns/${campaignId}/test`, { email_addresses: emailAddresses });
+    } catch (error) {
+      console.error('Error sending test email:', error);
+    }
+  };
+  
+  // Schedule a campaign
+  const scheduleCampaign = async (campaignId: string, scheduledTime: string) => {
+    try {
+      await axios.post(`/api/constant-contact/campaigns/${campaignId}/schedule`, { scheduled_time: scheduledTime });
+      // Refetch campaigns after scheduling
+      await fetchCCCampaigns();
+    } catch (error) {
+      console.error('Error scheduling campaign:', error);
+    }
+  };
+  
+  // Check connection status on component mount
+  useEffect(() => {
+    fetchCCStatus();
+  }, []);
+  
   const updateClientSegment = (id: string, segmentUpdate: Partial<ClientSegment>) => {
     setClientSegments(
       clientSegments.map(segment => 
@@ -743,6 +926,23 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         addMarketingTemplate,
         updateMarketingTemplate,
         deleteMarketingTemplate,
+        
+        // Constant Contact
+        ccStatus,
+        ccLists,
+        ccContacts,
+        ccCampaigns,
+        connectConstantContact,
+        fetchCCStatus,
+        fetchCCLists,
+        createCCList,
+        fetchCCContacts,
+        createCCContact,
+        fetchCCCampaigns,
+        createCCCampaign,
+        sendTestEmail,
+        scheduleCampaign,
+        isConstantContactConnected,
       }}
     >
       {children}

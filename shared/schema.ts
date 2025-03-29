@@ -681,3 +681,30 @@ export type InsertSignatureField = z.infer<typeof insertSignatureFieldSchema>;
 
 export type SignatureEvent = typeof signatureEvents.$inferSelect;
 export type InsertSignatureEvent = z.infer<typeof insertSignatureEventSchema>;
+
+// Integrations for external services like Constant Contact
+export const integrations = pgTable("integrations", {
+  id: serial("id").primaryKey(),
+  serviceName: text("service_name").notNull(), // "constant_contact", "google_calendar", etc.
+  userId: integer("user_id").references(() => users.id), // Which user this integration belongs to (null for practice-wide)
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at"),
+  active: boolean("active").default(true),
+  metadata: jsonb("metadata"), // Additional service-specific data
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertIntegrationSchema = createInsertSchema(integrations).pick({
+  serviceName: true,
+  userId: true,
+  accessToken: true,
+  refreshToken: true,
+  expiresAt: true,
+  active: true,
+  metadata: true,
+});
+
+export type Integration = typeof integrations.$inferSelect;
+export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;
