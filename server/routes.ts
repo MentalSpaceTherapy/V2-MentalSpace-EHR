@@ -5,6 +5,7 @@ import { setupAuth } from "./auth";
 import { CalendarService } from "./services/calendar-service";
 import constantContactRoutes from './routes/constantContact';
 import { constantContactService } from './services/constantContact';
+import reportsRoutes from './routes/reports';
 import { 
   insertClientSchema, 
   insertSessionSchema, 
@@ -2263,6 +2264,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register Constant Contact API routes
   app.use('/api/constant-contact', constantContactRoutes);
+  
+  // Register Reports API routes
+  app.use('/api/reports', reportsRoutes);
   
   // Special route for Constant Contact OAuth callback
   // Note: OAuth callback should not require authentication as the user is being redirected from Constant Contact

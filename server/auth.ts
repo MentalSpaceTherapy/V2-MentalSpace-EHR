@@ -97,6 +97,10 @@ export function setupAuth(app: Express) {
 
       req.login(user, (err) => {
         if (err) return next(err);
+        
+        // Store the user's role in the session for easier access
+        req.session.userRole = user.role;
+        
         res.status(201).json(user);
       });
     } catch (error) {
@@ -113,6 +117,10 @@ export function setupAuth(app: Express) {
       
       req.login(user, (err) => {
         if (err) return next(err);
+        
+        // Store the user's role in the session for easier access
+        req.session.userRole = user.role;
+        
         res.status(200).json(user);
       });
     })(req, res, next);

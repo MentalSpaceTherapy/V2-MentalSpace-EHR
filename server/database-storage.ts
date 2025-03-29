@@ -2,7 +2,7 @@ import {
   users, clients, sessions, documentation, notifications, messages,
   leads, marketingCampaigns, marketingEvents, eventRegistrations, contactHistory, referralSources,
   documentTemplates, templateVersions, signatureRequests, signatureFields, signatureEvents,
-  oauthStates,
+  oauthStates, reportTemplates, savedReports, analyticsDashboards,
   type User, type InsertUser,
   type Client, type InsertClient, type ExtendedClient,
   type Session, type InsertSession,
@@ -20,7 +20,10 @@ import {
   type SignatureRequest, type InsertSignatureRequest,
   type SignatureField, type InsertSignatureField,
   type SignatureEvent, type InsertSignatureEvent,
-  type OAuthState, type InsertOAuthState
+  type OAuthState, type InsertOAuthState,
+  type ReportTemplate, type InsertReportTemplate,
+  type SavedReport, type InsertSavedReport,
+  type AnalyticsDashboard, type InsertAnalyticsDashboard
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -1619,5 +1622,271 @@ export class DatabaseStorage implements IStorage {
       .where(eq(oauthStates.id, stateRecord.id));
     
     return true;
+  }
+
+  // Report Template Methods
+  async getReportTemplate(id: number): Promise<ReportTemplate | undefined> {
+    try {
+      return await db.query.reportTemplates.findFirst({
+        where: (reportTemplates, { eq }) => eq(reportTemplates.id, id)
+      });
+    } catch (error) {
+      console.error("Error getting report template:", error);
+      throw error;
+    }
+  }
+
+  async getReportTemplates(filters?: {
+    isPublic?: boolean;
+    category?: string;
+    createdById?: number;
+  }): Promise<ReportTemplate[]> {
+    try {
+      return await db.query.reportTemplates.findMany({
+        where: (reportTemplates, { eq, and }) => {
+          const conditions = [];
+          
+          if (filters?.isPublic !== undefined) {
+            conditions.push(eq(reportTemplates.isPublic, filters.isPublic));
+          }
+          
+          if (filters?.category) {
+            conditions.push(eq(reportTemplates.category, filters.category));
+          }
+          
+          if (filters?.createdById) {
+            conditions.push(eq(reportTemplates.createdById, filters.createdById));
+          }
+          
+          return conditions.length ? and(...conditions) : undefined;
+        },
+        orderBy: (reportTemplates, { desc }) => [desc(reportTemplates.updatedAt)]
+      });
+    } catch (error) {
+      console.error("Error getting report templates:", error);
+      throw error;
+    }
+  }
+
+  async createReportTemplate(templateData: InsertReportTemplate): Promise<ReportTemplate> {
+    try {
+      const [newTemplate] = await db.insert(reportTemplates)
+        .values(templateData)
+        .returning();
+      
+      return newTemplate;
+    } catch (error) {
+      console.error("Error creating report template:", error);
+      throw error;
+    }
+  }
+
+  async updateReportTemplate(id: number, templateData: Partial<InsertReportTemplate>): Promise<ReportTemplate | undefined> {
+    try {
+      const [updatedTemplate] = await db.update(reportTemplates)
+        .set({
+          ...templateData,
+          updatedAt: new Date()
+        })
+        .where(eq(reportTemplates.id, id))
+        .returning();
+      
+      return updatedTemplate;
+    } catch (error) {
+      console.error("Error updating report template:", error);
+      throw error;
+    }
+  }
+
+  async deleteReportTemplate(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(reportTemplates)
+        .where(eq(reportTemplates.id, id));
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error("Error deleting report template:", error);
+      throw error;
+    }
+  }
+
+  // Saved Report Methods
+  async getSavedReport(id: number): Promise<SavedReport | undefined> {
+    try {
+      return await db.query.savedReports.findFirst({
+        where: (savedReports, { eq }) => eq(savedReports.id, id),
+        with: {
+          template: true
+        }
+      });
+    } catch (error) {
+      console.error("Error getting saved report:", error);
+      throw error;
+    }
+  }
+
+  async getSavedReports(filters?: {
+    createdById?: number;
+    isArchived?: boolean;
+    templateId?: number;
+  }): Promise<SavedReport[]> {
+    try {
+      return await db.query.savedReports.findMany({
+        where: (savedReports, { eq, and }) => {
+          const conditions = [];
+          
+          if (filters?.createdById) {
+            conditions.push(eq(savedReports.createdById, filters.createdById));
+          }
+          
+          if (filters?.isArchived !== undefined) {
+            conditions.push(eq(savedReports.isArchived, filters.isArchived));
+          }
+          
+          if (filters?.templateId) {
+            conditions.push(eq(savedReports.templateId, filters.templateId));
+          }
+          
+          return conditions.length ? and(...conditions) : undefined;
+        },
+        with: {
+          template: true
+        },
+        orderBy: (savedReports, { desc }) => [desc(savedReports.createdAt)]
+      });
+    } catch (error) {
+      console.error("Error getting saved reports:", error);
+      throw error;
+    }
+  }
+
+  async createSavedReport(reportData: InsertSavedReport): Promise<SavedReport> {
+    try {
+      const [newReport] = await db.insert(savedReports)
+        .values(reportData)
+        .returning();
+      
+      return newReport;
+    } catch (error) {
+      console.error("Error creating saved report:", error);
+      throw error;
+    }
+  }
+
+  async updateSavedReport(id: number, reportData: Partial<InsertSavedReport>): Promise<SavedReport | undefined> {
+    try {
+      const [updatedReport] = await db.update(savedReports)
+        .set(reportData)
+        .where(eq(savedReports.id, id))
+        .returning();
+      
+      return updatedReport;
+    } catch (error) {
+      console.error("Error updating saved report:", error);
+      throw error;
+    }
+  }
+
+  async deleteSavedReport(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(savedReports)
+        .where(eq(savedReports.id, id));
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error("Error deleting saved report:", error);
+      throw error;
+    }
+  }
+
+  // Analytics Dashboard Methods
+  async getAnalyticsDashboard(id: number): Promise<AnalyticsDashboard | undefined> {
+    try {
+      return await db.query.analyticsDashboards.findFirst({
+        where: (analyticsDashboards, { eq }) => eq(analyticsDashboards.id, id)
+      });
+    } catch (error) {
+      console.error("Error getting analytics dashboard:", error);
+      throw error;
+    }
+  }
+
+  async getAnalyticsDashboards(filters?: {
+    createdById?: number;
+    isDefault?: boolean;
+    category?: string;
+    isPublic?: boolean;
+  }): Promise<AnalyticsDashboard[]> {
+    try {
+      return await db.query.analyticsDashboards.findMany({
+        where: (analyticsDashboards, { eq, and }) => {
+          const conditions = [];
+          
+          if (filters?.createdById) {
+            conditions.push(eq(analyticsDashboards.createdById, filters.createdById));
+          }
+          
+          if (filters?.isDefault !== undefined) {
+            conditions.push(eq(analyticsDashboards.isDefault, filters.isDefault));
+          }
+          
+          if (filters?.category) {
+            conditions.push(eq(analyticsDashboards.category, filters.category));
+          }
+          
+          if (filters?.isPublic !== undefined) {
+            conditions.push(eq(analyticsDashboards.isPublic, filters.isPublic));
+          }
+          
+          return conditions.length ? and(...conditions) : undefined;
+        },
+        orderBy: (analyticsDashboards, { desc }) => [desc(analyticsDashboards.updatedAt)]
+      });
+    } catch (error) {
+      console.error("Error getting analytics dashboards:", error);
+      throw error;
+    }
+  }
+
+  async createAnalyticsDashboard(dashboardData: InsertAnalyticsDashboard): Promise<AnalyticsDashboard> {
+    try {
+      const [newDashboard] = await db.insert(analyticsDashboards)
+        .values(dashboardData)
+        .returning();
+      
+      return newDashboard;
+    } catch (error) {
+      console.error("Error creating analytics dashboard:", error);
+      throw error;
+    }
+  }
+
+  async updateAnalyticsDashboard(id: number, dashboardData: Partial<InsertAnalyticsDashboard>): Promise<AnalyticsDashboard | undefined> {
+    try {
+      const [updatedDashboard] = await db.update(analyticsDashboards)
+        .set({
+          ...dashboardData,
+          updatedAt: new Date()
+        })
+        .where(eq(analyticsDashboards.id, id))
+        .returning();
+      
+      return updatedDashboard;
+    } catch (error) {
+      console.error("Error updating analytics dashboard:", error);
+      throw error;
+    }
+  }
+
+  async deleteAnalyticsDashboard(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(analyticsDashboards)
+        .where(eq(analyticsDashboards.id, id));
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error("Error deleting analytics dashboard:", error);
+      throw error;
+    }
   }
 }

@@ -2,7 +2,7 @@ import {
   users, clients, sessions, documentation, notifications, messages,
   leads, marketingCampaigns, marketingEvents, eventRegistrations, contactHistory, referralSources,
   documentTemplates, templateVersions, signatureRequests, signatureFields, signatureEvents,
-  oauthStates,
+  oauthStates, reportTemplates, savedReports, analyticsDashboards,
   type User, type InsertUser,
   type Client, type InsertClient, type ExtendedClient,
   type Session, type InsertSession,
@@ -20,7 +20,10 @@ import {
   type SignatureRequest, type InsertSignatureRequest,
   type SignatureField, type InsertSignatureField,
   type SignatureEvent, type InsertSignatureEvent,
-  type OAuthState, type InsertOAuthState
+  type OAuthState, type InsertOAuthState,
+  type ReportTemplate, type InsertReportTemplate,
+  type SavedReport, type InsertSavedReport,
+  type AnalyticsDashboard, type InsertAnalyticsDashboard
 } from "@shared/schema";
 import session from "express-session";
 
@@ -231,6 +234,40 @@ export interface IStorage {
   createOAuthState(stateData: InsertOAuthState): Promise<OAuthState>;
   getOAuthState(state: string): Promise<OAuthState | undefined>;
   validateAndUseOAuthState(state: string, service: string): Promise<boolean>;
+  
+  // Report template methods
+  getReportTemplate(id: number): Promise<ReportTemplate | undefined>;
+  getReportTemplates(filters?: {
+    isPublic?: boolean;
+    category?: string;
+    createdById?: number;
+  }): Promise<ReportTemplate[]>;
+  createReportTemplate(templateData: InsertReportTemplate): Promise<ReportTemplate>;
+  updateReportTemplate(id: number, templateData: Partial<InsertReportTemplate>): Promise<ReportTemplate | undefined>;
+  deleteReportTemplate(id: number): Promise<boolean>;
+  
+  // Saved report methods
+  getSavedReport(id: number): Promise<SavedReport | undefined>;
+  getSavedReports(filters?: {
+    createdById?: number;
+    isArchived?: boolean;
+    templateId?: number;
+  }): Promise<SavedReport[]>;
+  createSavedReport(reportData: InsertSavedReport): Promise<SavedReport>;
+  updateSavedReport(id: number, reportData: Partial<InsertSavedReport>): Promise<SavedReport | undefined>;
+  deleteSavedReport(id: number): Promise<boolean>;
+  
+  // Analytics dashboard methods
+  getAnalyticsDashboard(id: number): Promise<AnalyticsDashboard | undefined>;
+  getAnalyticsDashboards(filters?: {
+    createdById?: number;
+    isDefault?: boolean;
+    category?: string;
+    isPublic?: boolean;
+  }): Promise<AnalyticsDashboard[]>;
+  createAnalyticsDashboard(dashboardData: InsertAnalyticsDashboard): Promise<AnalyticsDashboard>;
+  updateAnalyticsDashboard(id: number, dashboardData: Partial<InsertAnalyticsDashboard>): Promise<AnalyticsDashboard | undefined>;
+  deleteAnalyticsDashboard(id: number): Promise<boolean>;
   
   // Session store for auth
   sessionStore: session.Store;

@@ -61,6 +61,56 @@ export const insertUserSchema = createInsertSchema(users).pick({
   profileImageUrl: true,
 });
 
+// Report templates - defined early to avoid circular references
+export const reportTemplates = pgTable("report_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // Standard, Custom
+  category: text("category").notNull(), // Clinical, Financial, Operational, Marketing, Performance, etc.
+  config: jsonb("config").default({}), // Report configuration (columns, filters, etc.)
+  isPublic: boolean("is_public").default(false),
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  lastRunAt: timestamp("last_run_at"),
+  schedule: text("schedule"), // Optional cron schedule for automated reports
+  exportFormats: text("export_formats").array(), // PDF, CSV, Excel, etc.
+});
+
+// Saved reports (generated reports)
+export const savedReports = pgTable("saved_reports", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  templateId: integer("template_id").references(() => reportTemplates.id).notNull(),
+  data: jsonb("data").default({}), // The actual report data
+  parameters: jsonb("parameters").default({}), // Parameters used to generate the report
+  format: text("format").notNull(), // PDF, CSV, Excel, etc.
+  fileUrl: text("file_url"), // URL to the generated file
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"), // Optional expiration date
+  isArchived: boolean("is_archived").default(false),
+  size: integer("size"), // File size in bytes
+  status: text("status").default("completed").notNull(), // pending, completed, failed
+  errorMessage: text("error_message"), // Error message if status is failed
+});
+
+// Analytics dashboards
+export const analyticsDashboards = pgTable("analytics_dashboards", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  layout: jsonb("layout").default({}), // Dashboard layout configuration
+  widgets: jsonb("widgets").default([]), // List of widgets on the dashboard
+  isDefault: boolean("is_default").default(false),
+  createdById: integer("created_by_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  isPublic: boolean("is_public").default(false),
+  category: text("category"), // Practice, Clinical, Financial, etc.
+});
+
 // Referral sources - defined early to avoid circular references
 export const referralSources = pgTable("referral_sources", {
   id: serial("id").primaryKey(),
@@ -747,3 +797,53 @@ export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;
 
 export type OAuthState = typeof oauthStates.$inferSelect;
 export type InsertOAuthState = z.infer<typeof insertOAuthStateSchema>;
+
+// Report template insertion schema
+export const insertReportTemplateSchema = createInsertSchema(reportTemplates).pick({
+  name: true,
+  description: true,
+  type: true,
+  category: true,
+  config: true,
+  isPublic: true,
+  createdById: true,
+  schedule: true,
+  exportFormats: true,
+});
+
+// Saved report insertion schema
+export const insertSavedReportSchema = createInsertSchema(savedReports).pick({
+  name: true,
+  templateId: true,
+  data: true,
+  parameters: true,
+  format: true,
+  fileUrl: true,
+  createdById: true,
+  expiresAt: true,
+  size: true,
+  status: true,
+  errorMessage: true,
+});
+
+// Analytics dashboard insertion schema
+export const insertAnalyticsDashboardSchema = createInsertSchema(analyticsDashboards).pick({
+  name: true,
+  description: true,
+  layout: true,
+  widgets: true,
+  isDefault: true,
+  createdById: true,
+  isPublic: true,
+  category: true,
+});
+
+// Export types for new report-related tables
+export type ReportTemplate = typeof reportTemplates.$inferSelect;
+export type InsertReportTemplate = z.infer<typeof insertReportTemplateSchema>;
+
+export type SavedReport = typeof savedReports.$inferSelect;
+export type InsertSavedReport = z.infer<typeof insertSavedReportSchema>;
+
+export type AnalyticsDashboard = typeof analyticsDashboards.$inferSelect;
+export type InsertAnalyticsDashboard = z.infer<typeof insertAnalyticsDashboardSchema>;
