@@ -31,8 +31,12 @@ import CRMAnalytics from "@/pages/crm/analytics";
 import CRMEvents from "@/pages/crm/events";
 import CRMReferralSources from "@/pages/crm/referral-sources";
 import CRMContactHistory from "@/pages/crm/contact-history";
-// Old mock auth provider - we're not using this anymore
-// import { AuthProvider as MockAuthProvider } from "@/hooks/use-auth";
+// PWA Components
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { UpdateNotification } from "@/components/pwa/UpdateNotification";
+import { useEffect } from "react";
+import { registerServiceWorker } from "@/lib/pwa-utils";
+// Form Components
 import { ProgressNoteForm } from "@/components/forms/ProgressNoteForm";
 import { IntakeForm } from "@/components/forms/IntakeForm";
 
@@ -120,11 +124,24 @@ function WrappedCRMRoute({ component: Component, path }: { component: React.Comp
 }
 
 function App() {
+  // Register service worker when the app loads
+  useEffect(() => {
+    registerServiceWorker()
+      .then((success) => {
+        if (success) {
+          console.log('Service worker registered successfully');
+        }
+      })
+      .catch(console.error);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router />
         <Toaster />
+        <InstallPrompt />
+        <UpdateNotification />
       </AuthProvider>
     </QueryClientProvider>
   );
