@@ -59,8 +59,8 @@ router.get('/authorize', isAuthenticated, async (req: Request, res: Response) =>
   }
 });
 
-// OAuth2 callback route
-router.get('/callback', isAuthenticated, async (req: Request, res: Response) => {
+// OAuth2 callback route - Note: No authentication required for callbacks
+router.get('/callback', async (req: Request, res: Response) => {
   try {
     const { code, state } = req.query;
     
