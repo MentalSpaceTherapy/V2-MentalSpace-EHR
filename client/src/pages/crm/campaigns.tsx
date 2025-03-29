@@ -399,9 +399,9 @@ export default function CRMCampaigns() {
                   {pausedCampaigns.length}
                 </span>
               </TabsTrigger>
-              <TabsTrigger value="sendgrid" className="text-sm">
+              <TabsTrigger value="email" className="text-sm">
                 <Mail className="h-4 w-4 mr-1.5" />
-                SendGrid
+                Email Campaigns
               </TabsTrigger>
             </TabsList>
             
@@ -561,12 +561,12 @@ export default function CRMCampaigns() {
             
             {/* Other status tabs would follow the same pattern */}
             
-            <TabsContent value="sendgrid">
+            <TabsContent value="email">
               <Card>
                 <CardHeader>
-                  <CardTitle>Email Marketing with SendGrid</CardTitle>
+                  <CardTitle>Email Marketing</CardTitle>
                   <CardDescription>
-                    Create and send email campaigns using our SendGrid integration
+                    Create and send email campaigns to clients and leads
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
