@@ -3,8 +3,6 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { CalendarService } from "./services/calendar-service";
-import constantContactRoutes from './routes/constantContact';
-import { constantContactService } from './services/constantContact';
 import sendGridRoutes from './routes/sendGrid';
 import reportsRoutes from './routes/reports';
 import telehealthRoutes from './routes/telehealth';
@@ -2265,9 +2263,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Register Constant Contact API routes
-  app.use('/api/constant-contact', constantContactRoutes);
-  
   // Register SendGrid API routes
   app.use('/api/sendgrid', sendGridRoutes);
   
@@ -2277,60 +2272,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Telehealth API routes
   app.use('/api/telehealth', telehealthRoutes);
   
-  // Special route for Constant Contact OAuth callback
-  // Note: OAuth callback should not require authentication as the user is being redirected from Constant Contact
-  app.get('/api/auth/constant-contact/callback', async (req, res, next) => {
-    try {
-      const { code, state } = req.query;
-      
-      console.log('OAuth callback received', { 
-        codePresent: !!code,
-        statePresent: !!state,
-        stateValue: state,
-        sessionExists: !!req.session,
-        sessionId: req.session?.id,
-        sessionState: req.session?.oauthState,
-        sessionOtherKeys: req.session ? Object.keys(req.session) : []
-      });
-      
-      if (!code || typeof code !== 'string') {
-        return res.status(400).json({ error: 'Authorization code is required' });
-      }
-      
-      // Verify the state parameter to prevent CSRF attacks
-      // First try to validate from database
-      const isValidDBState = await storage.validateAndUseOAuthState(state as string, 'constant_contact');
-      
-      if (!isValidDBState) {
-        // Fallback to session validation
-        if (!state || typeof state !== 'string' || !req.session || req.session.oauthState !== state) {
-          console.error('OAuth state validation failed', { 
-            receivedState: state, 
-            sessionState: req.session?.oauthState,
-            sessionId: req.session?.id,
-            sessionKeys: req.session ? Object.keys(req.session) : []
-          });
-          return res.status(400).json({ error: 'Invalid state parameter' });
-        }
-        
-        console.warn('OAuth state valid in session but not in database, proceeding with caution.');
-      }
-      
-      // Clear the state from the session
-      if (req.session) {
-        delete req.session.oauthState;
-        console.log('Cleared oauthState from session');
-      }
-
-      // Exchange code for tokens
-      await constantContactService.exchangeCodeForTokens(code);
-      
-      // Redirect to the marketing dashboard
-      res.redirect('/crm/marketing');
-    } catch (error) {
-      console.error('Error in OAuth callback:', error);
-      return res.status(500).json({ error: 'Failed to complete OAuth flow' });
+  // Legacy route for Constant Contact OAuth callback - redirects to marketing dashboard
+  // This route remains to handle any lingering callbacks but is now simplified
+  app.get('/api/auth/constant-contact/callback', async (req, res) => {
+    // Log the callback attempt
+    console.log('Legacy Constant Contact OAuth callback received - redirecting to marketing dashboard');
+    
+    // Clear any OAuth state from session
+    if (req.session && req.session.oauthState) {
+      delete req.session.oauthState;
     }
+    
+    // Redirect to the marketing dashboard with migration notice
+    res.redirect('/crm/marketing?migration=complete');
   });
 
   const httpServer = createServer(app);
