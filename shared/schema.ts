@@ -590,3 +590,94 @@ export type InsertDocumentTemplate = z.infer<typeof insertDocumentTemplateSchema
 
 export type TemplateVersion = typeof templateVersions.$inferSelect;
 export type InsertTemplateVersion = z.infer<typeof insertTemplateVersionSchema>;
+
+// E-Signature system
+export const signatureRequests = pgTable("signature_requests", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").references(() => documentation.id).notNull(),
+  requestedById: integer("requested_by_id").references(() => users.id).notNull(),
+  requestedForId: integer("requested_for_id").references(() => clients.id).notNull(),
+  requestedAt: timestamp("requested_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+  status: text("status").default("pending").notNull(), // pending, completed, expired, rejected, cancelled
+  message: text("message"), // Optional message to the signer
+  remindersSent: integer("reminders_sent").default(0).notNull(),
+  lastReminderSent: timestamp("last_reminder_sent"),
+  accessCode: text("access_code"), // Optional security code
+  accessUrl: text("access_url").notNull(), // Unique URL for signing
+  completedAt: timestamp("completed_at"),
+  rejectedAt: timestamp("rejected_at"),
+  rejectionReason: text("rejection_reason"),
+  metadata: jsonb("metadata").default({}), // Additional config like required fields
+});
+
+export const signatureFields = pgTable("signature_fields", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id").references(() => signatureRequests.id).notNull(),
+  fieldType: text("field_type").notNull(), // signature, initial, date, checkbox, text
+  label: text("label").notNull(),
+  required: boolean("required").default(true).notNull(),
+  pageNumber: integer("page_number").default(1).notNull(),
+  xPosition: integer("x_position").notNull(), // X coordinate on the page
+  yPosition: integer("y_position").notNull(), // Y coordinate on the page
+  width: integer("width").notNull(),
+  height: integer("height").notNull(),
+  value: text("value"), // The value after signing
+  completedAt: timestamp("completed_at"),
+  order: integer("order").default(0).notNull(), // Order in the signing flow
+});
+
+export const signatureEvents = pgTable("signature_events", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id").references(() => signatureRequests.id).notNull(),
+  eventType: text("event_type").notNull(), // viewed, signed, declined, reminded, etc.
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  metadata: jsonb("metadata").default({}), // Additional data about the event
+});
+
+// Create insert schemas for e-signature tables
+export const insertSignatureRequestSchema = createInsertSchema(signatureRequests).pick({
+  documentId: true,
+  requestedById: true,
+  requestedForId: true,
+  expiresAt: true,
+  status: true,
+  message: true,
+  accessCode: true,
+  accessUrl: true,
+  metadata: true,
+});
+
+export const insertSignatureFieldSchema = createInsertSchema(signatureFields).pick({
+  requestId: true,
+  fieldType: true,
+  label: true,
+  required: true,
+  pageNumber: true,
+  xPosition: true,
+  yPosition: true,
+  width: true,
+  height: true,
+  value: true,
+  order: true,
+});
+
+export const insertSignatureEventSchema = createInsertSchema(signatureEvents).pick({
+  requestId: true,
+  eventType: true,
+  ipAddress: true,
+  userAgent: true,
+  metadata: true,
+});
+
+// Types for e-signature system
+export type SignatureRequest = typeof signatureRequests.$inferSelect;
+export type InsertSignatureRequest = z.infer<typeof insertSignatureRequestSchema>;
+
+export type SignatureField = typeof signatureFields.$inferSelect;
+export type InsertSignatureField = z.infer<typeof insertSignatureFieldSchema>;
+
+export type SignatureEvent = typeof signatureEvents.$inferSelect;
+export type InsertSignatureEvent = z.infer<typeof insertSignatureEventSchema>;

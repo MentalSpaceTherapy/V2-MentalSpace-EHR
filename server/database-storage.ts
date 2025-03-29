@@ -1,7 +1,7 @@
 import { 
   users, clients, sessions, documentation, notifications, messages,
   leads, marketingCampaigns, marketingEvents, eventRegistrations, contactHistory, referralSources,
-  documentTemplates, templateVersions,
+  documentTemplates, templateVersions, signatureRequests, signatureFields, signatureEvents,
   type User, type InsertUser,
   type Client, type InsertClient, type ExtendedClient,
   type Session, type InsertSession,
@@ -15,7 +15,10 @@ import {
   type ContactHistoryRecord, type InsertContactHistory,
   type ReferralSource, type InsertReferralSource,
   type DocumentTemplate, type InsertDocumentTemplate,
-  type TemplateVersion, type InsertTemplateVersion
+  type TemplateVersion, type InsertTemplateVersion,
+  type SignatureRequest, type InsertSignatureRequest,
+  type SignatureField, type InsertSignatureField,
+  type SignatureEvent, type InsertSignatureEvent
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -1294,5 +1297,269 @@ export class DatabaseStorage implements IStorage {
       .where(eq(documentTemplates.id, version.templateId));
     
     return updatedVersion;
+  }
+
+  //----------------------
+  // E-Signature Request Methods
+  //----------------------
+  async getSignatureRequest(id: number): Promise<SignatureRequest | undefined> {
+    const [request] = await db.select().from(signatureRequests).where(eq(signatureRequests.id, id));
+    return request;
+  }
+
+  async getSignatureRequests(filters?: {
+    documentId?: number;
+    requestedById?: number;
+    requestedForId?: number;
+    status?: string;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<SignatureRequest[]> {
+    const result = await db.select().from(signatureRequests);
+    
+    // Filter in memory to avoid typing issues
+    let filteredRequests = result;
+    
+    if (filters) {
+      if (filters.documentId !== undefined) {
+        filteredRequests = filteredRequests.filter(req => 
+          req.documentId === filters.documentId
+        );
+      }
+      
+      if (filters.requestedById !== undefined) {
+        filteredRequests = filteredRequests.filter(req => 
+          req.requestedById === filters.requestedById
+        );
+      }
+      
+      if (filters.requestedForId !== undefined) {
+        filteredRequests = filteredRequests.filter(req => 
+          req.requestedForId === filters.requestedForId
+        );
+      }
+      
+      if (filters.status !== undefined) {
+        filteredRequests = filteredRequests.filter(req => 
+          req.status === filters.status
+        );
+      }
+      
+      if (filters.startDate && filters.endDate) {
+        filteredRequests = filteredRequests.filter(req => 
+          req.requestedAt >= filters.startDate! && 
+          req.requestedAt <= filters.endDate!
+        );
+      } else if (filters.startDate) {
+        filteredRequests = filteredRequests.filter(req => 
+          req.requestedAt >= filters.startDate!
+        );
+      } else if (filters.endDate) {
+        filteredRequests = filteredRequests.filter(req => 
+          req.requestedAt <= filters.endDate!
+        );
+      }
+    }
+    
+    // Sort by date requested, most recent first
+    return filteredRequests.sort((a, b) => 
+      new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime()
+    );
+  }
+
+  async createSignatureRequest(request: InsertSignatureRequest): Promise<SignatureRequest> {
+    // Generate a unique access URL if not provided
+    const requestWithDefaults: InsertSignatureRequest = {
+      ...request,
+      // Generate a random access URL if not provided
+      accessUrl: request.accessUrl || crypto.randomUUID(),
+      status: request.status || "pending"
+    };
+    
+    const [signatureRequest] = await db.insert(signatureRequests).values(requestWithDefaults).returning();
+    return signatureRequest;
+  }
+
+  async updateSignatureRequest(id: number, requestData: Partial<InsertSignatureRequest>): Promise<SignatureRequest | undefined> {
+    const [updatedRequest] = await db
+      .update(signatureRequests)
+      .set({
+        ...requestData
+      })
+      .where(eq(signatureRequests.id, id))
+      .returning();
+    
+    return updatedRequest;
+  }
+
+  async deleteSignatureRequest(id: number): Promise<boolean> {
+    try {
+      // First delete any associated fields
+      await db.delete(signatureFields).where(eq(signatureFields.requestId, id));
+      
+      // Then delete any associated events
+      await db.delete(signatureEvents).where(eq(signatureEvents.requestId, id));
+      
+      // Finally delete the request
+      await db.delete(signatureRequests).where(eq(signatureRequests.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error(`Error deleting signature request ${id}:`, error);
+      return false;
+    }
+  }
+
+  async getSignatureRequestByAccessUrl(accessUrl: string): Promise<SignatureRequest | undefined> {
+    const [request] = await db.select().from(signatureRequests).where(eq(signatureRequests.accessUrl, accessUrl));
+    return request;
+  }
+
+  async completeSignatureRequest(id: number): Promise<SignatureRequest> {
+    const [updatedRequest] = await db
+      .update(signatureRequests)
+      .set({
+        status: "completed",
+        completedAt: new Date()
+      })
+      .where(eq(signatureRequests.id, id))
+      .returning();
+    
+    if (!updatedRequest) {
+      throw new Error(`Failed to complete signature request with ID ${id}`);
+    }
+    
+    // Log the completion event
+    await this.createSignatureEvent({
+      requestId: id,
+      eventType: "completed",
+      metadata: { timestamp: new Date().toISOString() }
+    });
+    
+    return updatedRequest;
+  }
+
+  async rejectSignatureRequest(id: number, rejectionReason: string): Promise<SignatureRequest> {
+    const [updatedRequest] = await db
+      .update(signatureRequests)
+      .set({
+        status: "rejected",
+        rejectionReason,
+        rejectedAt: new Date()
+      })
+      .where(eq(signatureRequests.id, id))
+      .returning();
+    
+    if (!updatedRequest) {
+      throw new Error(`Failed to reject signature request with ID ${id}`);
+    }
+    
+    // Log the rejection event
+    await this.createSignatureEvent({
+      requestId: id,
+      eventType: "rejected",
+      metadata: { 
+        timestamp: new Date().toISOString(),
+        reason: rejectionReason
+      }
+    });
+    
+    return updatedRequest;
+  }
+
+  async incrementReminderCount(id: number): Promise<SignatureRequest> {
+    // Get current reminder count
+    const request = await this.getSignatureRequest(id);
+    if (!request) {
+      throw new Error(`Signature request with ID ${id} not found`);
+    }
+    
+    const [updatedRequest] = await db
+      .update(signatureRequests)
+      .set({
+        remindersSent: (request.remindersSent || 0) + 1,
+        lastReminderSent: new Date()
+      })
+      .where(eq(signatureRequests.id, id))
+      .returning();
+    
+    if (!updatedRequest) {
+      throw new Error(`Failed to increment reminder count for signature request with ID ${id}`);
+    }
+    
+    // Log the reminder event
+    await this.createSignatureEvent({
+      requestId: id,
+      eventType: "reminder_sent",
+      metadata: { 
+        timestamp: new Date().toISOString(),
+        reminderCount: updatedRequest.remindersSent
+      }
+    });
+    
+    return updatedRequest;
+  }
+
+  //----------------------
+  // Signature Field Methods
+  //----------------------
+  async getSignatureField(id: number): Promise<SignatureField | undefined> {
+    const [field] = await db.select().from(signatureFields).where(eq(signatureFields.id, id));
+    return field;
+  }
+
+  async getSignatureFields(requestId: number): Promise<SignatureField[]> {
+    const fields = await db.select().from(signatureFields).where(eq(signatureFields.requestId, requestId));
+    
+    // Sort by order field if available, otherwise by ID
+    return fields.sort((a, b) => 
+      (a.order !== null && b.order !== null) 
+        ? a.order - b.order 
+        : a.id - b.id
+    );
+  }
+
+  async createSignatureField(field: InsertSignatureField): Promise<SignatureField> {
+    const [signatureField] = await db.insert(signatureFields).values(field).returning();
+    return signatureField;
+  }
+
+  async updateSignatureField(id: number, fieldData: Partial<InsertSignatureField>): Promise<SignatureField | undefined> {
+    const [updatedField] = await db
+      .update(signatureFields)
+      .set({
+        ...fieldData
+      })
+      .where(eq(signatureFields.id, id))
+      .returning();
+    
+    return updatedField;
+  }
+
+  async deleteSignatureField(id: number): Promise<boolean> {
+    try {
+      await db.delete(signatureFields).where(eq(signatureFields.id, id));
+      return true;
+    } catch (error) {
+      console.error(`Error deleting signature field ${id}:`, error);
+      return false;
+    }
+  }
+
+  //----------------------
+  // Signature Event Methods
+  //----------------------
+  async getSignatureEvents(requestId: number): Promise<SignatureEvent[]> {
+    const events = await db.select().from(signatureEvents).where(eq(signatureEvents.requestId, requestId));
+    
+    // Sort by timestamp, most recent first
+    return events.sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  }
+
+  async createSignatureEvent(event: InsertSignatureEvent): Promise<SignatureEvent> {
+    const [signatureEvent] = await db.insert(signatureEvents).values(event).returning();
+    return signatureEvent;
   }
 }

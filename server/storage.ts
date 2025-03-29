@@ -1,7 +1,7 @@
 import { 
   users, clients, sessions, documentation, notifications, messages,
   leads, marketingCampaigns, marketingEvents, eventRegistrations, contactHistory, referralSources,
-  documentTemplates, templateVersions,
+  documentTemplates, templateVersions, signatureRequests, signatureFields, signatureEvents,
   type User, type InsertUser,
   type Client, type InsertClient, type ExtendedClient,
   type Session, type InsertSession,
@@ -15,7 +15,10 @@ import {
   type ContactHistoryRecord, type InsertContactHistory,
   type ReferralSource, type InsertReferralSource,
   type DocumentTemplate, type InsertDocumentTemplate,
-  type TemplateVersion, type InsertTemplateVersion
+  type TemplateVersion, type InsertTemplateVersion,
+  type SignatureRequest, type InsertSignatureRequest,
+  type SignatureField, type InsertSignatureField,
+  type SignatureEvent, type InsertSignatureEvent
 } from "@shared/schema";
 import session from "express-session";
 
@@ -189,6 +192,35 @@ export interface IStorage {
   setLatestTemplateVersion(templateId: number, versionId: number): Promise<DocumentTemplate>;
   approveTemplateVersion(versionId: number, approverId: number, notes?: string): Promise<TemplateVersion>;
   rejectTemplateVersion(versionId: number, approverId: number, reason: string): Promise<TemplateVersion>;
+  
+  // E-Signature request methods
+  getSignatureRequest(id: number): Promise<SignatureRequest | undefined>;
+  getSignatureRequests(filters?: {
+    documentId?: number;
+    requestedById?: number;
+    requestedForId?: number;
+    status?: string;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<SignatureRequest[]>;
+  createSignatureRequest(request: InsertSignatureRequest): Promise<SignatureRequest>;
+  updateSignatureRequest(id: number, request: Partial<InsertSignatureRequest>): Promise<SignatureRequest | undefined>;
+  deleteSignatureRequest(id: number): Promise<boolean>;
+  getSignatureRequestByAccessUrl(accessUrl: string): Promise<SignatureRequest | undefined>;
+  completeSignatureRequest(id: number): Promise<SignatureRequest>;
+  rejectSignatureRequest(id: number, rejectionReason: string): Promise<SignatureRequest>;
+  incrementReminderCount(id: number): Promise<SignatureRequest>;
+  
+  // Signature field methods
+  getSignatureField(id: number): Promise<SignatureField | undefined>;
+  getSignatureFields(requestId: number): Promise<SignatureField[]>;
+  createSignatureField(field: InsertSignatureField): Promise<SignatureField>;
+  updateSignatureField(id: number, field: Partial<InsertSignatureField>): Promise<SignatureField | undefined>;
+  deleteSignatureField(id: number): Promise<boolean>;
+  
+  // Signature event methods
+  getSignatureEvents(requestId: number): Promise<SignatureEvent[]>;
+  createSignatureEvent(event: InsertSignatureEvent): Promise<SignatureEvent>;
   
   // Session store for auth
   sessionStore: session.Store;
