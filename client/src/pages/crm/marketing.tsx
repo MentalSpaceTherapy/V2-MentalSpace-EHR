@@ -1,8 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ConstantContactIntegration } from "@/components/crm/marketing/ConstantContactIntegration";
 import { ContactLists } from "@/components/crm/marketing/ContactLists";
-import { EmailCampaigns } from "@/components/crm/marketing/EmailCampaigns";
+import EmailCampaigns from "@/components/crm/marketing/EmailCampaigns";
 import { CRMProvider } from "@/hooks/use-crm";
+import { SendGridIntegration } from "@/components/crm/marketing/SendGridIntegration";
 
 export default function MarketingPage() {
   return (
@@ -15,7 +15,7 @@ export default function MarketingPage() {
           </p>
         </div>
         
-        <ConstantContactIntegration />
+        <SendGridIntegration />
         
         <Tabs defaultValue="campaigns" className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-2">

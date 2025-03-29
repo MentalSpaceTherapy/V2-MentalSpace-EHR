@@ -7,120 +7,80 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Plus, RefreshCcw, AlertCircle, Calendar } from "lucide-react";
-import { useCRM } from "@/hooks/use-crm";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, RefreshCcw, AlertCircle, AlertTriangle, Calendar, Loader2 } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 
-export function EmailCampaigns() {
-  const { 
-    ccCampaigns,
-    ccLists,
-    fetchCCCampaigns,
-    fetchCCLists,
-    createCCCampaign,
-    sendTestEmail,
-    scheduleCampaign,
-    isConstantContactConnected
-  } = useCRM();
-  
-  const [isLoading, setIsLoading] = useState(false);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
-  const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
+// Define form schema for email campaigns
+const emailCampaignSchema = z.object({
+  subject: z.string().min(1, "Subject is required"),
+  htmlTemplate: z.string().min(1, "HTML template is required"),
+  textTemplate: z.string().min(1, "Text template is required"),
+  from: z.string().email("Must be a valid email"),
+  fromName: z.string().optional(),
+  testEmail: z.string().email("Must be a valid email").optional(),
+});
+
+export default function EmailCampaigns() {
+  const { toast } = useToast();
+  const [selectedTab, setSelectedTab] = useState('compose');
+  const [selectedClients, setSelectedClients] = useState<string[]>([]);
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const [testEmail, setTestEmail] = useState("");
-  const [scheduledDate, setScheduledDate] = useState("");
   
-  const [newCampaign, setNewCampaign] = useState({
-    name: "",
-    subject: "",
-    fromEmail: "",
-    fromName: "",
-    listId: "",
-    content: ""
+  // Form setup
+  const form = useForm<z.infer<typeof emailCampaignSchema>>({
+    resolver: zodResolver(emailCampaignSchema),
+    defaultValues: {
+      subject: '',
+      htmlTemplate: '<html><body><h1>Hello {firstName}</h1><p>Your content here</p></body></html>',
+      textTemplate: 'Hello {firstName},\n\nYour content here',
+      from: 'no-reply@mentalspace.health',
+      fromName: 'MentalSpace EHR',
+      testEmail: '',
+    },
   });
+  
+  // Check SendGrid configuration status
+  const { data: sendGridStatus, isLoading: isLoadingStatus } = useQuery({
+    queryKey: ['/api/sendgrid/status'],
+    queryFn: () => apiRequest('/api/sendgrid/status', { method: 'GET' })
+  });
+  
+  // Get clients to use as recipients
+  const { data: clients, isLoading: isLoadingClients } = useQuery({
+    queryKey: ['/api/clients'],
+    queryFn: () => apiRequest('/api/clients', { method: 'GET' })
+  });
+  
+  // Get leads to use as recipients
+  const { data: leads, isLoading: isLoadingLeads } = useQuery({
+    queryKey: ['/api/leads'],
+    queryFn: () => apiRequest('/api/leads', { method: 'GET' })
+  });
+  // No need for constant contact related state variables anymore
 
+  // Load client and lead data when component mounts
   useEffect(() => {
-    if (isConstantContactConnected) {
-      loadCampaigns();
-      if (ccLists.length === 0) {
-        fetchCCLists();
-      }
-    }
-  }, [isConstantContactConnected]);
+    // No need to fetch data here as it's handled by React Query
+  }, []);
 
-  const loadCampaigns = async () => {
-    setIsLoading(true);
-    try {
-      await fetchCCCampaigns();
-    } catch (error) {
-      console.error("Error fetching campaigns:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Get client IDs for recipient selection
+  const allClientIds = clients ? clients.map((client: any) => `client-${client.id}`) : [];
+  
+  // Get lead IDs for recipient selection
+  const allLeadIds = leads ? leads.map((lead: any) => `lead-${lead.id}`) : [];
 
-  const handleCreateCampaign = async () => {
-    if (!newCampaign.name || !newCampaign.subject || !newCampaign.fromEmail || !newCampaign.listId) return;
-
-    setIsLoading(true);
-    try {
-      const campaignData = {
-        name: newCampaign.name,
-        subject: newCampaign.subject,
-        from_email: newCampaign.fromEmail,
-        from_name: newCampaign.fromName,
-        list_id: newCampaign.listId,
-        content: newCampaign.content
-      };
-      
-      await createCCCampaign(campaignData);
-      setNewCampaign({
-        name: "",
-        subject: "",
-        fromEmail: "",
-        fromName: "",
-        listId: "",
-        content: ""
-      });
-      setIsCreateDialogOpen(false);
-    } catch (error) {
-      console.error("Error creating campaign:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSendTestEmail = async () => {
-    if (!selectedCampaign || !testEmail) return;
-
-    setIsLoading(true);
-    try {
-      await sendTestEmail(selectedCampaign, [testEmail]);
-      setTestEmail("");
-      setIsTestDialogOpen(false);
-    } catch (error) {
-      console.error("Error sending test email:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleScheduleCampaign = async () => {
-    if (!selectedCampaign || !scheduledDate) return;
-
-    setIsLoading(true);
-    try {
-      await scheduleCampaign(selectedCampaign, scheduledDate);
-      setScheduledDate("");
-      setIsScheduleDialogOpen(false);
-    } catch (error) {
-      console.error("Error scheduling campaign:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // The handleCreateCampaign, handleSendTestEmail, and handleScheduleCampaign functions
+  // are replaced by the new mutations and their handler functions below
 
   // Function to get appropriate badge styling based on status
   const getStatusBadge = (status: string) => {
@@ -138,7 +98,17 @@ export function EmailCampaigns() {
     }
   };
 
-  if (!isConstantContactConnected) {
+  // If SendGrid is not properly configured
+  if (isLoadingStatus) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Checking SendGrid configuration...</span>
+      </div>
+    );
+  }
+  
+  if (!sendGridStatus?.configured) {
     return (
       <Card className="w-full">
         <CardHeader>
@@ -146,10 +116,11 @@ export function EmailCampaigns() {
           <CardDescription>Create and manage your email marketing campaigns</CardDescription>
         </CardHeader>
         <CardContent>
-          <Alert className="bg-amber-50 border-amber-200">
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-600">
-              Please connect to Constant Contact to manage your email campaigns.
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>SendGrid Not Configured</AlertTitle>
+            <AlertDescription>
+              Your SendGrid API key is not properly configured. Please set up your SendGrid API key in the environment variables.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -157,270 +128,476 @@ export function EmailCampaigns() {
     );
   }
 
+  // Mutations for sending emails
+  const testEmailMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('/api/sendgrid/send-test', {
+      method: 'POST',
+      data
+    }),
+    onSuccess: () => {
+      toast({
+        title: "Test email sent",
+        description: "Your test email has been sent successfully.",
+        variant: "default",
+      });
+      form.setValue('testEmail', '');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to send test email",
+        description: error.message || "There was an error sending your test email.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation for sending campaign
+  const campaignMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('/api/sendgrid/send-campaign', {
+      method: 'POST',
+      data
+    }),
+    onSuccess: () => {
+      toast({
+        title: "Campaign sent",
+        description: "Your email campaign has been sent successfully.",
+        variant: "default",
+      });
+      setIsSending(false);
+      setSelectedClients([]);
+      form.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to send campaign",
+        description: error.message || "There was an error sending your campaign.",
+        variant: "destructive",
+      });
+      setIsSending(false);
+    }
+  });
+  
+  // Handle sending test email
+  const handleSendTest = () => {
+    const formValues = form.getValues();
+    
+    if (!formValues.testEmail) {
+      toast({
+        title: "Test email required",
+        description: "Please enter a test email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    testEmailMutation.mutate({
+      to: formValues.testEmail,
+      from: formValues.from,
+      name: formValues.fromName,
+      subject: formValues.subject,
+      text: formValues.textTemplate,
+      html: formValues.htmlTemplate
+    });
+  };
+  
+  // Handle sending email campaign
+  const handleSendCampaign = () => {
+    if (selectedClients.length === 0) {
+      toast({
+        title: "No recipients selected",
+        description: "Please select at least one recipient for your campaign.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSending(true);
+    
+    const formValues = form.getValues();
+    
+    // Prepare recipient data from selected clients and leads
+    const recipients = selectedClients.map(id => {
+      if (id.startsWith('client-')) {
+        const clientId = id.replace('client-', '');
+        const client = clients?.find((c: any) => c.id.toString() === clientId);
+        
+        if (client) {
+          return {
+            email: client.email,
+            name: `${client.firstName} ${client.lastName}`,
+            dynamicData: {
+              firstName: client.firstName,
+              lastName: client.lastName,
+              type: 'client'
+            }
+          };
+        }
+      } else if (id.startsWith('lead-')) {
+        const leadId = id.replace('lead-', '');
+        const lead = leads?.find((l: any) => l.id.toString() === leadId);
+        
+        if (lead) {
+          return {
+            email: lead.email,
+            name: lead.name,
+            dynamicData: {
+              firstName: lead.name.split(' ')[0],
+              lastName: lead.name.split(' ').slice(1).join(' '),
+              type: 'lead'
+            }
+          };
+        }
+      }
+      
+      return null;
+    }).filter(Boolean);
+    
+    campaignMutation.mutate({
+      recipients,
+      from: formValues.from,
+      fromName: formValues.fromName,
+      subject: formValues.subject,
+      textTemplate: formValues.textTemplate,
+      htmlTemplate: formValues.htmlTemplate
+    });
+  };
+  
+  // Toggle select all clients
+  const handleSelectAllClients = () => {
+    if (!clients) return;
+    
+    if (selectedClients.length === allClientIds.length) {
+      // Deselect all if all are already selected
+      setSelectedClients([]);
+    } else {
+      // Select all
+      setSelectedClients(allClientIds);
+    }
+  };
+  
+  // Handle select all leads
+  const handleSelectAllLeads = () => {
+    if (!leads) return;
+    
+    if (selectedClients.length === allLeadIds.length) {
+      // Deselect all if all are already selected
+      setSelectedClients([]);
+    } else {
+      // Select all
+      setSelectedClients(allLeadIds);
+    }
+  };
+  
+  // Main component return
   return (
-    <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div>
-          <CardTitle>Email Campaigns</CardTitle>
-          <CardDescription>Create and manage your email marketing campaigns</CardDescription>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadCampaigns}
-            disabled={isLoading}
-          >
-            <RefreshCcw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Campaign
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create New Email Campaign</DialogTitle>
-                <DialogDescription>
-                  Design a new email campaign to send to your contacts
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">Campaign Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="Enter campaign name"
-                    value={newCampaign.name}
-                    onChange={(e) => setNewCampaign({ ...newCampaign, name: e.target.value })}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="subject">Email Subject</Label>
-                  <Input
-                    id="subject"
-                    placeholder="Enter email subject"
-                    value={newCampaign.subject}
-                    onChange={(e) => setNewCampaign({ ...newCampaign, subject: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Email Campaign Builder</CardTitle>
+          <CardDescription>
+            Create personalized email campaigns to send to your clients and leads
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+            <TabsList className="grid w-full max-w-md grid-cols-3">
+              <TabsTrigger value="compose">Compose</TabsTrigger>
+              <TabsTrigger value="recipients">Recipients</TabsTrigger>
+              <TabsTrigger value="preview">Preview</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="compose" className="mt-4">
+              <form className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="fromEmail">From Email</Label>
+                    <Label htmlFor="subject">Email Subject</Label>
                     <Input
-                      id="fromEmail"
+                      id="subject"
+                      placeholder="Enter subject line"
+                      {...form.register("subject")}
+                    />
+                    {form.formState.errors.subject && (
+                      <p className="text-sm text-red-500">{form.formState.errors.subject.message}</p>
+                    )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="from">From Email</Label>
+                    <Input
+                      id="from"
                       placeholder="your@email.com"
-                      value={newCampaign.fromEmail}
-                      onChange={(e) => setNewCampaign({ ...newCampaign, fromEmail: e.target.value })}
+                      {...form.register("from")}
                     />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="fromName">From Name</Label>
-                    <Input
-                      id="fromName"
-                      placeholder="Your Name"
-                      value={newCampaign.fromName}
-                      onChange={(e) => setNewCampaign({ ...newCampaign, fromName: e.target.value })}
-                    />
+                    {form.formState.errors.from && (
+                      <p className="text-sm text-red-500">{form.formState.errors.from.message}</p>
+                    )}
                   </div>
                 </div>
+                
                 <div className="grid gap-2">
-                  <Label htmlFor="listId">Contact List</Label>
-                  <Select
-                    value={newCampaign.listId}
-                    onValueChange={(value) => setNewCampaign({ ...newCampaign, listId: value })}
-                  >
-                    <SelectTrigger id="listId">
-                      <SelectValue placeholder="Select a contact list" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ccLists.map((list) => (
-                        <SelectItem key={list.id} value={list.id}>
-                          {list.name} ({list.memberCount} contacts)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="content">Email Content</Label>
-                  <Textarea
-                    id="content"
-                    placeholder="Enter your email content. HTML is supported."
-                    value={newCampaign.content}
-                    onChange={(e) => setNewCampaign({ ...newCampaign, content: e.target.value })}
-                    className="min-h-[100px]"
+                  <Label htmlFor="fromName">From Name</Label>
+                  <Input
+                    id="fromName"
+                    placeholder="Your Name or Practice Name"
+                    {...form.register("fromName")}
                   />
                 </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsCreateDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreateCampaign}
-                  disabled={
-                    !newCampaign.name.trim() || 
-                    !newCampaign.subject.trim() || 
-                    !newCampaign.fromEmail.trim() || 
-                    !newCampaign.listId || 
-                    isLoading
-                  }
-                >
-                  {isLoading ? "Creating..." : "Create Campaign"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {isLoading && ccCampaigns.length === 0 ? (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-pulse text-muted-foreground">Loading campaigns...</div>
-          </div>
-        ) : ccCampaigns.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No email campaigns found.</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Create your first email campaign to start reaching out to your contacts.
-            </p>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Campaign Name</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Scheduled Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {ccCampaigns.map((campaign) => (
-                <TableRow key={campaign.id}>
-                  <TableCell className="font-medium">{campaign.name}</TableCell>
-                  <TableCell>{campaign.subject}</TableCell>
-                  <TableCell>{getStatusBadge(campaign.status)}</TableCell>
-                  <TableCell>{campaign.scheduledDate || "-"}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      {campaign.status.toLowerCase() === "draft" && (
-                        <>
-                          <Dialog open={isTestDialogOpen && selectedCampaign === campaign.id} 
-                            onOpenChange={(open) => {
-                              setIsTestDialogOpen(open);
-                              if (open) setSelectedCampaign(campaign.id);
-                              else setSelectedCampaign(null);
-                            }}>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">Test</Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-xs">
-                              <DialogHeader>
-                                <DialogTitle>Send Test Email</DialogTitle>
-                                <DialogDescription>
-                                  Send a test email to preview this campaign
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="grid gap-4 py-4">
-                                <div className="grid gap-2">
-                                  <Label htmlFor="testEmail">Email Address</Label>
-                                  <Input
-                                    id="testEmail"
-                                    placeholder="Enter your email"
-                                    value={testEmail}
-                                    onChange={(e) => setTestEmail(e.target.value)}
-                                  />
-                                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="htmlTemplate">
+                    HTML Content
+                    <span className="text-xs text-muted-foreground ml-2">
+                      (Use {"{firstName}"} for personalization)
+                    </span>
+                  </Label>
+                  <Textarea
+                    id="htmlTemplate"
+                    placeholder="<html><body><h1>Hello {firstName}</h1><p>Your content here</p></body></html>"
+                    rows={10}
+                    {...form.register("htmlTemplate")}
+                  />
+                  {form.formState.errors.htmlTemplate && (
+                    <p className="text-sm text-red-500">{form.formState.errors.htmlTemplate.message}</p>
+                  )}
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="textTemplate">
+                    Plain Text Version
+                    <span className="text-xs text-muted-foreground ml-2">
+                      (Required for accessibility)
+                    </span>
+                  </Label>
+                  <Textarea
+                    id="textTemplate"
+                    placeholder="Hello {firstName}, Your content here"
+                    rows={4}
+                    {...form.register("textTemplate")}
+                  />
+                  {form.formState.errors.textTemplate && (
+                    <p className="text-sm text-red-500">{form.formState.errors.textTemplate.message}</p>
+                  )}
+                </div>
+                
+                <div className="flex justify-between">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setPreviewHtml(form.getValues().htmlTemplate);
+                      setSelectedTab("preview");
+                    }}
+                  >
+                    Preview
+                  </Button>
+                  
+                  <div className="space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        form.setValue('testEmail', '');
+                        document.getElementById('test-email-dialog-trigger')?.click();
+                      }}
+                    >
+                      Send Test
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => setSelectedTab("recipients")}
+                    >
+                      Next: Select Recipients
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="recipients" className="mt-4">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Select Recipients</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Choose which clients or leads will receive this email campaign.
+                  </p>
+                </div>
+                
+                {isLoadingClients || isLoadingLeads ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+                    <span>Loading contacts...</span>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {clients && clients.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium">Clients</h4>
+                          <Button variant="outline" size="sm" onClick={handleSelectAllClients}>
+                            {selectedClients.length === allClientIds.length ? "Deselect All" : "Select All"}
+                          </Button>
+                        </div>
+                        <div className="border rounded-md divide-y">
+                          {clients.map((client: any) => (
+                            <div key={client.id} className="flex items-center justify-between p-3">
+                              <div className="flex items-center space-x-3">
+                                <input
+                                  type="checkbox"
+                                  id={`client-${client.id}`}
+                                  checked={selectedClients.includes(`client-${client.id}`)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedClients([...selectedClients, `client-${client.id}`]);
+                                    } else {
+                                      setSelectedClients(selectedClients.filter(id => id !== `client-${client.id}`));
+                                    }
+                                  }}
+                                  className="h-4 w-4 rounded border-gray-300"
+                                />
+                                <label htmlFor={`client-${client.id}`} className="flex flex-col">
+                                  <span className="font-medium">{client.firstName} {client.lastName}</span>
+                                  <span className="text-sm text-muted-foreground">{client.email}</span>
+                                </label>
                               </div>
-                              <DialogFooter>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setIsTestDialogOpen(false)}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  onClick={handleSendTestEmail}
-                                  disabled={!testEmail.trim() || isLoading}
-                                >
-                                  {isLoading ? "Sending..." : "Send Test"}
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-
-                          <Dialog open={isScheduleDialogOpen && selectedCampaign === campaign.id} 
-                            onOpenChange={(open) => {
-                              setIsScheduleDialogOpen(open);
-                              if (open) setSelectedCampaign(campaign.id);
-                              else setSelectedCampaign(null);
-                            }}>
-                            <DialogTrigger asChild>
-                              <Button size="sm">
-                                <Calendar className="h-4 w-4 mr-2" />
-                                Schedule
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-xs">
-                              <DialogHeader>
-                                <DialogTitle>Schedule Campaign</DialogTitle>
-                                <DialogDescription>
-                                  Set a date and time to send this campaign
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="grid gap-4 py-4">
-                                <div className="grid gap-2">
-                                  <Label htmlFor="scheduledDate">Date and Time</Label>
-                                  <Input
-                                    id="scheduledDate"
-                                    type="datetime-local"
-                                    value={scheduledDate}
-                                    onChange={(e) => setScheduledDate(e.target.value)}
-                                  />
-                                </div>
+                              <Badge>Client</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {leads && leads.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium">Leads</h4>
+                          <Button variant="outline" size="sm" onClick={handleSelectAllLeads}>
+                            {selectedClients.length === allLeadIds.length ? "Deselect All" : "Select All"}
+                          </Button>
+                        </div>
+                        <div className="border rounded-md divide-y">
+                          {leads.map((lead: any) => (
+                            <div key={lead.id} className="flex items-center justify-between p-3">
+                              <div className="flex items-center space-x-3">
+                                <input
+                                  type="checkbox"
+                                  id={`lead-${lead.id}`}
+                                  checked={selectedClients.includes(`lead-${lead.id}`)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedClients([...selectedClients, `lead-${lead.id}`]);
+                                    } else {
+                                      setSelectedClients(selectedClients.filter(id => id !== `lead-${lead.id}`));
+                                    }
+                                  }}
+                                  className="h-4 w-4 rounded border-gray-300"
+                                />
+                                <label htmlFor={`lead-${lead.id}`} className="flex flex-col">
+                                  <span className="font-medium">{lead.name}</span>
+                                  <span className="text-sm text-muted-foreground">{lead.email}</span>
+                                </label>
                               </div>
-                              <DialogFooter>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setIsScheduleDialogOpen(false)}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  onClick={handleScheduleCampaign}
-                                  disabled={!scheduledDate || isLoading}
-                                >
-                                  {isLoading ? "Scheduling..." : "Schedule"}
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        </>
-                      )}
+                              <Badge variant="outline">Lead</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between pt-4">
+                      <div>
+                        <span className="text-sm font-medium">
+                          {selectedClients.length} recipient{selectedClients.length !== 1 ? 's' : ''} selected
+                        </span>
+                      </div>
+                      
+                      <div className="space-x-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => setSelectedTab("compose")}
+                        >
+                          Back
+                        </Button>
+                        <Button
+                          onClick={handleSendCampaign}
+                          disabled={selectedClients.length === 0 || isSending}
+                        >
+                          {isSending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            "Send Campaign"
+                          )}
+                        </Button>
+                      </div>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <div>
-          <p className="text-xs text-muted-foreground">
-            Total Campaigns: {ccCampaigns.length}
-          </p>
-        </div>
-      </CardFooter>
-    </Card>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="preview" className="mt-4">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">Email Preview</h3>
+                  <Button variant="outline" onClick={() => setSelectedTab("compose")}>Back to Editor</Button>
+                </div>
+                
+                <Card className="border">
+                  <CardHeader className="border-b bg-muted/50">
+                    <div className="grid gap-1">
+                      <div className="font-medium">Subject: {form.getValues().subject}</div>
+                      <div className="text-sm text-muted-foreground">
+                        From: {form.getValues().fromName || form.getValues().from} ({form.getValues().from})
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+      
+      {/* Test Email Dialog */}
+      <Dialog>
+        <DialogTrigger className="hidden" id="test-email-dialog-trigger">Open</DialogTrigger>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Test Email</DialogTitle>
+            <DialogDescription>
+              Send a test version of your email to preview how it will look.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="test-email">Test Email Address</Label>
+              <Input
+                id="test-email"
+                placeholder="your@email.com"
+                {...form.register("testEmail")}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => document.getElementById('test-email-dialog-trigger')?.click()}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendTest}
+              disabled={testEmailMutation.isPending}
+            >
+              {testEmailMutation.isPending ? "Sending..." : "Send Test"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
