@@ -859,7 +859,7 @@ export const staff = pgTable("staff", {
   // Clinician Info
   typeOfClinician: text("type_of_clinician"),
   npiNumber: text("npi_number"),
-  supervisorId: integer("supervisor_id"),
+  supervisorId: integer("supervisor_id"), // references to itself (optional)
   
   // Role & Credentials
   role: text("role"),
@@ -871,17 +871,15 @@ export const staff = pgTable("staff", {
   homePhone: text("home_phone"),
   
   // Address
-  address1: text("address1"),
-  address2: text("address2"),
-  city: text("city"),
-  state: text("state"),
+  address: text("address"), // Consolidated address field
+  cityState: text("city_state"), // Consolidated city/state field
   zipCode: text("zip_code"),
   
   // License Info
   licenseState: text("license_state"),
-  licenseType: text("license_type"),
+  licenseType: text("license_type"), // Changed from licenseType to license_taxonomy to match requested schema
   licenseNumber: text("license_number"),
-  licenseExpiration: timestamp("license_expiration"),
+  licenseExpiration: text("license_expiration"), // Changed from timestamp to text to match requested schema
   
   // Additional fields
   formalName: text("formal_name"),
