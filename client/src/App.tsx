@@ -21,7 +21,8 @@ import Practice from "@/pages/practice";
 import Telehealth from "@/pages/telehealth";
 import SignaturePage from "@/pages/sign";
 import Staff from "@/pages/staff";
-import StaffFormPage from "@/pages/staff-form";
+// Import staff form directly to avoid path issues
+import StaffFormPage from "./pages/staff-form";
 import { AuthProvider } from "@/hooks/use-auth";
 import { CRMProvider } from "@/hooks/use-crm";
 // CRM pages
