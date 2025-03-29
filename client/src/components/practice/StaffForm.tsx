@@ -196,8 +196,15 @@ export function StaffForm({ isOpen, onClose, onSave, editingStaff }: StaffFormPr
     return acc;
   }, {} as Record<string, string[]>);
 
+  useEffect(() => {
+    console.log("StaffForm isOpen changed:", isOpen);
+  }, [isOpen]);
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      console.log("Dialog open state changed:", open);
+      if (!open) onClose();
+    }}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Staff Member" : "Add New Staff Member"}</DialogTitle>

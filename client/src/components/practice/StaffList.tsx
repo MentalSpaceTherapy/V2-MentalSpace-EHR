@@ -99,6 +99,7 @@ export function StaffList({ initialStaff }: StaffListProps) {
   const handleAddStaff = () => {
     setEditingStaff(undefined);
     setIsFormOpen(true);
+    console.log("Opening staff form", isFormOpen);
   };
 
   const handleEditStaff = (staffId: number) => {
