@@ -51,9 +51,13 @@ export function Sidebar({ className }: SidebarProps) {
     }
   }, [location]);
 
+  // Set mounted to true immediately without waiting for useEffect
   useEffect(() => {
     setMounted(true);
   }, []);
+  
+  // Force mounted to true for immediate rendering
+  if (!mounted) setMounted(true);
 
   // Documentation submenu items
   const documentTypes: SubMenuItemType[] = [
@@ -115,8 +119,8 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <div 
       className={cn(
-        "w-64 bg-white h-full z-10 fixed left-0 top-0 shadow-[0_0_40px_rgba(118,36,255,0.1)]",
-        "animate-fade-in overflow-y-auto", 
+        "w-64 bg-white h-full z-50 fixed left-0 top-0 shadow-[0_0_40px_rgba(118,36,255,0.1)]",
+        "overflow-y-auto", // Removed animation
         className
       )}
     >
@@ -157,10 +161,7 @@ export function Sidebar({ className }: SidebarProps) {
                   return (
                     <li 
                       key={item.name}
-                      style={{ 
-                        animationDelay: `${(index + 1) * 50}ms`,
-                      }}
-                      className={mounted ? "animate-slide-up" : "opacity-0"}
+                      className="opacity-100" // Remove animation for immediate visibility
                     >
                       <Collapsible
                         open={menuOpenState}
@@ -258,10 +259,7 @@ export function Sidebar({ className }: SidebarProps) {
                 return (
                   <li 
                     key={item.name}
-                    style={{ 
-                      animationDelay: `${(index + 1) * 50}ms`,
-                    }}
-                    className={mounted ? "animate-slide-up" : "opacity-0"}
+                    className="opacity-100" // Remove animation for immediate visibility
                   >
                     <Link href={item.href}>
                       <a
