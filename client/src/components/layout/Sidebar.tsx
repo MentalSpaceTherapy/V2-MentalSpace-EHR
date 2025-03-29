@@ -10,7 +10,7 @@ import {
   FileSignature, ClipboardCheck, FilePlus, FileClock,
   FileSpreadsheet, Phone, FileQuestion, ChevronDown, Plus,
   BarChart, Target, LineChart, UserPlus, AtSign, Share2,
-  User as UserIcon
+  User as UserIcon, Copy
 } from "lucide-react";
 import {
   Collapsible,
@@ -59,6 +59,7 @@ export function Sidebar({ className }: SidebarProps) {
   const documentTypes: SubMenuItemType[] = [
     { name: "Dashboard", href: "/documentation/dashboard", icon: LayoutDashboard },
     { name: "Templates", href: "/templates", icon: FileText },
+    { name: "Bulk Operations", href: "/documentation-bulk", icon: FileText },
     { name: "Intake Forms", href: "/documentation/intake", icon: FilePlus },
     { name: "Progress Notes", href: "/documentation/progress-notes", icon: FileSignature },
     { name: "Treatment Plans", href: "/documentation/treatment-plans", icon: ClipboardCheck },

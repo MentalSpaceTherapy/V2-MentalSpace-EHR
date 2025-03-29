@@ -647,6 +647,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Bulk document operations endpoint
+  app.post("/api/documents/bulk", isAuthenticated, async (req, res, next) => {
+    try {
+      // Use type assertion for user since we verified isAuthenticated
+      const user = req.user as AuthenticatedUser;
+      const userId = user.id;
+      
+      const { templateId, clientIds, documentType, completedDate, notes } = req.body;
+      
+      if (!templateId || !clientIds || !Array.isArray(clientIds) || clientIds.length === 0) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      const template = await storage.getDocumentTemplate(templateId);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      
+      const createdDocuments = [];
+      
+      // Create a document for each client based on the template
+      for (const clientId of clientIds) {
+        const client = await storage.getClient(clientId);
+        if (!client) {
+          continue; // Skip if client not found
+        }
+        
+        // Verify the user has permission to create documents for this client
+        if (user.role !== "administrator" && client.therapistId !== userId) {
+          continue; // Skip if user doesn't have permission
+        }
+        
+        const documentData = {
+          title: `${documentType.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase())} - ${client.firstName} ${client.lastName}`,
+          content: template.currentVersionId 
+            ? (await storage.getTemplateVersion(template.currentVersionId))?.content || template.description || ""
+            : template.description || "",
+          status: "complete",
+          type: documentType,
+          clientId,
+          therapistId: userId,
+          completedAt: new Date(completedDate), 
+          notes: notes || null,
+          metadata: { templateId }
+        };
+        
+        const document = await storage.createDocument(documentData);
+        createdDocuments.push(document);
+        
+        // Create notification for each document created
+        try {
+          await storage.createNotification({
+            userId,
+            title: "Bulk Document Created",
+            message: `${documentType} document has been created for ${client.firstName} ${client.lastName}.`,
+            type: "Document",
+            isRead: false,
+            link: `/documentation?id=${document.id}`
+          });
+        } catch (notificationError) {
+          console.error("Failed to create notification:", notificationError);
+          // Don't block the document creation if notification fails
+        }
+      }
+      
+      res.status(201).json({ 
+        success: true, 
+        count: createdDocuments.length,
+        documents: createdDocuments
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+  
   // Notification routes
   app.get("/api/notifications", isAuthenticated, async (req, res, next) => {
     try {

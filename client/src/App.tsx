@@ -11,6 +11,7 @@ import ProfileSettingsPage from "@/pages/settings/profile";
 import Clients from "@/pages/clients";
 import Documentation from "@/pages/documentation";
 import DocumentationDashboard from "@/pages/documentation-dashboard";
+import DocumentationBulk from "@/pages/documentation-bulk";
 import Templates from "@/pages/templates";
 import Scheduling from "@/pages/scheduling";
 import Messages from "@/pages/messages";
@@ -79,6 +80,7 @@ function Router() {
       {/* Documentation routes */}
       <ProtectedRoute path="/documentation" component={DocumentationRoute} />
       <ProtectedRoute path="/documentation/:type" component={DocumentationRoute} />
+      <ProtectedRoute path="/documentation-bulk" component={DocumentationBulk} />
       <ProtectedRoute path="/templates" component={Templates} />
       
       <ProtectedRoute path="/scheduling" component={Scheduling} />
