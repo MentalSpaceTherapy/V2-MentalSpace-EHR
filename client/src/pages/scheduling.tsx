@@ -231,19 +231,24 @@ export default function Scheduling() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<{date: Date, time: string} | null>(null);
   
   const handleScheduleAppointment = (date?: Date, time?: string) => {
-    if (date && time) {
-      // Set the selected time slot for use in the form
-      setSelectedTimeSlot({ date, time });
-      
-      // Convert time string to format expected by form
-      const timeParts = time.split(":");
-      const hour = parseInt(timeParts[0]);
-      const formattedTime = hour > 12 
-        ? `${hour - 12}:00 PM` 
-        : hour === 12 ? "12:00 PM" : `${hour}:00 AM`;
-      
-      // Pre-populate form with selected date and time
+    if (date) {
+      // Always set the selected date
       setSelectedDate(date);
+      
+      if (time) {
+        // Set the selected time slot for use in the form
+        setSelectedTimeSlot({ date, time });
+        
+        // Convert time string to format expected by form
+        const timeParts = time.split(":");
+        const hour = parseInt(timeParts[0]);
+        const formattedTime = hour > 12 
+          ? `${hour - 12}:00 PM` 
+          : hour === 12 ? "12:00 PM" : `${hour}:00 AM`;
+      } else {
+        // If no time provided, default to 9:00 AM with the selected date
+        setSelectedTimeSlot({ date, time: "9:00" });
+      }
     } else {
       setSelectedTimeSlot(null);
     }
