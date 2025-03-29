@@ -83,6 +83,7 @@ export function Sidebar({ className }: SidebarProps) {
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
+    { name: "Staff", href: "/staff", icon: UserPlus, new: true }, // Move Staff to the top and mark as new
     { name: "Clients", href: "/clients", icon: Users },
     { 
       name: "Documentation", 
@@ -106,7 +107,6 @@ export function Sidebar({ className }: SidebarProps) {
       setOpenState: setOpenCrmMenu,
       new: true // Show as new feature
     },
-    { name: "Staff", href: "/staff", icon: UserPlus },
     { name: "Billing", href: "/billing", icon: DollarSign },
     { name: "Reports", href: "/reports", icon: BarChart2 },
     { name: "Practice Mgmt", href: "/practice", icon: Building },
