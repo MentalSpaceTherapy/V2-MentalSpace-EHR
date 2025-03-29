@@ -1,12 +1,4 @@
 import sgMail from '@sendgrid/mail';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-// Initialize SendGrid with API key
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
 
 /**
  * Service class for handling SendGrid email operations
@@ -15,14 +7,22 @@ export class SendGridService {
   isConfigured: boolean;
 
   constructor() {
+    // Check if the SendGrid API key is set
     this.isConfigured = !!process.env.SENDGRID_API_KEY;
+    
+    if (this.isConfigured) {
+      // Initialize SendGrid with API key
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY as string);
+    }
   }
 
   /**
    * Check if SendGrid is properly configured
    */
   getConfigStatus(): { configured: boolean } {
-    return { configured: this.isConfigured };
+    return {
+      configured: this.isConfigured,
+    };
   }
 
   /**
@@ -35,32 +35,34 @@ export class SendGridService {
     subject: string;
     text: string;
     html: string;
-  }): Promise<any> {
+  }): Promise<{ success: boolean; message?: string }> {
     if (!this.isConfigured) {
-      throw new Error('SendGrid API key is not configured');
+      return {
+        success: false,
+        message: 'SendGrid API key is not configured',
+      };
     }
 
     try {
-      const msg = {
-        to: options.to,
-        from: {
-          email: options.from,
-          name: options.name || 'MentalSpace EHR'
-        },
-        subject: options.subject,
-        text: options.text,
-        html: options.html
-      };
+      const { to, from, name, subject, text, html } = options;
+      
+      const fromEmail = name ? `${name} <${from}>` : from;
 
-      const response = await sgMail.send(msg);
-      return {
-        success: true,
-        message: 'Test email sent successfully',
-        response
-      };
+      await sgMail.send({
+        to,
+        from: fromEmail,
+        subject,
+        text,
+        html,
+      });
+
+      return { success: true };
     } catch (error: any) {
-      console.error('Error sending test email:', error);
-      throw new Error(`Failed to send test email: ${error.message}`);
+      console.error('SendGrid test email error:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to send test email',
+      };
     }
   }
 
@@ -78,56 +80,46 @@ export class SendGridService {
     subject: string;
     textTemplate: string;
     htmlTemplate: string;
-  }): Promise<any> {
+  }): Promise<{ success: boolean; message?: string }> {
     if (!this.isConfigured) {
-      throw new Error('SendGrid API key is not configured');
-    }
-
-    if (!options.recipients || options.recipients.length === 0) {
-      throw new Error('No recipients provided for the campaign');
+      return {
+        success: false,
+        message: 'SendGrid API key is not configured',
+      };
     }
 
     try {
-      // Create a personalized message for each recipient
-      const messages = options.recipients.map(recipient => {
-        // Replace template variables with recipient-specific data
-        let personalizedHtml = options.htmlTemplate;
-        let personalizedText = options.textTemplate;
+      const { recipients, from, fromName, subject, textTemplate, htmlTemplate } = options;
+      
+      const fromEmail = fromName ? `${fromName} <${from}>` : from;
+      
+      // Create personalized messages for each recipient
+      const emails = recipients.map(recipient => {
+        const { email, name, dynamicData } = recipient;
         
-        if (recipient.dynamicData) {
-          Object.entries(recipient.dynamicData).forEach(([key, value]) => {
-            const regex = new RegExp(`{{${key}}}`, 'g');
-            personalizedHtml = personalizedHtml.replace(regex, value || '');
-            personalizedText = personalizedText.replace(regex, value || '');
-          });
-        }
-
+        // Process templates with personalization data
+        const personalizedHtml = this.processTemplate(htmlTemplate, dynamicData || {});
+        const personalizedText = this.processTemplate(textTemplate, dynamicData || {});
+        
         return {
-          to: {
-            email: recipient.email,
-            name: recipient.name
-          },
-          from: {
-            email: options.from,
-            name: options.fromName || 'MentalSpace EHR'
-          },
-          subject: options.subject,
+          to: name ? `${name} <${email}>` : email,
+          from: fromEmail,
+          subject,
           text: personalizedText,
-          html: personalizedHtml
+          html: personalizedHtml,
         };
       });
-
-      // Send all emails in a batch
-      const response = await sgMail.send(messages);
       
-      return {
-        success: true,
-        message: `Campaign sent to ${messages.length} recipients`,
-        response
-      };
+      // Send all emails
+      await sgMail.send(emails);
+      
+      return { success: true };
     } catch (error: any) {
-      console.error('Error sending campaign:', error);
-      throw new Error(`Failed to send campaign: ${error.message}`);
+      console.error('SendGrid campaign error:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to send campaign',
+      };
     }
   }
 
@@ -135,19 +127,17 @@ export class SendGridService {
    * Process and format email templates by replacing variables
    */
   processTemplate(template: string, data: Record<string, any>): string {
-    let processed = template;
+    let result = template;
     
-    // Replace any template variables with actual data
-    Object.entries(data).forEach(([key, value]) => {
-      const regex = new RegExp(`{{${key}}}`, 'g');
-      processed = processed.replace(regex, value || '');
+    // Replace all variables in the format {variableName} with their values
+    const variableRegex = /\{([^\}]+)\}/g;
+    result = result.replace(variableRegex, (match, variable) => {
+      return data[variable] !== undefined ? data[variable] : match;
     });
     
-    // Remove any remaining template variables
-    processed = processed.replace(/{{[^{}]+}}/g, '');
-    
-    return processed;
+    return result;
   }
 }
 
-export default new SendGridService();
+// Export singleton instance
+export const sendGridService = new SendGridService();

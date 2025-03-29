@@ -100,17 +100,16 @@ export type Lead = {
 
 export type TimeRange = "week" | "month" | "quarter" | "year";
 
-// Constant Contact Integration Types
-export type ConstantContactStatus = {
-  connected: boolean;
-  authUrl?: string;
+// SendGrid Integration Types
+export type SendGridStatus = {
+  configured: boolean;
 };
 
-export type ContactList = {
+export type ContactSegment = {
   id: string;
   name: string;
   description?: string;
-  memberCount: number;
+  contact_count?: number;
 };
 
 export type EmailContact = {
@@ -119,17 +118,18 @@ export type EmailContact = {
   firstName?: string;
   lastName?: string;
   status: string;
-  lists?: string[];
+  segments?: string[];
 };
 
 export type EmailCampaign = {
   id: string;
   name: string;
   subject: string;
-  fromEmail: string;
+  from: string;
+  fromName?: string;
   status: string;
   scheduledDate?: string;
-  performance?: {
+  stats?: {
     sends: number;
     opens: number;
     clicks: number;
@@ -192,24 +192,10 @@ interface CRMContextType {
   updateMarketingTemplate: (id: string, template: Partial<MarketingTemplate>) => void;
   deleteMarketingTemplate: (id: string) => void;
   
-  // Constant Contact Integration
-  ccStatus: ConstantContactStatus;
-  ccLists: ContactList[];
-  ccContacts: EmailContact[];
-  ccCampaigns: EmailCampaign[];
-  
-  // Constant Contact Methods
-  connectConstantContact: () => Promise<void>;
-  fetchCCStatus: () => Promise<void>;
-  fetchCCLists: () => Promise<void>;
-  createCCList: (name: string, description?: string) => Promise<void>;
-  fetchCCContacts: () => Promise<void>;
-  createCCContact: (contactData: any) => Promise<void>;
-  fetchCCCampaigns: () => Promise<void>;
-  createCCCampaign: (campaignData: any) => Promise<void>;
-  sendTestEmail: (campaignId: string, emailAddresses: string[]) => Promise<void>;
-  scheduleCampaign: (campaignId: string, scheduledTime: string) => Promise<void>;
-  isConstantContactConnected: boolean;
+  // SendGrid Integration
+  sendGridStatus: SendGridStatus;
+  isSendGridConfigured: boolean;
+  fetchSendGridStatus: () => Promise<void>;
 }
 
 // Sample data
@@ -654,7 +640,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     setEvents(events.filter(event => event.id !== id));
   };
   
-  // Lead methods
+  // Metrics methods
   const incrementLeads = (amount: number) => {
     setLeads(prev => prev + amount);
   };
@@ -707,8 +693,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   };
   
   const getLeadContactHistory = (leadId: string) => {
-    return contactHistory.filter(contact => contact.leadId === leadId)
-      .sort((a, b) => a.contactNumber - b.contactNumber);
+    return contactHistory.filter(contact => contact.leadId === leadId);
   };
   
   // Client segment methods
@@ -719,131 +704,6 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     };
     setClientSegments([...clientSegments, newSegment]);
   };
-  
-  // Constant Contact states
-  const [ccStatus, setCCStatus] = useState<ConstantContactStatus>({ connected: false });
-  const [ccLists, setCCLists] = useState<ContactList[]>([]);
-  const [ccContacts, setCCContacts] = useState<EmailContact[]>([]);
-  const [ccCampaigns, setCCCampaigns] = useState<EmailCampaign[]>([]);
-  const [isConstantContactConnected, setIsConstantContactConnected] = useState(false);
-  
-  // Fetch Constant Contact status
-  const fetchCCStatus = async () => {
-    try {
-      const response = await axios.get('/api/constant-contact/status');
-      setCCStatus(response.data);
-      setIsConstantContactConnected(response.data.connected);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching Constant Contact status:', error);
-      setCCStatus({ connected: false });
-      setIsConstantContactConnected(false);
-      return { connected: false };
-    }
-  };
-  
-  // Connect to Constant Contact
-  const connectConstantContact = async () => {
-    try {
-      const response = await axios.get('/api/constant-contact/authorize');
-      if (response.data.authUrl) {
-        window.location.href = response.data.authUrl;
-      }
-    } catch (error) {
-      console.error('Error connecting to Constant Contact:', error);
-    }
-  };
-  
-  // Fetch Constant Contact lists
-  const fetchCCLists = async () => {
-    try {
-      const response = await axios.get('/api/constant-contact/lists');
-      setCCLists(response.data);
-    } catch (error) {
-      console.error('Error fetching Constant Contact lists:', error);
-      setCCLists([]);
-    }
-  };
-  
-  // Create a new Constant Contact list
-  const createCCList = async (name: string, description?: string) => {
-    try {
-      await axios.post('/api/constant-contact/lists', { name, description });
-      // Refetch lists after creating a new one
-      await fetchCCLists();
-    } catch (error) {
-      console.error('Error creating Constant Contact list:', error);
-    }
-  };
-  
-  // Fetch Constant Contact contacts
-  const fetchCCContacts = async () => {
-    try {
-      const response = await axios.get('/api/constant-contact/contacts');
-      setCCContacts(response.data);
-    } catch (error) {
-      console.error('Error fetching Constant Contact contacts:', error);
-      setCCContacts([]);
-    }
-  };
-  
-  // Create a new Constant Contact contact
-  const createCCContact = async (contactData: any) => {
-    try {
-      await axios.post('/api/constant-contact/contacts', contactData);
-      // Refetch contacts after creating a new one
-      await fetchCCContacts();
-    } catch (error) {
-      console.error('Error creating Constant Contact contact:', error);
-    }
-  };
-  
-  // Fetch Constant Contact campaigns
-  const fetchCCCampaigns = async () => {
-    try {
-      const response = await axios.get('/api/constant-contact/campaigns');
-      setCCCampaigns(response.data);
-    } catch (error) {
-      console.error('Error fetching Constant Contact campaigns:', error);
-      setCCCampaigns([]);
-    }
-  };
-  
-  // Create a new Constant Contact campaign
-  const createCCCampaign = async (campaignData: any) => {
-    try {
-      await axios.post('/api/constant-contact/campaigns', campaignData);
-      // Refetch campaigns after creating a new one
-      await fetchCCCampaigns();
-    } catch (error) {
-      console.error('Error creating Constant Contact campaign:', error);
-    }
-  };
-  
-  // Send a test email for a campaign
-  const sendTestEmail = async (campaignId: string, emailAddresses: string[]) => {
-    try {
-      await axios.post(`/api/constant-contact/campaigns/${campaignId}/test`, { email_addresses: emailAddresses });
-    } catch (error) {
-      console.error('Error sending test email:', error);
-    }
-  };
-  
-  // Schedule a campaign
-  const scheduleCampaign = async (campaignId: string, scheduledTime: string) => {
-    try {
-      await axios.post(`/api/constant-contact/campaigns/${campaignId}/schedule`, { scheduled_time: scheduledTime });
-      // Refetch campaigns after scheduling
-      await fetchCCCampaigns();
-    } catch (error) {
-      console.error('Error scheduling campaign:', error);
-    }
-  };
-  
-  // Check connection status on component mount
-  useEffect(() => {
-    fetchCCStatus();
-  }, []);
   
   const updateClientSegment = (id: string, segmentUpdate: Partial<ClientSegment>) => {
     setClientSegments(
@@ -878,71 +738,91 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     setMarketingTemplates(marketingTemplates.filter(template => template.id !== id));
   };
   
-  // Compute active campaigns
-  const activeCampaigns = campaigns.filter(c => c.status === "Running");
+  // SendGrid Integration
+  const [sendGridStatus, setSendGridStatus] = useState<SendGridStatus>({ configured: false });
+  const [isSendGridConfigured, setIsSendGridConfigured] = useState(false);
+  
+  const fetchSendGridStatus = async () => {
+    try {
+      const response = await axios.get('/api/sendgrid/status');
+      setSendGridStatus(response.data);
+      setIsSendGridConfigured(response.data.configured);
+    } catch (error) {
+      console.error('Error fetching SendGrid status:', error);
+      setSendGridStatus({ configured: false });
+      setIsSendGridConfigured(false);
+    }
+  };
+  
+  // Initialize the CRM data
+  useEffect(() => {
+    fetchSendGridStatus();
+  }, []);
+  
+  // Get active campaigns
+  const activeCampaigns = campaigns.filter(
+    campaign => campaign.status === "Running" || campaign.status === "Scheduled"
+  );
   
   return (
     <CRMContext.Provider
       value={{
+        // Campaigns
         campaigns,
         activeCampaigns,
         addCampaign,
         updateCampaign,
         deleteCampaign,
         
+        // Leads & Metrics
         leads,
         incrementLeads,
         conversionRate,
         setConversionRate,
         
+        // Events
         events,
         addEvent,
         updateEvent,
         deleteEvent,
         
+        // Metrics
         selectedTimeRange,
         setSelectedTimeRange,
         
+        // Referral sources
         referralSources,
         updateReferralSources,
         
+        // Referral partners
         referralPartners,
         addReferralPartner,
         updateReferralPartner,
         deleteReferralPartner,
         
+        // Contact history
         contactHistory,
         addContactHistory,
         updateContactHistory,
         deleteContactHistory,
         getLeadContactHistory,
         
+        // Client segments
         clientSegments,
         addClientSegment,
         updateClientSegment,
         deleteClientSegment,
         
+        // Marketing templates
         marketingTemplates,
         addMarketingTemplate,
         updateMarketingTemplate,
         deleteMarketingTemplate,
         
-        // Constant Contact
-        ccStatus,
-        ccLists,
-        ccContacts,
-        ccCampaigns,
-        connectConstantContact,
-        fetchCCStatus,
-        fetchCCLists,
-        createCCList,
-        fetchCCContacts,
-        createCCContact,
-        fetchCCCampaigns,
-        createCCCampaign,
-        sendTestEmail,
-        scheduleCampaign,
-        isConstantContactConnected,
+        // SendGrid Integration
+        sendGridStatus,
+        isSendGridConfigured,
+        fetchSendGridStatus,
       }}
     >
       {children}
@@ -950,10 +830,10 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook for accessing CRM context
+// Export the hook for consuming the context
 export function useCRM() {
   const context = useContext(CRMContext);
-  if (!context) {
+  if (context === null) {
     throw new Error("useCRM must be used within a CRMProvider");
   }
   return context;

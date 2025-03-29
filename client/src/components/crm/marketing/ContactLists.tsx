@@ -6,69 +6,98 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, RefreshCcw, AlertCircle } from "lucide-react";
-import { useCRM } from "@/hooks/use-crm";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Plus, RefreshCcw, AlertCircle, Loader2, Download, Upload } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export function ContactLists() {
-  const { 
-    ccLists, 
-    fetchCCLists, 
-    createCCList,
-    isConstantContactConnected
-  } = useCRM();
-  
-  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newList, setNewList] = useState({
     name: "",
     description: ""
   });
 
-  useEffect(() => {
-    if (isConstantContactConnected) {
-      loadLists();
-    }
-  }, [isConstantContactConnected]);
+  // Check SendGrid configuration
+  const { data: sendGridStatus, isLoading: isLoadingStatus } = useQuery({
+    queryKey: ['/api/sendgrid/status'],
+    queryFn: () => apiRequest('/api/sendgrid/status', { method: 'GET' })
+  });
 
-  const loadLists = async () => {
-    setIsLoading(true);
-    try {
-      await fetchCCLists();
-    } catch (error) {
-      console.error("Error fetching lists:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Get contact segments - In SendGrid they're called segments instead of lists
+  const { data: contactSegments, isLoading: isLoadingSegments, refetch: refetchSegments } = useQuery({
+    queryKey: ['/api/sendgrid/segments'],
+    queryFn: () => apiRequest('/api/sendgrid/segments', { method: 'GET' }),
+    enabled: !!sendGridStatus?.configured
+  });
 
-  const handleCreateList = async () => {
-    if (!newList.name.trim()) return;
-
-    setIsLoading(true);
-    try {
-      await createCCList(newList.name, newList.description);
+  // Mutation for creating a new segment (list)
+  const createSegmentMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('/api/sendgrid/segments', {
+      method: 'POST',
+      data
+    }),
+    onSuccess: () => {
+      toast({
+        title: "Segment created",
+        description: "Your contact segment has been created successfully.",
+        variant: "default",
+      });
       setNewList({ name: "", description: "" });
       setIsDialogOpen(false);
-    } catch (error) {
-      console.error("Error creating list:", error);
-    } finally {
-      setIsLoading(false);
+      refetchSegments();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to create segment",
+        description: error.message || "There was an error creating your segment.",
+        variant: "destructive",
+      });
     }
+  });
+
+  const handleCreateSegment = () => {
+    if (!newList.name.trim()) return;
+    
+    createSegmentMutation.mutate({
+      name: newList.name,
+      description: newList.description
+    });
   };
 
-  if (!isConstantContactConnected) {
+  // Handle status when SendGrid is not configured
+  if (isLoadingStatus) {
     return (
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Contact Lists</CardTitle>
-          <CardDescription>Manage your Constant Contact email lists</CardDescription>
+          <CardTitle>Contact Segments</CardTitle>
+          <CardDescription>Manage your contact segments for email campaigns</CardDescription>
         </CardHeader>
         <CardContent>
-          <Alert className="bg-amber-50 border-amber-200">
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-600">
-              Please connect to Constant Contact to manage your contact lists.
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+            <span>Checking SendGrid configuration...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (!sendGridStatus?.configured) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Contact Segments</CardTitle>
+          <CardDescription>Manage your contact segments for email campaigns</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>SendGrid Not Configured</AlertTitle>
+            <AlertDescription>
+              Your SendGrid API key is not properly configured. Please set up your SendGrid API key in the environment variables.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -76,19 +105,20 @@ export function ContactLists() {
     );
   }
 
+  // Main component return
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div>
-          <CardTitle>Contact Lists</CardTitle>
-          <CardDescription>Manage your Constant Contact email lists</CardDescription>
+          <CardTitle>Contact Segments</CardTitle>
+          <CardDescription>Manage your SendGrid contact segments for targeted email campaigns</CardDescription>
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={loadLists}
-            disabled={isLoading}
+            onClick={() => refetchSegments()}
+            disabled={isLoadingSegments}
           >
             <RefreshCcw className="h-4 w-4 mr-2" />
             Refresh
@@ -97,22 +127,22 @@ export function ContactLists() {
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                Create List
+                Create Segment
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create New Contact List</DialogTitle>
+                <DialogTitle>Create New Contact Segment</DialogTitle>
                 <DialogDescription>
-                  Create a new list to organize your contacts in Constant Contact
+                  Create a new segment to organize your contacts in SendGrid for targeted email campaigns
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="name">List Name</Label>
+                  <Label htmlFor="name">Segment Name</Label>
                   <Input
                     id="name"
-                    placeholder="Enter list name"
+                    placeholder="Enter segment name"
                     value={newList.name}
                     onChange={(e) => setNewList({ ...newList, name: e.target.value })}
                   />
@@ -121,7 +151,7 @@ export function ContactLists() {
                   <Label htmlFor="description">Description (Optional)</Label>
                   <Textarea
                     id="description"
-                    placeholder="Enter list description"
+                    placeholder="Enter segment description"
                     value={newList.description}
                     onChange={(e) => setNewList({ ...newList, description: e.target.value })}
                   />
@@ -135,10 +165,10 @@ export function ContactLists() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleCreateList}
-                  disabled={!newList.name.trim() || isLoading}
+                  onClick={handleCreateSegment}
+                  disabled={!newList.name.trim() || createSegmentMutation.isPending}
                 >
-                  {isLoading ? "Creating..." : "Create List"}
+                  {createSegmentMutation.isPending ? "Creating..." : "Create Segment"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -146,32 +176,33 @@ export function ContactLists() {
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading && ccLists.length === 0 ? (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-pulse text-muted-foreground">Loading lists...</div>
+        {isLoadingSegments ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+            <span>Loading segments...</span>
           </div>
-        ) : ccLists.length === 0 ? (
+        ) : !contactSegments || contactSegments.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">No contact lists found.</p>
+            <p className="text-muted-foreground">No contact segments found.</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Create your first contact list to start managing subscribers.
+              Create your first contact segment to start organizing your email recipients.
             </p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>List Name</TableHead>
+                <TableHead>Segment Name</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead className="text-right">Contacts</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ccLists.map((list) => (
-                <TableRow key={list.id}>
-                  <TableCell className="font-medium">{list.name}</TableCell>
-                  <TableCell>{list.description || "-"}</TableCell>
-                  <TableCell className="text-right">{list.memberCount}</TableCell>
+              {contactSegments.map((segment: any) => (
+                <TableRow key={segment.id}>
+                  <TableCell className="font-medium">{segment.name}</TableCell>
+                  <TableCell>{segment.description || "-"}</TableCell>
+                  <TableCell className="text-right">{segment.contact_count || 0}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -181,8 +212,18 @@ export function ContactLists() {
       <CardFooter className="flex justify-between">
         <div>
           <p className="text-xs text-muted-foreground">
-            Total Lists: {ccLists.length}
+            Total Segments: {contactSegments?.length || 0}
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled>
+            <Download className="h-4 w-4 mr-2" />
+            Export Contacts
+          </Button>
+          <Button variant="outline" size="sm" disabled>
+            <Upload className="h-4 w-4 mr-2" />
+            Import Contacts
+          </Button>
         </div>
       </CardFooter>
     </Card>
