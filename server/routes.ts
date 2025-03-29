@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { CalendarService } from "./services/calendar-service";
 import constantContactRoutes from './routes/constantContact';
+import { constantContactService } from './services/constantContact';
 import { 
   insertClientSchema, 
   insertSessionSchema, 
@@ -2262,6 +2263,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register Constant Contact API routes
   app.use('/api/constant-contact', constantContactRoutes);
+  
+  // Special route for Constant Contact OAuth callback
+  // Note: OAuth callback should not require authentication as the user is being redirected from Constant Contact
+  app.get('/api/auth/constant-contact/callback', async (req, res, next) => {
+    try {
+      const { code } = req.query;
+      
+      if (!code || typeof code !== 'string') {
+        return res.status(400).json({ error: 'Authorization code is required' });
+      }
+
+      // Exchange code for tokens
+      await constantContactService.exchangeCodeForTokens(code);
+      
+      // Redirect to the marketing dashboard
+      res.redirect('/crm/marketing');
+    } catch (error) {
+      console.error('Error in OAuth callback:', error);
+      return res.status(500).json({ error: 'Failed to complete OAuth flow' });
+    }
+  });
 
   const httpServer = createServer(app);
 
