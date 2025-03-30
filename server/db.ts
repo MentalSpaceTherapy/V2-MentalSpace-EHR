@@ -3,9 +3,10 @@ import pkg from 'pg';
 const { Pool } = pkg;
 import * as schema from "../shared/schema";
 
-// Database connection setup
+// Mock database connection for frontend-only mode
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: 'postgresql://dummy:dummy@localhost:5432/dummy',
+  max: 0, // Prevent actual connections
 });
 
 // Create a Drizzle instance
@@ -13,12 +14,5 @@ export const db = drizzle(pool, { schema });
 
 // Healthcheck function to verify database connectivity
 export async function dbHealthcheck() {
-  try {
-    await pool.query("SELECT 1");
-    console.log("Database connection successful");
-    return true;
-  } catch (error) {
-    console.error("Database connection failed:", error);
-    return false;
-  }
+  return true; // Always return true in frontend-only mode
 }

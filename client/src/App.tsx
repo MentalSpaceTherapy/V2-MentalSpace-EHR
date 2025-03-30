@@ -3,8 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
-import Dashboard from "@/pages/dashboard"; // Using our updated dashboard
-import AuthPage from "@/pages/auth-page";
+import Dashboard from "@/pages/dashboard";
 import PasswordResetPage from "@/pages/password-reset";
 import PracticeRegistrationPage from "@/pages/practice-registration";
 import ProfileSettingsPage from "@/pages/settings/profile";
@@ -21,11 +20,9 @@ import Practice from "@/pages/practice";
 import Telehealth from "@/pages/telehealth";
 import SignaturePage from "@/pages/sign";
 import Staff from "@/pages/staff";
-// Import staff form directly to avoid path issues
 import StaffFormPage from "./pages/staff-form";
 import { AuthProvider } from "@/hooks/use-auth";
 import { CRMProvider } from "@/hooks/use-crm";
-// CRM pages
 import CRMIndex from "@/pages/crm";
 import CRMDashboard from "@/pages/crm/dashboard";
 import CRMCampaigns from "@/pages/crm/campaigns";
@@ -36,14 +33,10 @@ import CRMEvents from "@/pages/crm/events";
 import CRMReferralSources from "@/pages/crm/referral-sources";
 import CRMContactHistory from "@/pages/crm/contact-history";
 import AddStaffPage from "@/pages/add-staff";
-// PWA Components
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { UpdateNotification } from "@/components/pwa/UpdateNotification";
 import { useEffect } from "react";
 import { registerServiceWorker } from "@/lib/pwa-utils";
-// Form Components
-import { ProgressNoteForm } from "@/components/forms/ProgressNoteForm";
-import { IntakeForm } from "@/components/forms/IntakeForm";
 
 // Component to handle the documentation routes and pass the formType
 const DocumentationRoute = () => {
@@ -72,28 +65,25 @@ const DocumentationRoute = () => {
   return <Documentation formType={formType} />;
 };
 
-import { ProtectedRoute } from "./lib/protected-route";
-
 function Router() {
   return (
     <Switch>
-      <Route path="/auth" component={AuthPage} />
       <Route path="/password-reset" component={PasswordResetPage} />
       <Route path="/practice-registration" component={PracticeRegistrationPage} />
       <Route path="/sign/:accessUrl" component={SignaturePage} />
-      <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
-      <ProtectedRoute path="/" component={Dashboard} />
-      <ProtectedRoute path="/clients" component={Clients} />
-      <ProtectedRoute path="/clients/:id" component={Clients} />
+      <Route path="/settings/profile" component={ProfileSettingsPage} />
+      <Route path="/" component={Dashboard} />
+      <Route path="/clients" component={Clients} />
+      <Route path="/clients/:id" component={Clients} />
       
       {/* Documentation routes */}
-      <ProtectedRoute path="/documentation" component={DocumentationRoute} />
-      <ProtectedRoute path="/documentation/:type" component={DocumentationRoute} />
-      <ProtectedRoute path="/documentation-bulk" component={DocumentationBulk} />
-      <ProtectedRoute path="/templates" component={Templates} />
+      <Route path="/documentation" component={DocumentationRoute} />
+      <Route path="/documentation/:type" component={DocumentationRoute} />
+      <Route path="/documentation-bulk" component={DocumentationBulk} />
+      <Route path="/templates" component={Templates} />
       
-      <ProtectedRoute path="/scheduling" component={Scheduling} />
-      <ProtectedRoute path="/messages" component={Messages} />
+      <Route path="/scheduling" component={Scheduling} />
+      <Route path="/messages" component={Messages} />
       
       {/* CRM routes - wrapped with CRMProvider */}
       <WrappedCRMRoute path="/crm" component={CRMIndex} />
@@ -106,14 +96,14 @@ function Router() {
       <WrappedCRMRoute path="/crm/referral-sources" component={CRMReferralSources} />
       <WrappedCRMRoute path="/crm/contact-history" component={CRMContactHistory} />
       
-      <ProtectedRoute path="/billing" component={Billing} />
-      <ProtectedRoute path="/reports" component={Reports} />
-      <ProtectedRoute path="/practice" component={Practice} />
-      <ProtectedRoute path="/telehealth" component={Telehealth} />
-      <ProtectedRoute path="/staff" component={Staff} />
-      <ProtectedRoute path="/add-staff" component={AddStaffPage} />
-      <ProtectedRoute path="/staff-form" component={StaffFormPage} />
-      <ProtectedRoute path="/staff-new" component={() => {
+      <Route path="/billing" component={Billing} />
+      <Route path="/reports" component={Reports} />
+      <Route path="/practice" component={Practice} />
+      <Route path="/telehealth" component={Telehealth} />
+      <Route path="/staff" component={Staff} />
+      <Route path="/add-staff" component={AddStaffPage} />
+      <Route path="/staff-form" component={StaffFormPage} />
+      <Route path="/staff-new" component={() => {
         const StaffNewPage = require("./pages/staff-new").default;
         return <StaffNewPage />;
       }} />
@@ -133,7 +123,7 @@ const CRMRoute = ({ Component }: { Component: React.ComponentType }) => {
 
 // Wrap CRM routes with the CRM provider
 function WrappedCRMRoute({ component: Component, path }: { component: React.ComponentType, path: string }) {
-  return <ProtectedRoute path={path} component={() => <CRMRoute Component={Component} />} />;
+  return <Route path={path} component={() => <CRMRoute Component={Component} />} />;
 }
 
 function App() {

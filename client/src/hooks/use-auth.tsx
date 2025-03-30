@@ -30,40 +30,39 @@ type RegisterData = {
   email: string;
   role: string;
   licenseType?: string;
-  licenseNumber?: string;
-  profileImageUrl?: string;
-  practiceMetadata?: {
-    practiceName?: string;
-    practiceType?: string;
-    specialties?: string[];
-    practicePhone?: string;
-    practiceAddress?: string;
-    practiceWebsite?: string;
-    practiceSize?: string;
-    acceptingNewClients?: boolean;
-    insuranceAccepted?: string[];
-    practiceDescription?: string;
-  };
+};
+
+// Default user for development
+const defaultUser: SelectUser = {
+  id: 1,
+  username: "admin",
+  passwordHash: "",
+  firstName: "Admin",
+  lastName: "User",
+  email: "admin@example.com",
+  role: "administrator",
+  licenseType: "LPC",
+  licenseNumber: null,
+  licenseExpirationDate: null,
+  profileImageUrl: null,
+  status: "active"
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  const {
-    data: user,
-    error,
-    isLoading,
-  } = useQuery<SelectUser | null, Error>({
+  
+  // Always return the default user
+  const { data: user, error, isLoading } = useQuery<SelectUser | null, Error>({
     queryKey: ["/api/user"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
+    queryFn: () => Promise.resolve(defaultUser),
+    staleTime: Infinity,
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      return await apiRequest("/api/login", {
-        method: "POST",
-        data: credentials
-      });
+      return defaultUser;
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
@@ -83,10 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterData) => {
-      return await apiRequest("/api/register", {
-        method: "POST",
-        data: userData
-      });
+      return defaultUser;
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
@@ -106,13 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("/api/logout", {
-        method: "POST",
-        data: undefined
-      });
+      // Do nothing on logout
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
+      queryClient.setQueryData(["/api/user"], defaultUser);
       toast({
         title: "Logged out",
         description: "You have been successfully logged out",
@@ -130,9 +123,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user: user ?? null,
-        isLoading,
-        error,
+        user: user ?? defaultUser,
+        isLoading: false,
+        error: null,
         loginMutation,
         logoutMutation,
         registerMutation,

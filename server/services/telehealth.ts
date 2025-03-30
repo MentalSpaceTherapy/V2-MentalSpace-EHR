@@ -301,3 +301,7 @@ export class TelehealthService {
 
 // Export singleton instance
 export const telehealthService = new TelehealthService();
+
+export const initializeTelehealthService = () => {
+  console.log('Telehealth service initialized');
+};
