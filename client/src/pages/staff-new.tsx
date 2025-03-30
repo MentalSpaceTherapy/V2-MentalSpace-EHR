@@ -20,7 +20,7 @@ export default function AddStaffPage() {
   const handleSave = async (data: any) => {
     try {
       // Make API call to save staff member
-      const response = await fetch('/api/staffManagement', {
+      const response = await fetch('/api/staff', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

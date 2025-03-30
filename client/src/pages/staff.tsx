@@ -33,7 +33,7 @@ export default function StaffPage() {
     isLoading,
     isError,
   } = useQuery<StaffMember[]>({
-    queryKey: ['/api/staffManagement'],
+    queryKey: ['/api/staff'],
     retry: 1,
     onSuccess: (data) => {
       // Map date strings to Date objects
