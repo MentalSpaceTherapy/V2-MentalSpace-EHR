@@ -116,7 +116,7 @@ export function StaffList({ initialStaff }: StaffListProps) {
       
       const newStatus = staffMember.status === "Active" ? "Inactive" : "Active";
       
-      const response = await fetch(`/api/staff/${staffId}`, {
+      const response = await fetch(`/api/staffManagement/${staffId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -153,7 +153,7 @@ export function StaffList({ initialStaff }: StaffListProps) {
     try {
       if (staffData.id) {
         // Update existing staff member
-        const response = await fetch(`/api/staff/${staffData.id}`, {
+        const response = await fetch(`/api/staffManagement/${staffData.id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -197,7 +197,7 @@ export function StaffList({ initialStaff }: StaffListProps) {
         });
       } else {
         // Add new staff member
-        const response = await fetch('/api/staff', {
+        const response = await fetch('/api/staffManagement', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

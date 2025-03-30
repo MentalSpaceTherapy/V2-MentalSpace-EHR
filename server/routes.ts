@@ -6,6 +6,7 @@ import { CalendarService } from "./services/calendar-service";
 import sendGridRoutes from './routes/sendGrid';
 import reportsRoutes from './routes/reports';
 import telehealthRoutes from './routes/telehealth';
+import staffRoutes from './routes/staffRoutes';
 import { telehealthService } from './services/telehealth';
 import { 
   insertClientSchema, 
@@ -2388,6 +2389,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register Telehealth API routes
   app.use('/api/telehealth', telehealthRoutes);
+  
+  // Register Staff Management API routes
+  app.use('/api/staffManagement', staffRoutes);
   
   // Note: Constant Contact integration has been fully migrated to SendGrid.
   // If any lingering callbacks need to be handled, uncomment this route.

@@ -122,7 +122,7 @@ export function StaffForm({ onSave, onCancel, editingStaff }: StaffFormProps) {
       }
       
       // Otherwise, handle the API call here
-      const response = await fetch("/api/staff", {
+      const response = await fetch("/api/staffManagement", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
