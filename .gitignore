@@ -56,3 +56,7 @@ next-env.d.ts
 
 # Vite
 vite.config.ts.*
+
+# Local development
+.cursor/
+.cursor.json
