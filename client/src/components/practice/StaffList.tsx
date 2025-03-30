@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,8 @@ import {
   RefreshCw,
   MoreHorizontal,
   FileDown,
-  Filter
+  Filter,
+  AlertCircle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, isAfter, subDays } from "date-fns";
@@ -65,6 +66,41 @@ export function StaffList({ initialStaff }: StaffListProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | undefined>(undefined);
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Fetch staff data from API
+  useEffect(() => {
+    const fetchStaff = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch('/api/staffManagement');
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch staff: ${response.statusText}`);
+        }
+        
+        const staffData = await response.json();
+        setStaff(staffData);
+      } catch (err) {
+        console.error('Error fetching staff:', err);
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        // Keep the initial staff data if provided
+        if (initialStaff.length === 0) {
+          toast({
+            title: "Error loading staff",
+            description: err instanceof Error ? err.message : 'Could not load staff data',
+            variant: "destructive",
+          });
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchStaff();
+  }, [toast, initialStaff]);
   
   // Filter staff based on search and role filter
   const filteredStaff = staff.filter(member => {
@@ -348,7 +384,46 @@ export function StaffList({ initialStaff }: StaffListProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredStaff.length > 0 ? (
+              {isLoading ? (
+                // Loading state - show 3 skeleton rows
+                Array.from({ length: 3 }).map((_, index) => (
+                  <TableRow key={`loading-${index}`}>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 mr-3 rounded-full bg-neutral-100 animate-pulse"></div>
+                        <div className="space-y-2">
+                          <div className="h-4 w-32 bg-neutral-100 rounded animate-pulse"></div>
+                          <div className="h-3 w-20 bg-neutral-100 rounded animate-pulse"></div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell><div className="h-4 w-24 bg-neutral-100 rounded animate-pulse"></div></TableCell>
+                    <TableCell><div className="h-4 w-36 bg-neutral-100 rounded animate-pulse"></div></TableCell>
+                    <TableCell><div className="h-4 w-28 bg-neutral-100 rounded animate-pulse"></div></TableCell>
+                    <TableCell><div className="h-5 w-16 bg-neutral-100 rounded-full animate-pulse"></div></TableCell>
+                    <TableCell className="text-right"><div className="h-6 w-6 bg-neutral-100 rounded-full ml-auto animate-pulse"></div></TableCell>
+                  </TableRow>
+                ))
+              ) : error ? (
+                // Error state
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-6">
+                    <div className="flex flex-col items-center text-muted-foreground">
+                      <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
+                      <h4 className="text-base font-medium text-red-600">Error loading staff members</h4>
+                      <p className="text-sm mt-1">{error}</p>
+                      <Button 
+                        variant="outline" 
+                        className="mt-4" 
+                        onClick={() => window.location.reload()}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Retry
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredStaff.length > 0 ? (
                 filteredStaff.map((staffMember) => (
                   <TableRow 
                     key={staffMember.id} 

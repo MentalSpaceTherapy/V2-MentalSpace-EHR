@@ -363,7 +363,7 @@ export default function Practice() {
 
             {/* Staff Management Tab */}
             <TabsContent value="staff" className="mt-4">
-              <StaffList initialStaff={mockStaff} />
+              <StaffList initialStaff={[]} />
             </TabsContent>
 
             {/* Document Templates Tab */}
