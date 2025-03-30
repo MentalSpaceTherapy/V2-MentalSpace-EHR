@@ -57,9 +57,10 @@ interface StaffMember {
 
 interface StaffListProps {
   initialStaff: StaffMember[];
+  autoFetch?: boolean;
 }
 
-export function StaffList({ initialStaff }: StaffListProps) {
+export function StaffList({ initialStaff, autoFetch = false }: StaffListProps) {
   const { toast } = useToast();
   const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
   const [staffSearch, setStaffSearch] = useState("");
@@ -71,6 +72,12 @@ export function StaffList({ initialStaff }: StaffListProps) {
   
   // Fetch staff data from API
   useEffect(() => {
+    // If we have initialStaff and autoFetch is false, just use the initialStaff
+    if (initialStaff.length > 0 && !autoFetch) {
+      setIsLoading(false);
+      return;
+    }
+    
     const fetchStaff = async () => {
       setIsLoading(true);
       setError(null);
@@ -100,7 +107,7 @@ export function StaffList({ initialStaff }: StaffListProps) {
     };
     
     fetchStaff();
-  }, [toast, initialStaff]);
+  }, [toast, initialStaff, autoFetch]);
   
   // Filter staff based on search and role filter
   const filteredStaff = staff.filter(member => {

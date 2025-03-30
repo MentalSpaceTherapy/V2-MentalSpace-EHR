@@ -240,13 +240,7 @@ export default function Practice() {
   const [templates, setTemplates] = useState(documentTemplates);
   const [auditLogs, setAuditLogs] = useState(auditTrail);
 
-  // Filter staff based on search
-  const filteredStaff = staff.filter(member => 
-    member.firstName.toLowerCase().includes(staffSearch.toLowerCase()) ||
-    member.lastName.toLowerCase().includes(staffSearch.toLowerCase()) ||
-    member.email.toLowerCase().includes(staffSearch.toLowerCase()) ||
-    member.role.toLowerCase().includes(staffSearch.toLowerCase())
-  );
+  // We'll leave the staff filtering to the StaffList component
 
   // Check if license is expiring soon (within 60 days)
   const isLicenseExpiringSoon = (expirationDate: Date | null) => {
@@ -363,7 +357,8 @@ export default function Practice() {
 
             {/* Staff Management Tab */}
             <TabsContent value="staff" className="mt-4">
-              <StaffList initialStaff={[]} />
+              {/* Use empty initialStaff but set autoFetch to true so StaffList uses its internal fetch */}
+              <StaffList initialStaff={[]} autoFetch={true} />
             </TabsContent>
 
             {/* Document Templates Tab */}
