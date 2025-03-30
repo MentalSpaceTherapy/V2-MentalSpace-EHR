@@ -17,13 +17,36 @@ export default function AddStaffPage() {
     return <LoginForm />;
   }
 
-  const handleSave = (data: any) => {
-    toast({
-      title: "Staff Member Saved",
-      description: `Successfully saved staff member: ${data.first_name} ${data.last_name}`,
-    });
-    // Redirect to staff list after save
-    setLocation("/staff");
+  const handleSave = async (data: any) => {
+    try {
+      // Make API call to save staff member
+      const response = await fetch('/api/staffManagement', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save staff member');
+      }
+      
+      toast({
+        title: "Staff Member Saved",
+        description: `Successfully saved staff member: ${data.firstName} ${data.lastName}`,
+      });
+      // Redirect to staff list after save
+      setLocation("/staff");
+    } catch (error) {
+      console.error('Error saving staff member:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save staff member",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCancel = () => {
