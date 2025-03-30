@@ -877,9 +877,9 @@ export const staff = pgTable("staff", {
   
   // License Info
   licenseState: text("license_state"),
-  licenseType: text("license_type"), // Changed from licenseType to license_taxonomy to match requested schema
+  licenseType: text("license_type"),
   licenseNumber: text("license_number"),
-  licenseExpiration: text("license_expiration"), // Changed from timestamp to text to match requested schema
+  licenseExpiration: text("license_expiration"), // Using text for flexibility with date formats
   
   // Additional fields
   formalName: text("formal_name"),
@@ -907,10 +907,8 @@ export const insertStaffSchema = createInsertSchema(staff).pick({
   canReceiveSMS: true,
   workPhone: true,
   homePhone: true,
-  address1: true,
-  address2: true,
-  city: true,
-  state: true,
+  address: true,
+  cityState: true,
   zipCode: true,
   licenseState: true,
   licenseType: true,
