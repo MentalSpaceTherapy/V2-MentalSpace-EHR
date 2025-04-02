@@ -62,6 +62,7 @@ import { CancellationMissedForm } from "@/components/forms/CancellationMissedFor
 import { ConsultationForm } from "@/components/forms/ConsultationForm";
 import { MiscellaneousForm } from "@/components/forms/MiscellaneousForm";
 import { AbsenceNoteForm } from "@/components/forms/AbsenceNoteForm";
+import DocumentationDashboard from "./documentation-dashboard";
 
 // Mock documentation data
 const mockDocuments = [
@@ -143,6 +144,16 @@ export default function Documentation({ formType }: DocumentationProps) {
   const [viewMode, setViewMode] = useState<'list' | 'form'>(formType ? 'form' : 'list');
   const [currentForm, setCurrentForm] = useState<string | undefined>(formType || undefined);
   
+  // If user is not authenticated, show login form
+  if (!user) {
+    return <LoginForm />;
+  }
+
+  // For the root /documentation route, directly return the dashboard
+  if (location === '/documentation' || location === '/V2-MentalSpace-EHR/documentation') {
+    return <DocumentationDashboard />;
+  }
+
   // Effect to automatically open create dialog when navigated with create=true parameter
   // Parse URL parameters for document selection and navigation
   useEffect(() => {
@@ -268,11 +279,6 @@ export default function Documentation({ formType }: DocumentationProps) {
     setActiveDocument(null);
   };
 
-  // If user is not authenticated, show login form
-  if (!user) {
-    return <LoginForm />;
-  }
-
   // Render form based on document type
   const renderForm = () => {
     switch (currentForm) {
@@ -292,13 +298,17 @@ export default function Documentation({ formType }: DocumentationProps) {
       case "Miscellaneous":
         return <MiscellaneousForm />;
       default:
-        // Import and render the DocumentationDashboard component
+        // If location is /documentation and rendering the default case
         if (location === '/documentation') {
           const DocumentationDashboard = require('@/pages/documentation-dashboard').default;
           return <DocumentationDashboard />;
         }
         return (
           <div className="max-w-4xl mx-auto p-10 text-center bg-white rounded-lg shadow-md">
+            <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg inline-flex items-center mb-6 animate-pulse">
+              <CheckCircle className="h-5 w-5 mr-2" />
+              <span>Updated 2025-04-02</span>
+            </div>
             <FileQuestion className="h-16 w-16 mx-auto text-gray-400 mb-4" />
             <h3 className="text-xl font-medium text-gray-700 mb-2">Form Not Implemented Yet</h3>
             <p className="text-gray-500 mb-6">

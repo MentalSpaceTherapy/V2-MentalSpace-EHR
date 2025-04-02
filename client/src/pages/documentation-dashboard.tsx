@@ -236,11 +236,24 @@ export default function DocumentationDashboard() {
         <TopBar title="Documentation Dashboard" />
         
         <div className="p-6 bg-neutral-50 min-h-screen">
+          {/* Prominent Update Banner */}
+          <div className="mb-4 p-4 border-2 border-green-500 bg-green-50 rounded-lg shadow animate-pulse">
+            <div className="flex items-center">
+              <div className="rounded-full bg-green-500 p-1 mr-3">
+                <CheckCircle className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-green-800">UPDATED: April 2, 2025</h3>
+                <p className="text-green-700">The Documentation module has been updated with a comprehensive Intake Assessment form including Mental Status Examination, Diagnosis with ICD-10/DSM-5 integration, advanced Risk Assessment, and Treatment Recommendations.</p>
+              </div>
+            </div>
+          </div>
+          
           <Card>
             <CardHeader className="pb-3">
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle>Documentation Dashboard</CardTitle>
+                  <CardTitle>Documentation Dashboard <Badge className="ml-2 bg-green-100 text-green-800 animate-pulse">Updated 2025-04-02</Badge></CardTitle>
                   <CardDescription className="mt-1">
                     Manage and monitor all your clinical documentation
                   </CardDescription>
