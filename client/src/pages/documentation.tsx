@@ -140,8 +140,8 @@ export default function Documentation({ formType }: DocumentationProps) {
   // State for document creation and editing
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [activeDocument, setActiveDocument] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'form'>(formType ? 'list' : 'list');
-  const [currentForm, setCurrentForm] = useState<string | undefined>(undefined);
+  const [viewMode, setViewMode] = useState<'list' | 'form'>(formType ? 'form' : 'list');
+  const [currentForm, setCurrentForm] = useState<string | undefined>(formType || undefined);
   
   // Effect to automatically open create dialog when navigated with create=true parameter
   // Parse URL parameters for document selection and navigation
@@ -292,6 +292,11 @@ export default function Documentation({ formType }: DocumentationProps) {
       case "Miscellaneous":
         return <MiscellaneousForm />;
       default:
+        // Import and render the DocumentationDashboard component
+        if (location === '/documentation') {
+          const DocumentationDashboard = require('@/pages/documentation-dashboard').default;
+          return <DocumentationDashboard />;
+        }
         return (
           <div className="max-w-4xl mx-auto p-10 text-center bg-white rounded-lg shadow-md">
             <FileQuestion className="h-16 w-16 mx-auto text-gray-400 mb-4" />
@@ -315,7 +320,9 @@ export default function Documentation({ formType }: DocumentationProps) {
         <TopBar title={formType ? `${formType} Documentation` : "Session Documentation"} />
         
         <div className="p-6 bg-neutral-50 min-h-screen">
-          {viewMode === 'list' ? (
+          {location === '/documentation' ? (
+            renderForm()
+          ) : viewMode === 'list' ? (
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-center">

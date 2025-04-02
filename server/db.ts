@@ -3,10 +3,13 @@ import pkg from 'pg';
 const { Pool } = pkg;
 import * as schema from "../shared/schema";
 
-// Mock database connection for frontend-only mode
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is not set');
+}
+
 const pool = new Pool({
-  connectionString: 'postgresql://dummy:dummy@localhost:5432/dummy',
-  max: 0, // Prevent actual connections
+  connectionString: process.env.DATABASE_URL,
+  max: 20, // Maximum number of connections in the pool
 });
 
 // Create a Drizzle instance
@@ -14,5 +17,12 @@ export const db = drizzle(pool, { schema });
 
 // Healthcheck function to verify database connectivity
 export async function dbHealthcheck() {
-  return true; // Always return true in frontend-only mode
+  try {
+    const client = await pool.connect();
+    client.release();
+    return true;
+  } catch (error) {
+    console.error('Database health check failed:', error);
+    return false;
+  }
 }

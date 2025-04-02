@@ -144,6 +144,162 @@ const medicationFrequencyOptions = [
   "Other"
 ];
 
+// Mental status examination options
+const appearance = [
+  "Well-groomed",
+  "Casual",
+  "Disheveled",
+  "Inappropriate",
+  "Poor hygiene",
+  "Other"
+];
+
+const behaviorMotor = [
+  "Calm",
+  "Restless",
+  "Agitated",
+  "Psychomotor retardation",
+  "Hyperactive",
+  "Tremors",
+  "Other"
+];
+
+const speechOptions = [
+  "Normal rate/volume",
+  "Loud",
+  "Soft/quiet",
+  "Pressured",
+  "Slow",
+  "Rapid",
+  "Poverty of speech",
+  "Other"
+];
+
+const moodOptions = [
+  "Euthymic",
+  "Depressed",
+  "Anxious",
+  "Irritable",
+  "Angry",
+  "Euphoric",
+  "Guilty",
+  "Fearful",
+  "Hopeless",
+  "Other"
+];
+
+const affectOptions = [
+  "Full range",
+  "Constricted",
+  "Flat",
+  "Blunted",
+  "Labile",
+  "Inappropriate",
+  "Congruent with mood",
+  "Incongruent with mood",
+  "Other"
+];
+
+const thoughtProcessOptions = [
+  "Logical",
+  "Coherent",
+  "Disorganized",
+  "Circumstantial",
+  "Tangential",
+  "Loosening of associations",
+  "Flight of ideas",
+  "Thought blocking",
+  "Other"
+];
+
+const thoughtContentOptions = [
+  "Unremarkable",
+  "Suicidal ideation",
+  "Homicidal ideation",
+  "Paranoid ideation",
+  "Delusions",
+  "Obsessions",
+  "Phobias",
+  "Ruminations",
+  "Ideas of reference",
+  "Poverty of content",
+  "Other"
+];
+
+const perceptionOptions = [
+  "No abnormalities",
+  "Auditory hallucinations",
+  "Visual hallucinations",
+  "Tactile hallucinations",
+  "Olfactory hallucinations",
+  "Gustatory hallucinations",
+  "Illusions",
+  "Depersonalization",
+  "Derealization",
+  "Other"
+];
+
+const cognitionOptions = [
+  "Alert",
+  "Oriented x3",
+  "Disoriented",
+  "Impaired attention",
+  "Impaired concentration",
+  "Impaired memory",
+  "Impaired abstraction",
+  "Impaired judgment",
+  "Impaired insight",
+  "Other"
+];
+
+const insightJudgmentOptions = [
+  "Good",
+  "Fair",
+  "Limited",
+  "Poor",
+  "Absent"
+];
+
+// Common diagnoses
+const commonDiagnoses = [
+  { code: "F32.9", name: "Major Depressive Disorder, Single Episode, Unspecified" },
+  { code: "F33.9", name: "Major Depressive Disorder, Recurrent, Unspecified" },
+  { code: "F41.1", name: "Generalized Anxiety Disorder" },
+  { code: "F41.9", name: "Anxiety Disorder, Unspecified" },
+  { code: "F43.10", name: "Post-Traumatic Stress Disorder, Unspecified" },
+  { code: "F43.21", name: "Adjustment Disorder with Depressed Mood" },
+  { code: "F43.23", name: "Adjustment Disorder with Mixed Anxiety and Depressed Mood" },
+  { code: "F60.9", name: "Personality Disorder, Unspecified" },
+  { code: "F90.9", name: "Attention-Deficit/Hyperactivity Disorder, Unspecified Type" },
+  { code: "F42.9", name: "Obsessive-Compulsive Disorder, Unspecified" },
+  { code: "F31.9", name: "Bipolar Disorder, Unspecified" },
+  { code: "F20.9", name: "Schizophrenia, Unspecified" },
+  { code: "F50.9", name: "Eating Disorder, Unspecified" },
+  { code: "F10.10", name: "Alcohol Use Disorder, Mild" },
+  { code: "F10.20", name: "Alcohol Use Disorder, Moderate" },
+  { code: "F10.90", name: "Alcohol Use Disorder, Unspecified" },
+];
+
+// Treatment modalities
+const treatmentModalities = [
+  "Individual Therapy",
+  "Group Therapy",
+  "Family Therapy",
+  "Couples Therapy",
+  "Cognitive Behavioral Therapy (CBT)",
+  "Dialectical Behavior Therapy (DBT)",
+  "Trauma-Focused Therapy",
+  "Mindfulness-Based Interventions",
+  "Motivational Interviewing",
+  "Psychodynamic Therapy",
+  "Supportive Therapy",
+  "Solution-Focused Brief Therapy",
+  "Psychoeducation",
+  "Medication Management",
+  "Skills Training",
+  "Other"
+];
+
 // Form schema using zod
 const intakeFormSchema = z.object({
   // Basic information
@@ -209,6 +365,57 @@ const intakeFormSchema = z.object({
     aggressionViolence: z.boolean().default(false),
   }),
   riskAssessmentDetails: z.string().optional(),
+  riskLevel: z.enum(["none", "low", "moderate", "high", "extreme"]).default("none"),
+  safetyPlan: z.boolean().default(false),
+  
+  // Mental Status Examination
+  mentalStatus: z.object({
+    appearance: z.array(z.string()).default([]),
+    appearanceOther: z.string().optional(),
+    behavior: z.array(z.string()).default([]),
+    behaviorOther: z.string().optional(),
+    speech: z.array(z.string()).default([]),
+    speechOther: z.string().optional(),
+    mood: z.array(z.string()).default([]),
+    moodOther: z.string().optional(),
+    affect: z.array(z.string()).default([]),
+    affectOther: z.string().optional(),
+    thoughtProcess: z.array(z.string()).default([]),
+    thoughtProcessOther: z.string().optional(),
+    thoughtContent: z.array(z.string()).default([]),
+    thoughtContentOther: z.string().optional(),
+    perception: z.array(z.string()).default([]),
+    perceptionOther: z.string().optional(),
+    cognition: z.array(z.string()).default([]),
+    cognitionOther: z.string().optional(),
+    insightJudgment: z.string().optional(),
+    additionalObservations: z.string().optional(),
+  }).default({}),
+  
+  // Diagnosis
+  diagnoses: z.array(z.object({
+    code: z.string().min(1, "Diagnosis code is required"),
+    name: z.string().min(1, "Diagnosis name is required"),
+    isPrimary: z.boolean().default(false),
+    specifier: z.string().optional(),
+    notes: z.string().optional()
+  })).default([]),
+  rulOutDiagnoses: z.array(z.object({
+    code: z.string().min(1, "Diagnosis code is required"),
+    name: z.string().min(1, "Diagnosis name is required")
+  })).default([]),
+  zCode: z.string().optional(),
+  diagnosticFormulation: z.string().optional(),
+  
+  // Treatment Recommendations
+  recommendedTreatment: z.object({
+    recommendedModalities: z.array(z.string()).default([]),
+    recommendedFrequency: z.string().optional(),
+    recommendedDuration: z.string().optional(),
+    medicationRecommendations: z.string().optional(),
+    additionalRecommendations: z.string().optional(),
+    referrals: z.string().optional(),
+  }).default({}),
   
   // Psychosocial Information
   maritalStatus: z.string().optional(),
@@ -254,6 +461,24 @@ export function IntakeForm() {
       impulsivity: false,
       aggressionViolence: false,
     },
+    riskLevel: "none",
+    safetyPlan: false,
+    mentalStatus: {
+      appearance: [],
+      behavior: [],
+      speech: [],
+      mood: [],
+      affect: [],
+      thoughtProcess: [],
+      thoughtContent: [],
+      perception: [],
+      cognition: [],
+    },
+    diagnoses: [],
+    rulOutDiagnoses: [],
+    recommendedTreatment: {
+      recommendedModalities: [],
+    }
   };
   
   const form = useForm<IntakeFormValues>({
@@ -349,7 +574,7 @@ export function IntakeForm() {
   
   // Function to navigate to next tab
   const goToNextTab = () => {
-    const tabs = ["basic", "presenting", "history", "medical", "substances", "risk", "psychosocial", "finalize"];
+    const tabs = ["basic", "presenting", "history", "medical", "substances", "risk", "mentalstatus", "diagnosis", "recommendations", "psychosocial", "finalize"];
     const currentIndex = tabs.indexOf(activeTab);
     if (currentIndex < tabs.length - 1) {
       setActiveTab(tabs[currentIndex + 1]);
@@ -358,7 +583,7 @@ export function IntakeForm() {
   
   // Function to navigate to previous tab
   const goToPreviousTab = () => {
-    const tabs = ["basic", "presenting", "history", "medical", "substances", "risk", "psychosocial", "finalize"];
+    const tabs = ["basic", "presenting", "history", "medical", "substances", "risk", "mentalstatus", "diagnosis", "recommendations", "psychosocial", "finalize"];
     const currentIndex = tabs.indexOf(activeTab);
     if (currentIndex > 0) {
       setActiveTab(tabs[currentIndex - 1]);
@@ -478,6 +703,36 @@ export function IntakeForm() {
                     )}
                   >
                     Risk Assessment
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="mentalstatus" 
+                    className={cn(
+                      "data-[state=active]:shadow-none rounded-none py-3",
+                      "data-[state=active]:border-b-2 data-[state=active]:border-primary-500 data-[state=active]:text-primary-700",
+                      "transition-all duration-200 flex-shrink-0"
+                    )}
+                  >
+                    Mental Status
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="diagnosis" 
+                    className={cn(
+                      "data-[state=active]:shadow-none rounded-none py-3",
+                      "data-[state=active]:border-b-2 data-[state=active]:border-primary-500 data-[state=active]:text-primary-700",
+                      "transition-all duration-200 flex-shrink-0"
+                    )}
+                  >
+                    Diagnosis
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="recommendations" 
+                    className={cn(
+                      "data-[state=active]:shadow-none rounded-none py-3",
+                      "data-[state=active]:border-b-2 data-[state=active]:border-primary-500 data-[state=active]:text-primary-700",
+                      "transition-all duration-200 flex-shrink-0"
+                    )}
+                  >
+                    Treatment Plan
                   </TabsTrigger>
                   <TabsTrigger 
                     value="psychosocial" 
@@ -1554,33 +1809,124 @@ export function IntakeForm() {
                       </div>
                     </div>
                     
+                    <FormField
+                      control={form.control}
+                      name="riskLevel"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Overall Risk Level Assessment <span className="text-red-500">*</span></FormLabel>
+                          <FormDescription>
+                            Based on your clinical judgment, rate the client's overall risk level
+                          </FormDescription>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              className="flex flex-col space-y-1"
+                            >
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="none" />
+                                </FormControl>
+                                <FormLabel className="font-normal text-gray-800">
+                                  No identified risk
+                                </FormLabel>
+                              </FormItem>
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="low" />
+                                </FormControl>
+                                <FormLabel className="font-normal text-blue-800">
+                                  Low risk - Minimal risk factors, good impulse control
+                                </FormLabel>
+                              </FormItem>
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="moderate" />
+                                </FormControl>
+                                <FormLabel className="font-normal text-yellow-800">
+                                  Moderate risk - Some risk factors present, adequate impulse control
+                                </FormLabel>
+                              </FormItem>
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="high" />
+                                </FormControl>
+                                <FormLabel className="font-normal text-orange-800">
+                                  High risk - Multiple risk factors, poor impulse control
+                                </FormLabel>
+                              </FormItem>
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="extreme" />
+                                </FormControl>
+                                <FormLabel className="font-normal text-red-800">
+                                  Extreme risk - Imminent danger, immediate intervention required
+                                </FormLabel>
+                              </FormItem>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
                     {(form.watch("riskFactors.suicidalIdeation") ||
                       form.watch("riskFactors.suicideAttemptHistory") ||
                       form.watch("riskFactors.homicidalIdeation") ||
                       form.watch("riskFactors.selfHarmBehaviors") ||
                       form.watch("riskFactors.impulsivity") ||
-                      form.watch("riskFactors.aggressionViolence")) && (
-                      <FormField
-                        control={form.control}
-                        name="riskAssessmentDetails"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Risk Assessment Details <span className="text-red-500">*</span></FormLabel>
-                            <FormDescription>
-                              Provide detailed assessment of identified risks, including severity, protective factors, 
-                              and safety planning measures
-                            </FormDescription>
-                            <FormControl>
-                              <Textarea
-                                placeholder="Client endorses passive suicidal ideation without plan or intent. Reports strong protective factors including family support and goals for the future..."
-                                className="min-h-[150px]"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      form.watch("riskFactors.aggressionViolence") ||
+                      form.watch("riskLevel") === "moderate" ||
+                      form.watch("riskLevel") === "high" ||
+                      form.watch("riskLevel") === "extreme") && (
+                      <div className="space-y-6">
+                        <FormField
+                          control={form.control}
+                          name="riskAssessmentDetails"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Risk Assessment Details <span className="text-red-500">*</span></FormLabel>
+                              <FormDescription>
+                                Provide detailed assessment of identified risks, including severity, protective factors, 
+                                and safety planning measures
+                              </FormDescription>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Client endorses passive suicidal ideation without plan or intent. Reports strong protective factors including family support and goals for the future..."
+                                  className="min-h-[150px]"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="safetyPlan"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border border-amber-200 rounded-md bg-amber-50">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel className="text-base text-amber-800">
+                                  Safety Plan Completed
+                                </FormLabel>
+                                <FormDescription className="text-amber-700">
+                                  I confirm that a comprehensive safety plan has been developed and reviewed with the client, 
+                                  emergency contacts have been established, and crisis resources have been provided.
+                                </FormDescription>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     )}
                     
                     {!(form.watch("riskFactors.suicidalIdeation") ||
@@ -1588,7 +1934,8 @@ export function IntakeForm() {
                        form.watch("riskFactors.homicidalIdeation") ||
                        form.watch("riskFactors.selfHarmBehaviors") ||
                        form.watch("riskFactors.impulsivity") ||
-                       form.watch("riskFactors.aggressionViolence")) && (
+                       form.watch("riskFactors.aggressionViolence")) &&
+                       (form.watch("riskLevel") === "none" || form.watch("riskLevel") === "low") && (
                       <div className="bg-green-50 rounded-lg p-4 text-sm text-green-800">
                         <div className="flex">
                           <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
@@ -1601,6 +1948,1288 @@ export function IntakeForm() {
                         </div>
                       </div>
                     )}
+                  </CardContent>
+                  <CardFooter className="flex justify-between border-t p-4 bg-gray-50">
+                    <Button 
+                      onClick={goToPreviousTab} 
+                      type="button" 
+                      variant="outline"
+                    >
+                      Back
+                    </Button>
+                    <Button onClick={goToNextTab} type="button">
+                      Continue to Mental Status Exam
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+              
+              {/* Mental Status Examination Tab */}
+              <TabsContent value="mentalstatus" className="p-0 m-0">
+                <Card className="border-none shadow-md modern-card">
+                  <CardHeader className="bg-gradient-to-r from-primary-50 to-white">
+                    <CardTitle className="text-xl text-primary-700 flex items-center gap-2">
+                      Mental Status Examination
+                      <Badge variant="outline" className="bg-green-100 text-green-800 animate-pulse">NEW</Badge>
+                    </CardTitle>
+                    <CardDescription>Comprehensive assessment of the client's mental state</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6 pt-6">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
+                      <div className="flex">
+                        <Brain className="h-5 w-5 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium">Mental Status Examination</p>
+                          <p className="mt-1 text-sm">
+                            Select all applicable observations for each category. Multiple selections are allowed.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Appearance */}
+                    <FormField
+                      control={form.control}
+                      name="mentalStatus.appearance"
+                      render={() => (
+                        <FormItem>
+                          <div className="mb-2">
+                            <FormLabel className="text-base">Appearance</FormLabel>
+                            <FormDescription>
+                              Select all that apply to the client's presentation
+                            </FormDescription>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {appearance.map((item) => (
+                              <FormField
+                                key={item}
+                                control={form.control}
+                                name="mentalStatus.appearance"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={item}
+                                      className="flex flex-row items-center space-x-2 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(item)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...(field.value || []), item])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== item
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal text-sm">
+                                        {item}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
+
+                          {form.watch("mentalStatus.appearance")?.includes("Other") && (
+                            <FormField
+                              control={form.control}
+                              name="mentalStatus.appearanceOther"
+                              render={({ field }) => (
+                                <FormItem className="mt-2">
+                                  <FormLabel>Other appearance details</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Please specify other appearance observations"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Behavior/Motor Activity */}
+                    <FormField
+                      control={form.control}
+                      name="mentalStatus.behavior"
+                      render={() => (
+                        <FormItem>
+                          <div className="mb-2">
+                            <FormLabel className="text-base">Behavior/Motor Activity</FormLabel>
+                            <FormDescription>
+                              Select all that apply to the client's behavior
+                            </FormDescription>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {behaviorMotor.map((item) => (
+                              <FormField
+                                key={item}
+                                control={form.control}
+                                name="mentalStatus.behavior"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={item}
+                                      className="flex flex-row items-center space-x-2 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(item)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...(field.value || []), item])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== item
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal text-sm">
+                                        {item}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
+
+                          {form.watch("mentalStatus.behavior")?.includes("Other") && (
+                            <FormField
+                              control={form.control}
+                              name="mentalStatus.behaviorOther"
+                              render={({ field }) => (
+                                <FormItem className="mt-2">
+                                  <FormLabel>Other behavior details</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Please specify other behavior observations"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Speech */}
+                    <FormField
+                      control={form.control}
+                      name="mentalStatus.speech"
+                      render={() => (
+                        <FormItem>
+                          <div className="mb-2">
+                            <FormLabel className="text-base">Speech</FormLabel>
+                            <FormDescription>
+                              Select all that apply to the client's speech
+                            </FormDescription>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {speechOptions.map((item) => (
+                              <FormField
+                                key={item}
+                                control={form.control}
+                                name="mentalStatus.speech"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={item}
+                                      className="flex flex-row items-center space-x-2 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(item)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...(field.value || []), item])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== item
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal text-sm">
+                                        {item}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
+
+                          {form.watch("mentalStatus.speech")?.includes("Other") && (
+                            <FormField
+                              control={form.control}
+                              name="mentalStatus.speechOther"
+                              render={({ field }) => (
+                                <FormItem className="mt-2">
+                                  <FormLabel>Other speech details</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Please specify other speech observations"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Mood */}
+                    <FormField
+                      control={form.control}
+                      name="mentalStatus.mood"
+                      render={() => (
+                        <FormItem>
+                          <div className="mb-2">
+                            <FormLabel className="text-base">Mood</FormLabel>
+                            <FormDescription>
+                              Select all that apply to the client's reported mood
+                            </FormDescription>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {moodOptions.map((item) => (
+                              <FormField
+                                key={item}
+                                control={form.control}
+                                name="mentalStatus.mood"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={item}
+                                      className="flex flex-row items-center space-x-2 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(item)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...(field.value || []), item])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== item
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal text-sm">
+                                        {item}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
+
+                          {form.watch("mentalStatus.mood")?.includes("Other") && (
+                            <FormField
+                              control={form.control}
+                              name="mentalStatus.moodOther"
+                              render={({ field }) => (
+                                <FormItem className="mt-2">
+                                  <FormLabel>Other mood details</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Please specify other mood observations"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Affect */}
+                    <FormField
+                      control={form.control}
+                      name="mentalStatus.affect"
+                      render={() => (
+                        <FormItem>
+                          <div className="mb-2">
+                            <FormLabel className="text-base">Affect</FormLabel>
+                            <FormDescription>
+                              Select all that apply to the client's observed affect
+                            </FormDescription>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {affectOptions.map((item) => (
+                              <FormField
+                                key={item}
+                                control={form.control}
+                                name="mentalStatus.affect"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={item}
+                                      className="flex flex-row items-center space-x-2 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(item)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...(field.value || []), item])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== item
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal text-sm">
+                                        {item}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
+
+                          {form.watch("mentalStatus.affect")?.includes("Other") && (
+                            <FormField
+                              control={form.control}
+                              name="mentalStatus.affectOther"
+                              render={({ field }) => (
+                                <FormItem className="mt-2">
+                                  <FormLabel>Other affect details</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Please specify other affect observations"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Thought Process */}
+                    <FormField
+                      control={form.control}
+                      name="mentalStatus.thoughtProcess"
+                      render={() => (
+                        <FormItem>
+                          <div className="mb-2">
+                            <FormLabel className="text-base">Thought Process</FormLabel>
+                            <FormDescription>
+                              Select all that apply to the client's thought process
+                            </FormDescription>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {thoughtProcessOptions.map((item) => (
+                              <FormField
+                                key={item}
+                                control={form.control}
+                                name="mentalStatus.thoughtProcess"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={item}
+                                      className="flex flex-row items-center space-x-2 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(item)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...(field.value || []), item])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== item
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal text-sm">
+                                        {item}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
+
+                          {form.watch("mentalStatus.thoughtProcess")?.includes("Other") && (
+                            <FormField
+                              control={form.control}
+                              name="mentalStatus.thoughtProcessOther"
+                              render={({ field }) => (
+                                <FormItem className="mt-2">
+                                  <FormLabel>Other thought process details</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Please specify other thought process observations"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Thought Content */}
+                    <FormField
+                      control={form.control}
+                      name="mentalStatus.thoughtContent"
+                      render={() => (
+                        <FormItem>
+                          <div className="mb-2">
+                            <FormLabel className="text-base">Thought Content</FormLabel>
+                            <FormDescription>
+                              Select all that apply to the client's thought content
+                            </FormDescription>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {thoughtContentOptions.map((item) => (
+                              <FormField
+                                key={item}
+                                control={form.control}
+                                name="mentalStatus.thoughtContent"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={item}
+                                      className="flex flex-row items-center space-x-2 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(item)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...(field.value || []), item])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== item
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal text-sm">
+                                        {item}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
+
+                          {form.watch("mentalStatus.thoughtContent")?.includes("Other") && (
+                            <FormField
+                              control={form.control}
+                              name="mentalStatus.thoughtContentOther"
+                              render={({ field }) => (
+                                <FormItem className="mt-2">
+                                  <FormLabel>Other thought content details</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Please specify other thought content observations"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Perception */}
+                    <FormField
+                      control={form.control}
+                      name="mentalStatus.perception"
+                      render={() => (
+                        <FormItem>
+                          <div className="mb-2">
+                            <FormLabel className="text-base">Perception</FormLabel>
+                            <FormDescription>
+                              Select all that apply to the client's perception
+                            </FormDescription>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {perceptionOptions.map((item) => (
+                              <FormField
+                                key={item}
+                                control={form.control}
+                                name="mentalStatus.perception"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={item}
+                                      className="flex flex-row items-center space-x-2 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(item)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...(field.value || []), item])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== item
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal text-sm">
+                                        {item}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
+
+                          {form.watch("mentalStatus.perception")?.includes("Other") && (
+                            <FormField
+                              control={form.control}
+                              name="mentalStatus.perceptionOther"
+                              render={({ field }) => (
+                                <FormItem className="mt-2">
+                                  <FormLabel>Other perception details</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Please specify other perception observations"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Cognition */}
+                    <FormField
+                      control={form.control}
+                      name="mentalStatus.cognition"
+                      render={() => (
+                        <FormItem>
+                          <div className="mb-2">
+                            <FormLabel className="text-base">Cognition</FormLabel>
+                            <FormDescription>
+                              Select all that apply to the client's cognitive functioning
+                            </FormDescription>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {cognitionOptions.map((item) => (
+                              <FormField
+                                key={item}
+                                control={form.control}
+                                name="mentalStatus.cognition"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={item}
+                                      className="flex flex-row items-center space-x-2 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(item)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...(field.value || []), item])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== item
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal text-sm">
+                                        {item}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
+
+                          {form.watch("mentalStatus.cognition")?.includes("Other") && (
+                            <FormField
+                              control={form.control}
+                              name="mentalStatus.cognitionOther"
+                              render={({ field }) => (
+                                <FormItem className="mt-2">
+                                  <FormLabel>Other cognition details</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Please specify other cognition observations"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Insight and Judgment */}
+                    <FormField
+                      control={form.control}
+                      name="mentalStatus.insightJudgment"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base">Insight and Judgment</FormLabel>
+                          <FormDescription>
+                            Rate the client's level of insight into their condition and judgment
+                          </FormDescription>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select insight/judgment level" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {insightJudgmentOptions.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Additional Observations */}
+                    <FormField
+                      control={form.control}
+                      name="mentalStatus.additionalObservations"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Additional Observations</FormLabel>
+                          <FormDescription>
+                            Record any additional mental status observations or elaborations not covered above
+                          </FormDescription>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Client demonstrated good eye contact throughout the session and was able to recall details of recent events without difficulty..."
+                              className="min-h-[100px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                  <CardFooter className="flex justify-between border-t p-4 bg-gray-50">
+                    <Button 
+                      onClick={goToPreviousTab} 
+                      type="button" 
+                      variant="outline"
+                    >
+                      Back
+                    </Button>
+                    <Button onClick={goToNextTab} type="button">
+                      Continue to Diagnosis
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+              
+              {/* Diagnosis Tab */}
+              <TabsContent value="diagnosis" className="p-0 m-0">
+                <Card className="border-none shadow-md modern-card">
+                  <CardHeader className="bg-gradient-to-r from-primary-50 to-white">
+                    <CardTitle className="text-xl text-primary-700 flex items-center gap-2">
+                      Diagnosis
+                      <Badge variant="outline" className="bg-green-100 text-green-800 animate-pulse">NEW</Badge>
+                    </CardTitle>
+                    <CardDescription>Clinical diagnosis using ICD-10/DSM-5 codes</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6 pt-6">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800 mb-6">
+                      <div className="flex">
+                        <ClipboardList className="h-5 w-5 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium">Clinical Diagnosis</p>
+                          <p className="mt-1 text-sm">
+                            Select from common diagnoses or enter custom ICD-10/DSM-5 codes. Mark one diagnosis as primary.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <FormLabel className="text-base">Clinical Diagnoses</FormLabel>
+                          <FormDescription>
+                            Add all applicable diagnoses. Select at least one primary diagnosis.
+                          </FormDescription>
+                        </div>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const currentDiagnoses = form.getValues().diagnoses || [];
+                            form.setValue("diagnoses", [
+                              ...currentDiagnoses, 
+                              { code: "", name: "", isPrimary: currentDiagnoses.length === 0, specifier: "", notes: "" }
+                            ]);
+                          }}
+                        >
+                          Add Diagnosis
+                        </Button>
+                      </div>
+                      
+                      {form.watch("diagnoses")?.length === 0 ? (
+                        <div className="bg-gray-50 rounded-md p-4 text-center text-gray-500">
+                          <ClipboardList className="h-6 w-6 mx-auto mb-2 text-gray-400" />
+                          <p>No diagnoses added. Click "Add Diagnosis" to begin.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {form.watch("diagnoses")?.map((_, index) => (
+                            <div key={index} className="p-4 border rounded-md relative">
+                              <button 
+                                type="button" 
+                                className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+                                onClick={() => {
+                                  const currentDiagnoses = form.getValues().diagnoses || [];
+                                  form.setValue("diagnoses", 
+                                    currentDiagnoses.filter((_, i) => i !== index)
+                                  );
+                                  
+                                  // If no primary diagnosis is left, mark the first one as primary
+                                  const remaining = form.getValues().diagnoses || [];
+                                  if (remaining.length > 0 && !remaining.some(d => d.isPrimary)) {
+                                    const updated = [...remaining];
+                                    updated[0].isPrimary = true;
+                                    form.setValue("diagnoses", updated);
+                                  }
+                                }}
+                              >
+                                &times;
+                              </button>
+                              
+                              <div className="flex items-center mb-4">
+                                <FormField
+                                  control={form.control}
+                                  name={`diagnoses.${index}.isPrimary`}
+                                  render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value}
+                                          onCheckedChange={(checked) => {
+                                            // Uncheck all others if this is checked
+                                            if (checked) {
+                                              const currentDiagnoses = form.getValues().diagnoses || [];
+                                              const updated = currentDiagnoses.map((diag, i) => ({
+                                                ...diag,
+                                                isPrimary: i === index
+                                              }));
+                                              form.setValue("diagnoses", updated);
+                                            } else {
+                                              // Don't allow unchecking if this is the only primary
+                                              const currentDiagnoses = form.getValues().diagnoses || [];
+                                              if (currentDiagnoses.filter(d => d.isPrimary).length <= 1) {
+                                                return;
+                                              }
+                                              field.onChange(false);
+                                            }
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-semibold text-sm">
+                                        Primary Diagnosis
+                                      </FormLabel>
+                                    </FormItem>
+                                  )}
+                                />
+                                
+                                {form.watch(`diagnoses.${index}.isPrimary`) && (
+                                  <Badge className="ml-2 bg-blue-100 text-blue-800 hover:bg-blue-100">Primary</Badge>
+                                )}
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <FormField
+                                    control={form.control}
+                                    name={`diagnoses.${index}.code`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Diagnosis Code <span className="text-red-500">*</span></FormLabel>
+                                        <Select 
+                                          onValueChange={(value) => {
+                                            field.onChange(value);
+                                            // Auto-fill the name if a common diagnosis is selected
+                                            const selected = commonDiagnoses.find(d => d.code === value);
+                                            if (selected) {
+                                              form.setValue(`diagnoses.${index}.name`, selected.name);
+                                            }
+                                          }}
+                                          value={field.value}
+                                        >
+                                          <FormControl>
+                                            <SelectTrigger>
+                                              <SelectValue placeholder="Select or type code" />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            <div className="px-3 py-2 text-sm text-gray-500 border-b">Common Diagnoses</div>
+                                            {commonDiagnoses.map((diagnosis) => (
+                                              <SelectItem key={diagnosis.code} value={diagnosis.code}>
+                                                {diagnosis.code} - {diagnosis.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                
+                                  <FormField
+                                    control={form.control}
+                                    name={`diagnoses.${index}.name`}
+                                    render={({ field }) => (
+                                      <FormItem className="mt-4">
+                                        <FormLabel>Diagnosis Description <span className="text-red-500">*</span></FormLabel>
+                                        <FormControl>
+                                          <Input {...field} placeholder="e.g., Major Depressive Disorder" />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <FormField
+                                    control={form.control}
+                                    name={`diagnoses.${index}.specifier`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Specifiers (if applicable)</FormLabel>
+                                        <FormControl>
+                                          <Input {...field} placeholder="e.g., With anxious distress, moderate" />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  
+                                  <FormField
+                                    control={form.control}
+                                    name={`diagnoses.${index}.notes`}
+                                    render={({ field }) => (
+                                      <FormItem className="mt-4">
+                                        <FormLabel>Diagnostic Notes</FormLabel>
+                                        <FormControl>
+                                          <Textarea 
+                                            {...field} 
+                                            className="min-h-[80px]"
+                                            placeholder="Additional diagnostic information..." 
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="mt-8">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <FormLabel className="text-base">Rule Out Diagnoses</FormLabel>
+                          <FormDescription>
+                            Add diagnoses that should be considered or ruled out
+                          </FormDescription>
+                        </div>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const currentRuleOuts = form.getValues().rulOutDiagnoses || [];
+                            form.setValue("rulOutDiagnoses", [
+                              ...currentRuleOuts, 
+                              { code: "", name: "" }
+                            ]);
+                          }}
+                        >
+                          Add Rule Out
+                        </Button>
+                      </div>
+                      
+                      {form.watch("rulOutDiagnoses")?.length === 0 ? (
+                        <div className="bg-gray-50 rounded-md p-4 text-center text-gray-500">
+                          <p>No rule-out diagnoses. Add if appropriate for this assessment.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {form.watch("rulOutDiagnoses")?.map((_, index) => (
+                            <div key={index} className="p-4 border rounded-md relative">
+                              <button 
+                                type="button" 
+                                className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+                                onClick={() => {
+                                  const currentRuleOuts = form.getValues().rulOutDiagnoses || [];
+                                  form.setValue("rulOutDiagnoses", 
+                                    currentRuleOuts.filter((_, i) => i !== index)
+                                  );
+                                }}
+                              >
+                                &times;
+                              </button>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField
+                                  control={form.control}
+                                  name={`rulOutDiagnoses.${index}.code`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Diagnosis Code <span className="text-red-500">*</span></FormLabel>
+                                      <Select 
+                                        onValueChange={(value) => {
+                                          field.onChange(value);
+                                          // Auto-fill the name if a common diagnosis is selected
+                                          const selected = commonDiagnoses.find(d => d.code === value);
+                                          if (selected) {
+                                            form.setValue(`rulOutDiagnoses.${index}.name`, selected.name);
+                                          }
+                                        }}
+                                        value={field.value}
+                                      >
+                                        <FormControl>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select or type code" />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                          <div className="px-3 py-2 text-sm text-gray-500 border-b">Common Diagnoses</div>
+                                          {commonDiagnoses.map((diagnosis) => (
+                                            <SelectItem key={diagnosis.code} value={diagnosis.code}>
+                                              {diagnosis.code} - {diagnosis.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                
+                                <FormField
+                                  control={form.control}
+                                  name={`rulOutDiagnoses.${index}.name`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Diagnosis Description <span className="text-red-500">*</span></FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="e.g., Bipolar Disorder" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="zCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Z-Code (Psychosocial Factors)</FormLabel>
+                          <FormDescription>
+                            Optional Z-code to document psychosocial factors affecting condition
+                          </FormDescription>
+                          <FormControl>
+                            <Input 
+                              {...field}
+                              placeholder="e.g., Z63.0 Problems in relationship with spouse or partner" 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="diagnosticFormulation"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Diagnostic Formulation</FormLabel>
+                          <FormDescription>
+                            Provide a clinical formulation explaining your diagnostic reasoning and conceptualization
+                          </FormDescription>
+                          <FormControl>
+                            <Textarea
+                              placeholder="The client's symptoms meet criteria for Major Depressive Disorder as evidenced by..."
+                              className="min-h-[150px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                  <CardFooter className="flex justify-between border-t p-4 bg-gray-50">
+                    <Button 
+                      onClick={goToPreviousTab} 
+                      type="button" 
+                      variant="outline"
+                    >
+                      Back
+                    </Button>
+                    <Button onClick={goToNextTab} type="button">
+                      Continue to Treatment Plan
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+              
+              {/* Treatment Recommendations Tab */}
+              <TabsContent value="recommendations" className="p-0 m-0">
+                <Card className="border-none shadow-md modern-card">
+                  <CardHeader className="bg-gradient-to-r from-primary-50 to-white">
+                    <CardTitle className="text-xl text-primary-700">Treatment Recommendations</CardTitle>
+                    <CardDescription>Recommended treatment approach and interventions</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6 pt-6">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800 mb-6">
+                      <div className="flex">
+                        <ClipboardList className="h-5 w-5 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium">Treatment Plan</p>
+                          <p className="mt-1 text-sm">
+                            Outline recommended treatment modalities, frequency, duration, and specific interventions for this client.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="recommendedTreatment.recommendedModalities"
+                      render={() => (
+                        <FormItem>
+                          <div className="mb-2">
+                            <FormLabel className="text-base">Recommended Treatment Modalities</FormLabel>
+                            <FormDescription>
+                              Select all treatment approaches recommended for this client
+                            </FormDescription>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {treatmentModalities.map((item) => (
+                              <FormField
+                                key={item}
+                                control={form.control}
+                                name="recommendedTreatment.recommendedModalities"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={item}
+                                      className="flex flex-row items-center space-x-2 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(item)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...(field.value || []), item])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== item
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal text-sm">
+                                        {item}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="recommendedTreatment.recommendedFrequency"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Recommended Frequency</FormLabel>
+                            <FormDescription>
+                              How often should sessions occur?
+                            </FormDescription>
+                            <FormControl>
+                              <Input 
+                                {...field}
+                                placeholder="e.g., Weekly, Bi-weekly, Monthly" 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="recommendedTreatment.recommendedDuration"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Estimated Treatment Duration</FormLabel>
+                            <FormDescription>
+                              Anticipated length of treatment
+                            </FormDescription>
+                            <FormControl>
+                              <Input 
+                                {...field}
+                                placeholder="e.g., 12 weeks, 6 months, Ongoing" 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="recommendedTreatment.medicationRecommendations"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Medication Recommendations</FormLabel>
+                          <FormDescription>
+                            Provide recommendations regarding medication evaluation, management, or continuation
+                          </FormDescription>
+                          <FormControl>
+                            <Textarea
+                              placeholder="e.g., Recommend psychiatric evaluation for possible antidepressant medication. Client should continue current medication regimen and follow up with prescriber..."
+                              className="min-h-[100px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="recommendedTreatment.additionalRecommendations"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Additional Treatment Recommendations</FormLabel>
+                          <FormDescription>
+                            Provide any additional recommendations, interventions, or specific treatment goals
+                          </FormDescription>
+                          <FormControl>
+                            <Textarea
+                              placeholder="e.g., Recommend stress management techniques including mindfulness practice and progressive muscle relaxation. Focus on developing coping skills for anxiety management..."
+                              className="min-h-[150px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="recommendedTreatment.referrals"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Referrals</FormLabel>
+                          <FormDescription>
+                            List any recommended referrals to other providers or services
+                          </FormDescription>
+                          <FormControl>
+                            <Textarea
+                              placeholder="e.g., Referral to psychiatrist for medication evaluation, Referral to substance abuse treatment program, Referral to support group..."
+                              className="min-h-[100px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </CardContent>
                   <CardFooter className="flex justify-between border-t p-4 bg-gray-50">
                     <Button 
@@ -2042,10 +3671,26 @@ export function IntakeForm() {
                   form.getValues().substanceUse?.opioids ||
                   form.getValues().substanceUse?.sedatives ||
                   form.getValues().substanceUse?.other) && (
-                  <div>
-                    <p className="text-sm text-gray-500">Substance Use Details</p>
-                    <p className="mt-1 p-3 bg-gray-50 rounded-md whitespace-pre-line">{form.getValues().substanceUseDetails || "Not specified"}</p>
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="substanceUseDetails"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Substance Use Details</FormLabel>
+                        <FormDescription>
+                          Provide details about frequency, amount, duration, and impact of substance use
+                        </FormDescription>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Client reports drinking 3-4 glasses of wine daily for the past 5 years. Reports increased use in the last 6 months following job loss..."
+                            className="min-h-[150px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
               </div>
               
@@ -2079,6 +3724,30 @@ export function IntakeForm() {
                   </div>
                 </div>
                 
+                <div className="mt-3 mb-4">
+                  <p className="text-sm text-gray-500">Overall Risk Level</p>
+                  <div className="flex items-center mt-1">
+                    <Badge className={cn(
+                      "text-sm",
+                      form.getValues().riskLevel === "none" ? "bg-gray-100 text-gray-700" :
+                      form.getValues().riskLevel === "low" ? "bg-blue-100 text-blue-700" :
+                      form.getValues().riskLevel === "moderate" ? "bg-yellow-100 text-yellow-700" :
+                      form.getValues().riskLevel === "high" ? "bg-orange-100 text-orange-700" :
+                      "bg-red-100 text-red-700"
+                    )}>
+                      {form.getValues().riskLevel === "none" ? "No identified risk" :
+                       form.getValues().riskLevel === "low" ? "Low risk" :
+                       form.getValues().riskLevel === "moderate" ? "Moderate risk" :
+                       form.getValues().riskLevel === "high" ? "High risk" :
+                       "Extreme risk"}
+                    </Badge>
+                    
+                    {form.getValues().safetyPlan && (
+                      <Badge className="ml-2 bg-green-100 text-green-700">Safety Plan Completed</Badge>
+                    )}
+                  </div>
+                </div>
+                
                 {(form.getValues().riskFactors?.suicidalIdeation ||
                   form.getValues().riskFactors?.suicideAttemptHistory ||
                   form.getValues().riskFactors?.homicidalIdeation ||
@@ -2090,6 +3759,241 @@ export function IntakeForm() {
                     <p className="mt-1 p-3 bg-gray-50 rounded-md whitespace-pre-line">{form.getValues().riskAssessmentDetails || "Not specified"}</p>
                   </div>
                 )}
+              </div>
+              
+              {/* Mental Status Display in Preview */}
+              <div>
+                <h3 className="text-lg font-medium mb-3 text-primary-700 border-b pb-1">Mental Status Examination</h3>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div>
+                      <p className="text-sm text-gray-500">Appearance</p>
+                      <p className="font-medium">
+                        {form.getValues().mentalStatus?.appearance?.length 
+                          ? form.getValues().mentalStatus.appearance.join(", ") 
+                          : "Not documented"}
+                        {form.getValues().mentalStatus?.appearanceOther && 
+                         ` (${form.getValues().mentalStatus.appearanceOther})`}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Behavior</p>
+                      <p className="font-medium">
+                        {form.getValues().mentalStatus?.behavior?.length 
+                          ? form.getValues().mentalStatus.behavior.join(", ") 
+                          : "Not documented"}
+                        {form.getValues().mentalStatus?.behaviorOther && 
+                         ` (${form.getValues().mentalStatus.behaviorOther})`}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Speech</p>
+                      <p className="font-medium">
+                        {form.getValues().mentalStatus?.speech?.length 
+                          ? form.getValues().mentalStatus.speech.join(", ") 
+                          : "Not documented"}
+                        {form.getValues().mentalStatus?.speechOther && 
+                         ` (${form.getValues().mentalStatus.speechOther})`}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Mood</p>
+                      <p className="font-medium">
+                        {form.getValues().mentalStatus?.mood?.length 
+                          ? form.getValues().mentalStatus.mood.join(", ") 
+                          : "Not documented"}
+                        {form.getValues().mentalStatus?.moodOther && 
+                         ` (${form.getValues().mentalStatus.moodOther})`}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Affect</p>
+                      <p className="font-medium">
+                        {form.getValues().mentalStatus?.affect?.length 
+                          ? form.getValues().mentalStatus.affect.join(", ") 
+                          : "Not documented"}
+                        {form.getValues().mentalStatus?.affectOther && 
+                         ` (${form.getValues().mentalStatus.affectOther})`}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Thought Process</p>
+                      <p className="font-medium">
+                        {form.getValues().mentalStatus?.thoughtProcess?.length 
+                          ? form.getValues().mentalStatus.thoughtProcess.join(", ") 
+                          : "Not documented"}
+                        {form.getValues().mentalStatus?.thoughtProcessOther && 
+                         ` (${form.getValues().mentalStatus.thoughtProcessOther})`}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Thought Content</p>
+                      <p className="font-medium">
+                        {form.getValues().mentalStatus?.thoughtContent?.length 
+                          ? form.getValues().mentalStatus.thoughtContent.join(", ") 
+                          : "Not documented"}
+                        {form.getValues().mentalStatus?.thoughtContentOther && 
+                         ` (${form.getValues().mentalStatus.thoughtContentOther})`}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Perception</p>
+                      <p className="font-medium">
+                        {form.getValues().mentalStatus?.perception?.length 
+                          ? form.getValues().mentalStatus.perception.join(", ") 
+                          : "Not documented"}
+                        {form.getValues().mentalStatus?.perceptionOther && 
+                         ` (${form.getValues().mentalStatus.perceptionOther})`}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Cognition</p>
+                      <p className="font-medium">
+                        {form.getValues().mentalStatus?.cognition?.length 
+                          ? form.getValues().mentalStatus.cognition.join(", ") 
+                          : "Not documented"}
+                        {form.getValues().mentalStatus?.cognitionOther && 
+                         ` (${form.getValues().mentalStatus.cognitionOther})`}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Insight/Judgment</p>
+                      <p className="font-medium">
+                        {form.getValues().mentalStatus?.insightJudgment || "Not documented"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {form.getValues().mentalStatus?.additionalObservations && (
+                    <div>
+                      <p className="text-sm text-gray-500">Additional Observations</p>
+                      <p className="mt-1 p-3 bg-gray-50 rounded-md whitespace-pre-line">
+                        {form.getValues().mentalStatus.additionalObservations}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Diagnosis Display in Preview */}
+              <div>
+                <h3 className="text-lg font-medium mb-3 text-primary-700 border-b pb-1">Clinical Diagnosis</h3>
+                
+                {form.getValues().diagnoses?.length > 0 ? (
+                  <div className="space-y-4">
+                    {form.getValues().diagnoses.map((diagnosis, index) => (
+                      <div key={index} className="p-3 bg-gray-50 rounded-md">
+                        <div className="flex items-center mb-1">
+                          <p className="font-medium">{diagnosis.code}: {diagnosis.name}</p>
+                          {diagnosis.isPrimary && (
+                            <Badge className="ml-2 bg-blue-100 text-blue-800">Primary</Badge>
+                          )}
+                        </div>
+                        {diagnosis.specifier && (
+                          <p className="text-sm text-gray-700">Specifier: {diagnosis.specifier}</p>
+                        )}
+                        {diagnosis.notes && (
+                          <p className="text-sm text-gray-700 mt-1">{diagnosis.notes}</p>
+                        )}
+                      </div>
+                    ))}
+                    
+                    {form.getValues().rulOutDiagnoses?.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-600 font-medium mb-2">Rule Out Diagnoses:</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                          {form.getValues().rulOutDiagnoses.map((diagnosis, index) => (
+                            <li key={index} className="text-gray-700">
+                              {diagnosis.code}: {diagnosis.name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {form.getValues().zCode && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-600 font-medium mb-1">Z-Code:</p>
+                        <p className="text-gray-700">{form.getValues().zCode}</p>
+                      </div>
+                    )}
+                    
+                    {form.getValues().diagnosticFormulation && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-600 font-medium mb-1">Formulation:</p>
+                        <p className="text-gray-700 whitespace-pre-line p-2 bg-white border rounded-md">
+                          {form.getValues().diagnosticFormulation}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 italic">No diagnoses documented</p>
+                )}
+              </div>
+              
+              {/* Treatment Recommendations Display in Preview */}
+              <div>
+                <h3 className="text-lg font-medium mb-3 text-primary-700 border-b pb-1">Treatment Recommendations</h3>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Recommended Modalities</p>
+                      <p className="font-medium">
+                        {form.getValues().recommendedTreatment?.recommendedModalities?.length
+                          ? form.getValues().recommendedTreatment.recommendedModalities.join(", ")
+                          : "None specified"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Frequency</p>
+                      <p className="font-medium">
+                        {form.getValues().recommendedTreatment?.recommendedFrequency || "Not specified"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Estimated Duration</p>
+                      <p className="font-medium">
+                        {form.getValues().recommendedTreatment?.recommendedDuration || "Not specified"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {form.getValues().recommendedTreatment?.medicationRecommendations && (
+                    <div>
+                      <p className="text-sm text-gray-500">Medication Recommendations</p>
+                      <p className="mt-1 p-3 bg-gray-50 rounded-md whitespace-pre-line">
+                        {form.getValues().recommendedTreatment.medicationRecommendations}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {form.getValues().recommendedTreatment?.additionalRecommendations && (
+                    <div>
+                      <p className="text-sm text-gray-500">Additional Recommendations</p>
+                      <p className="mt-1 p-3 bg-gray-50 rounded-md whitespace-pre-line">
+                        {form.getValues().recommendedTreatment.additionalRecommendations}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {form.getValues().recommendedTreatment?.referrals && (
+                    <div>
+                      <p className="text-sm text-gray-500">Referrals</p>
+                      <p className="mt-1 p-3 bg-gray-50 rounded-md whitespace-pre-line">
+                        {form.getValues().recommendedTreatment.referrals}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {!form.getValues().recommendedTreatment?.recommendedModalities?.length &&
+                   !form.getValues().recommendedTreatment?.medicationRecommendations &&
+                   !form.getValues().recommendedTreatment?.additionalRecommendations &&
+                   !form.getValues().recommendedTreatment?.referrals && (
+                    <p className="text-gray-500 italic">No treatment recommendations documented</p>
+                  )}
+                </div>
               </div>
               
               {/* Psychosocial */}

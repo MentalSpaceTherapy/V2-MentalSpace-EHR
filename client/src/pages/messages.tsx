@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, Send, Paperclip, MoreVertical, Loader2, Plus, Calendar, MessageSquarePlus, FileText, 
          UserRound, FileSpreadsheet, Clipboard, CheckCircle, Clock, Eye, AlertCircle, Trash2, 
-         ChevronDown, Bookmark, MailQuestion, Archive, Bell, Settings } from "lucide-react";
+         ChevronDown, Bookmark, MailQuestion, Archive, Bell, Settings, UserPlus } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -198,6 +198,9 @@ export default function Messages() {
         // First by unread status
         if (a.unread && !b.unread) return -1;
         if (!a.unread && b.unread) return 1;
+        // Then by unanswered status
+        if (a.unanswered && !b.unanswered) return -1;
+        if (!a.unanswered && b.unanswered) return 1;
         // Then by timestamp
         return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
       });
@@ -218,6 +221,7 @@ export default function Messages() {
         // Parse the content to extract subject if it's in the format "Subject: ... \n\n content"
         let subject = message.subject || "";
         let text = message.content;
+        let category = message.category || "Clinical"; // Default to Clinical if not specified
         
         if (!subject && message.content) {
           // If there's no subject field but content has a "Subject:" line, extract it
@@ -230,30 +234,37 @@ export default function Messages() {
         
         return {
           id: message.id,
-          text: text,
-          subject: subject,
-          category: message.category || "Clinical", // Default to Clinical if not specified
+          text,
+          subject,
+          category,
           sender: message.sender as "client" | "therapist",
           timestamp: message.createdAt ? new Date(message.createdAt) : new Date(),
           isRead: message.isRead,
           attachments: message.attachments as any[] || []
         };
       } catch (e) {
-        console.error("Error processing message:", e, message);
+        // Only log in development
+        if (process.env.NODE_ENV !== 'production') {
+          console.error("Error processing message:", e);
+        }
         return {
           id: message.id,
           text: message.content,
           category: "Clinical",
           sender: message.sender as "client" | "therapist",
-          timestamp: new Date(),
-          isRead: message.isRead
+          timestamp: new Date(message.createdAt || Date.now()),
+          isRead: message.isRead || false,
+          attachments: []
         };
       }
     }).sort((a, b) => {
       try {
         return a.timestamp.getTime() - b.timestamp.getTime();
       } catch (e) {
-        console.error("Error sorting messages:", e);
+        // Only log in development
+        if (process.env.NODE_ENV !== 'production') {
+          console.error("Error sorting messages:", e);
+        }
         return 0;
       }
     }) : [];
@@ -369,7 +380,10 @@ export default function Messages() {
         return format(date, "MMM d");
       }
     } catch (e) {
-      console.error("Date formatting error:", e);
+      // Only log in development
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("Date formatting error:", e);
+      }
       return "Unknown";
     }
   };
@@ -632,108 +646,140 @@ export default function Messages() {
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto">
                     <div className="max-w-3xl mx-auto p-4 space-y-6">
-                      {currentConversation
-                        .filter(message => {
-                          // If "all" is selected, show all messages
-                          if (selectedCategory === "all") return true;
-                          
-                          // Filter by message category
-                          return message.category === selectedCategory;
-                        })
-                        .map(message => (
-                        <div 
-                          key={message.id}
-                          className={cn(
-                            "flex",
-                            message.sender === "therapist" ? "justify-end" : "justify-start"
-                          )}
-                        >
-                          <div className={cn(
-                            "max-w-[80%] p-3 rounded-lg",
-                            message.sender === "therapist" 
-                              ? "bg-primary-600 rounded-tr-none"
-                              : "bg-blue-50 border border-blue-200 rounded-tl-none"
-                          )}>
-                            {/* Category badge - shown for both message types */}
-                            {message.category && (
-                              <div className="mb-1.5 flex justify-between items-center">
-                                <Badge 
-                                  variant="outline" 
-                                  className={cn("text-[10px] px-1.5 py-0 font-normal",
-                                    message.sender === "therapist" 
-                                      ? cn("text-white border-white/30",
-                                          message.category === "Clinical" && "bg-primary-700/50",
-                                          message.category === "Billing" && "bg-green-700/50",
-                                          message.category === "Administrative" && "bg-amber-700/50") 
-                                      : cn("border-blue-300",
-                                          message.category === "Clinical" && "bg-primary-100/50 text-primary-700",
-                                          message.category === "Billing" && "bg-green-100/50 text-green-700",
-                                          message.category === "Administrative" && "bg-amber-100/50 text-amber-700")
-                                  )}
-                                >
-                                  {message.category === "Clinical" && (
-                                    <>
-                                      <FileText className="mr-1 h-2.5 w-2.5" />
-                                      Clinical
-                                    </>
-                                  )}
-                                  {message.category === "Billing" && (
-                                    <>
-                                      <FileSpreadsheet className="mr-1 h-2.5 w-2.5" />
-                                      Billing
-                                    </>
-                                  )}
-                                  {message.category === "Administrative" && (
-                                    <>
-                                      <Clipboard className="mr-1 h-2.5 w-2.5" />
-                                      Admin
-                                    </>
-                                  )}
-                                </Badge>
-                                {message.subject && (
-                                  <span className={cn("text-xs font-medium ml-2",
-                                    message.sender === "therapist" ? "text-white/70" : "text-blue-600"
-                                  )}>
-                                    {message.subject}
-                                  </span>
-                                )}
-                              </div>
+                      {clientMessagesLoading ? (
+                        <div className="flex flex-col items-center justify-center h-48">
+                          <Loader2 className="w-10 h-10 animate-spin text-primary-500 mb-4" />
+                          <p className="text-neutral-500">Loading messages...</p>
+                        </div>
+                      ) : currentConversation.length > 0 ? (
+                        currentConversation
+                          .filter(message => {
+                            // If "all" is selected, show all messages
+                            if (selectedCategory === "all") return true;
+                            
+                            // Filter by message category
+                            return message.category === selectedCategory;
+                          })
+                          .map(message => (
+                          <div 
+                            key={message.id}
+                            className={cn(
+                              "flex",
+                              message.sender === "therapist" ? "justify-end" : "justify-start"
                             )}
-                            
-                            {/* Message text */}
-                            <p className={message.sender === "therapist" ? "text-white font-medium" : "text-black font-medium"}>
-                              {message.text}
-                            </p>
-                            
-                            {/* Timestamp */}
+                          >
                             <div className={cn(
-                              "text-xs mt-1 flex justify-between items-center",
-                              message.sender === "therapist" ? "text-primary-100" : "text-blue-500"
+                              "max-w-[80%] p-3 rounded-lg",
+                              message.sender === "therapist" 
+                                ? "bg-primary-600 rounded-tr-none"
+                                : "bg-blue-50 border border-blue-200 rounded-tl-none"
                             )}>
-                              <div>
-                                {message.sender === "client" && !message.isRead && (
-                                  <Badge variant="outline" className="mr-1.5 text-[10px] py-0 px-1 border-blue-300 text-blue-600 bg-blue-50">
-                                    <Clock className="mr-1 h-2.5 w-2.5" />
-                                    New
+                              {/* Category badge - shown for both message types */}
+                              {message.category && (
+                                <div className="mb-1.5 flex justify-between items-center">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={cn("text-[10px] px-1.5 py-0 font-normal",
+                                      message.sender === "therapist" 
+                                        ? cn("text-white border-white/30",
+                                            message.category === "Clinical" && "bg-primary-700/50",
+                                            message.category === "Billing" && "bg-green-700/50",
+                                            message.category === "Administrative" && "bg-amber-700/50") 
+                                        : cn("border-blue-300",
+                                            message.category === "Clinical" && "bg-primary-100/50 text-primary-700",
+                                            message.category === "Billing" && "bg-green-100/50 text-green-700",
+                                            message.category === "Administrative" && "bg-amber-100/50 text-amber-700")
+                                    )}
+                                  >
+                                    {message.category === "Clinical" && (
+                                      <>
+                                        <FileText className="mr-1 h-2.5 w-2.5" />
+                                        Clinical
+                                      </>
+                                    )}
+                                    {message.category === "Billing" && (
+                                      <>
+                                        <FileSpreadsheet className="mr-1 h-2.5 w-2.5" />
+                                        Billing
+                                      </>
+                                    )}
+                                    {message.category === "Administrative" && (
+                                      <>
+                                        <Clipboard className="mr-1 h-2.5 w-2.5" />
+                                        Admin
+                                      </>
+                                    )}
                                   </Badge>
-                                )}
-                              </div>
-                              <div>
-                                {(() => {
-                                  try {
-                                    return format(message.timestamp, "h:mm a");
-                                  } catch (e) {
-                                    return "Unknown time";
-                                  }
-                                })()}
-                                {message.sender === "therapist" && (
-                                  <CheckCircle className="ml-1 inline-block h-3 w-3 text-primary-100" />
-                                )}
+                                  {message.subject && (
+                                    <span className={cn("text-xs font-medium ml-2",
+                                      message.sender === "therapist" ? "text-white/70" : "text-blue-600"
+                                    )}>
+                                      {message.subject}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Message text */}
+                              <p className={message.sender === "therapist" ? "text-white font-medium" : "text-black font-medium"}>
+                                {message.text}
+                              </p>
+                              
+                              {/* Timestamp */}
+                              <div className={cn(
+                                "text-xs mt-1 flex justify-between items-center",
+                                message.sender === "therapist" ? "text-primary-100" : "text-blue-500"
+                              )}>
+                                <div>
+                                  {message.sender === "client" && !message.isRead && (
+                                    <Badge variant="outline" className="mr-1.5 text-[10px] py-0 px-1 border-blue-300 text-blue-600 bg-blue-50">
+                                      <Clock className="mr-1 h-2.5 w-2.5" />
+                                      New
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div>
+                                  {(() => {
+                                    try {
+                                      return format(message.timestamp, "h:mm a");
+                                    } catch (e) {
+                                      return "Unknown time";
+                                    }
+                                  })()}
+                                  {message.sender === "therapist" && (
+                                    <CheckCircle className="ml-1 inline-block h-3 w-3 text-primary-100" />
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        selectedCategory !== "all" ? (
+                          <div className="flex flex-col items-center justify-center h-48 text-center">
+                            <div className="bg-neutral-100 rounded-full p-4 mb-3">
+                              {selectedCategory === "Clinical" && <FileText className="h-8 w-8 text-primary-500" />}
+                              {selectedCategory === "Billing" && <FileSpreadsheet className="h-8 w-8 text-green-500" />}
+                              {selectedCategory === "Administrative" && <Clipboard className="h-8 w-8 text-amber-500" />}
+                            </div>
+                            <h3 className="text-lg font-medium mb-1">No {selectedCategory} messages</h3>
+                            <p className="text-neutral-500 max-w-xs">
+                              There are no {selectedCategory.toLowerCase()} messages in this conversation yet. 
+                              Send a message to start.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center h-48 text-center">
+                            <div className="bg-neutral-100 rounded-full p-4 mb-3">
+                              <MessageSquarePlus className="h-8 w-8 text-primary-500" />
+                            </div>
+                            <h3 className="text-lg font-medium mb-1">No messages yet</h3>
+                            <p className="text-neutral-500 max-w-xs">
+                              This conversation is empty. Send a message to start communicating with {selectedClient.name}.
+                            </p>
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
                   
@@ -785,7 +831,7 @@ export default function Messages() {
                       <span className="text-xs text-neutral-500 mr-2">Subject:</span>
                       <Input
                         className="h-7 text-sm"
-                        placeholder="Optional message subject"
+                        placeholder="Optional message topic"
                         value={messageSubject}
                         onChange={(e) => setMessageSubject(e.target.value)}
                       />
@@ -825,6 +871,7 @@ export default function Messages() {
                               handleSendMessage();
                             }
                           }}
+                          disabled={sendMessageMutation.isPending}
                         />
                       </div>
                       
@@ -836,9 +883,13 @@ export default function Messages() {
                           currentMessageCategory === "Administrative" && "bg-amber-600 hover:bg-amber-700"
                         )}
                         onClick={handleSendMessage}
-                        disabled={!messageText.trim()}
+                        disabled={!messageText.trim() || sendMessageMutation.isPending}
                       >
-                        <Send className="h-5 w-5" />
+                        {sendMessageMutation.isPending ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <Send className="h-5 w-5" />
+                        )}
                       </Button>
                     </div>
                     
@@ -855,7 +906,36 @@ export default function Messages() {
               ) : (
                 <div className="flex-1 flex items-center justify-center bg-neutral-50">
                   <div className="text-center">
-                    <p className="text-neutral-500">Select a conversation to start messaging</p>
+                    {clientsLoading || messagesLoading ? (
+                      <div className="flex flex-col items-center">
+                        <Loader2 className="w-10 h-10 animate-spin text-primary-500 mb-4" />
+                        <p className="text-neutral-500">Loading conversations...</p>
+                      </div>
+                    ) : clients.length === 0 ? (
+                      <div className="max-w-xs">
+                        <div className="bg-neutral-100 rounded-full p-4 inline-block mb-3">
+                          <UserRound className="h-8 w-8 text-primary-500" />
+                        </div>
+                        <h3 className="text-lg font-medium mb-1">No clients found</h3>
+                        <p className="text-neutral-500">
+                          It looks like you don't have any clients yet. Add clients to start messaging.
+                        </p>
+                        <Button className="mt-4" onClick={() => setLocation("/clients/new")}>
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Add Client
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="max-w-xs">
+                        <div className="bg-neutral-100 rounded-full p-4 inline-block mb-3">
+                          <MessageSquarePlus className="h-8 w-8 text-primary-500" />
+                        </div>
+                        <h3 className="text-lg font-medium mb-1">Select a conversation</h3>
+                        <p className="text-neutral-500">
+                          Choose a client from the list to view or start a conversation.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

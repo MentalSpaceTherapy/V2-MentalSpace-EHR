@@ -194,13 +194,31 @@ export const clients = pgTable("clients", {
   phone: text("phone"),
   dateOfBirth: timestamp("date_of_birth"),
   address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  zipCode: text("zip_code"),
   status: text("status").default("active").notNull(),
   primaryTherapistId: integer("primary_therapist_id").references(() => users.id),
-  referralSourceId: integer("referral_source_id").references(() => referralSources.id), // Connect clients to referral sources
-  referralNotes: text("referral_notes"), // Notes about how the client was referred
-  leadId: integer("lead_id").references(() => leads.id), // Connect clients to their original lead record
-  conversionDate: timestamp("conversion_date"), // When they were converted from lead to client
-  originalMarketingCampaignId: integer("original_marketing_campaign_id").references(() => marketingCampaigns.id), // Track which campaign brought them in
+  referralSourceId: integer("referral_source_id").references(() => referralSources.id), 
+  referralNotes: text("referral_notes"),
+  leadId: integer("lead_id").references(() => leads.id),
+  conversionDate: timestamp("conversion_date"),
+  originalMarketingCampaignId: integer("original_marketing_campaign_id").references(() => marketingCampaigns.id),
+  // Additional client information
+  gender: text("gender"),
+  pronouns: text("pronouns"),
+  emergencyContact: jsonb("emergency_contact").default({}),
+  insuranceInfo: jsonb("insurance_info").default({}),
+  secondaryInsurance: jsonb("secondary_insurance").default({}),
+  notes: text("notes"),
+  lastAppointment: timestamp("last_appointment"),
+  nextAppointment: timestamp("next_appointment"),
+  preferredContactMethod: text("preferred_contact_method").default("email"),
+  communicationPreferences: jsonb("communication_preferences").default({}),
+  assignedTeam: text("assigned_team").array(),
+  tags: text("tags").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const insertClientSchema = createInsertSchema(clients).pick({
@@ -488,73 +506,42 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   attachments: true,
 });
 
-// Extended client schema with additional fields
-export const extendedClientSchema = insertClientSchema.extend({
-  // Personal information
-  middleName: z.string().optional(),
-  preferredName: z.string().optional(),
-  administrativeSex: z.enum(["male", "female", "unknown"]).optional(),
-  genderIdentity: z.string().optional(),
-  sexualOrientation: z.string().optional(),
-  preferredPronouns: z.string().optional(),
-  race: z.string().optional(),
-  ethnicity: z.string().optional(),
-  language: z.string().optional(),
-  maritalStatus: z.string().optional(),
-  
-  // Contact information
-  mobilePhone: z.string().optional(),
-  homePhone: z.string().optional(),
-  workPhone: z.string().optional(),
-  otherPhone: z.string().optional(),
-  address1: z.string().optional(),
-  address2: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zipCode: z.string().optional(),
-  timeZone: z.string().optional(),
-  
-  // Employment/referral
-  employment: z.string().optional(),
-  referralSource: z.string().optional(),
-  
-  // Emergency contacts - array of contacts
-  emergencyContacts: z.array(emergencyContactSchema).optional(),
-  
-  // Legacy single emergency contact fields (for backwards compatibility)
-  emergencyContactName: z.string().optional(),
-  emergencyContactPhone: z.string().optional(),
-  emergencyContactRelationship: z.string().optional(),
-  
-  // Insurance information - array of insurance plans
-  insuranceInformation: z.array(insuranceInfoSchema).optional(),
-  
-  // Legacy single insurance fields (for backwards compatibility)
-  insuranceProvider: z.string().optional(),
-  insurancePolicyNumber: z.string().optional(),
-  insuranceGroupNumber: z.string().optional(),
-  insuranceCopay: z.string().optional(),
-  insuranceDeductible: z.string().optional(),
-  responsibleParty: z.string().optional(),
-  
-  // Payment methods
-  paymentCards: z.array(paymentCardSchema).optional(),
-  
-  // Clinical information
-  diagnosisCodes: z.array(z.string()).optional(),
-  medicationList: z.string().optional(),
-  allergies: z.string().optional(),
-  smokingStatus: z.string().optional(),
-  
-  // Consent & privacy
-  hipaaConsentSigned: z.boolean().optional(),
-  consentForTreatmentSigned: z.boolean().optional(),
-  consentForCommunication: z.array(z.string()).optional(),
-  
-  // Notes
-  notes: z.string().optional(),
-  billingNotes: z.string().optional(),
-  privateNotes: z.string().optional(),
+// Enhanced client schema for validation
+export const extendedClientSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address").optional().nullable(),
+  phone: z.string().optional().nullable(),
+  dateOfBirth: z.coerce.date().optional().nullable(),
+  address: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
+  state: z.string().optional().nullable(),
+  zipCode: z.string().optional().nullable(),
+  status: z.enum(["active", "inactive", "onboarding", "discharged", "on-hold"]).default("active"),
+  primaryTherapistId: z.number().optional().nullable(),
+  referralSourceId: z.number().optional().nullable(),
+  referralNotes: z.string().optional().nullable(),
+  leadId: z.number().optional().nullable(),
+  conversionDate: z.coerce.date().optional().nullable(),
+  originalMarketingCampaignId: z.number().optional().nullable(),
+  gender: z.string().optional().nullable(),
+  pronouns: z.string().optional().nullable(),
+  emergencyContact: emergencyContactSchema.optional().nullable(),
+  insuranceInfo: insuranceInfoSchema.optional().nullable(),
+  secondaryInsurance: insuranceInfoSchema.optional().nullable(),
+  notes: z.string().optional().nullable(),
+  lastAppointment: z.coerce.date().optional().nullable(),
+  nextAppointment: z.coerce.date().optional().nullable(),
+  preferredContactMethod: z.enum(["email", "phone", "text", "mail"]).default("email"),
+  communicationPreferences: z.object({
+    allowEmail: z.boolean().default(true),
+    allowSMS: z.boolean().default(false),
+    allowVoicemail: z.boolean().default(true),
+    allowMarketing: z.boolean().default(false),
+    preferredTime: z.string().optional(),
+  }).optional().nullable(),
+  assignedTeam: z.array(z.number()).optional().nullable(),
+  tags: z.array(z.string()).optional().nullable(),
 });
 
 // Document Templates
@@ -855,71 +842,33 @@ export const staff = pgTable("staff", {
   middleName: text("middle_name"),
   lastName: text("last_name").notNull(),
   suffix: text("suffix"),
-  
-  // Clinician Info
   typeOfClinician: text("type_of_clinician"),
   npiNumber: text("npi_number"),
-  supervisorId: integer("supervisor_id"), // references to itself (optional)
-  
-  // Role & Credentials
-  role: text("role"),
+  supervisorId: integer("supervisor_id").references(() => staff.id),
+  role: text("role").notNull(),
   roles: text("roles").array(),
-  email: text("email").notNull().unique(),
+  email: text("email").notNull(),
   phone: text("phone"),
   canReceiveSMS: boolean("can_receive_texts").default(false),
   workPhone: text("work_phone"),
   homePhone: text("home_phone"),
-  
-  // Address
-  address: text("address"), // Consolidated address field
-  cityState: text("city_state"), // Consolidated city/state field
+  address: text("address"),
+  cityState: text("city_state"),
   zipCode: text("zip_code"),
-  
-  // License Info
   licenseState: text("license_state"),
   licenseType: text("license_type"),
   licenseNumber: text("license_number"),
-  licenseExpiration: text("license_expiration"), // Using text for flexibility with date formats
-  
-  // Additional fields
+  licenseExpiration: timestamp("license_expiration"),
   formalName: text("formal_name"),
   title: text("professional_title"),
   languages: text("languages").array(),
   status: text("status").default("active").notNull(),
   profileImage: text("profile_image"),
-  
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
-export const insertStaffSchema = createInsertSchema(staff).pick({
-  firstName: true,
-  middleName: true,
-  lastName: true,
-  suffix: true,
-  typeOfClinician: true,
-  npiNumber: true,
-  supervisorId: true,
-  role: true,
-  roles: true,
-  email: true,
-  phone: true,
-  canReceiveSMS: true,
-  workPhone: true,
-  homePhone: true,
-  address: true,
-  cityState: true,
-  zipCode: true,
-  licenseState: true,
-  licenseType: true,
-  licenseNumber: true,
-  licenseExpiration: true,
-  formalName: true,
-  title: true,
-  languages: true,
-  status: true,
-  profileImage: true,
-});
+export const insertStaffSchema = createInsertSchema(staff);
 
 export type Staff = typeof staff.$inferSelect;
 export type InsertStaff = z.infer<typeof insertStaffSchema>;

@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express, Request as ExpressRequest, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
@@ -38,38 +38,133 @@ type AuthenticatedUser = {
   email: string;
 };
 
+// Extend Express Request type to include authentication properties
+declare global {
+  namespace Express {
+    interface Request {
+      isAuthenticated(): boolean;
+      user?: any;
+      login(user: any, callback: (err: any) => void): void;
+      logout(callback: (err: any) => void): void;
+    }
+  }
+}
+
+// Define a more specific type for our authenticated requests
+type Request = ExpressRequest & {
+  user?: AuthenticatedUser;
+  isAuthenticated(): boolean;
+}
+
 // Middleware to check if user is authenticated
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  // Temporarily bypass authentication
-  req.user = {
-    id: 1,
-    role: "administrator",
-    username: "admin",
-    firstName: "Admin",
-    lastName: "User",
-    email: "admin@example.com"
-  };
+  if (!req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ message: "Unauthorized. Please login to access this resource." });
+  }
   return next();
 };
 
 // Middleware to check if user has the correct role
 const hasRole = (roles: string | string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    // Temporarily bypass role checks
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized. Please login to access this resource." });
+    }
+    
+    const userRole = (req.user as AuthenticatedUser).role;
+    const allowedRoles = Array.isArray(roles) ? roles : [roles];
+    
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({ 
+        message: "Forbidden. You don't have permission to access this resource." 
+      });
+    }
+    
     return next();
   };
 };
 
 // Middleware to check if therapist has access to a specific client
 const canAccessClient = async (req: Request, res: Response, next: NextFunction) => {
-  // Temporarily bypass client access checks
-  return next();
+  try {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized. Please login to access this resource." });
+    }
+    
+    const user = req.user as AuthenticatedUser;
+    const clientId = parseInt(req.params.id);
+    
+    // Administrators can access all clients
+    if (user.role === "administrator") {
+      return next();
+    }
+    
+    // Check if the user has permission to access this client
+    const client = await storage.getClient(clientId);
+    if (!client) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+    
+    // Check if the user is the primary therapist for this client
+    if (client.primaryTherapistId === user.id) {
+      return next();
+    }
+    
+    // TODO: In the future, check for additional access granted to other therapists
+    // For now, only the primary therapist or administrators can access a client
+    return res.status(403).json({ 
+      message: "Forbidden. You don't have permission to access this client." 
+    });
+  } catch (error) {
+    return next(error);
+  }
 };
 
 // Middleware to check if therapist has access to a client ID provided in request body or query
 const canAccessClientId = async (req: Request, res: Response, next: NextFunction) => {
-  // Temporarily bypass client ID access checks
-  return next();
+  try {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized. Please login to access this resource." });
+    }
+    
+    const user = req.user as AuthenticatedUser;
+    
+    // Administrators can access all clients
+    if (user.role === "administrator") {
+      return next();
+    }
+    
+    // Get client ID from request body or query
+    let clientId: number | undefined;
+    if (req.body && req.body.clientId) {
+      clientId = parseInt(req.body.clientId);
+    } else if (req.query && req.query.clientId) {
+      clientId = parseInt(req.query.clientId as string);
+    }
+    
+    // If no client ID provided, allow access (filtering will happen in the endpoint)
+    if (!clientId) {
+      return next();
+    }
+    
+    // Check if the user has permission to access this client
+    const client = await storage.getClient(clientId);
+    if (!client) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+    
+    // Check if the user is the primary therapist for this client
+    if (client.primaryTherapistId === user.id) {
+      return next();
+    }
+    
+    // TODO: In the future, check for additional access granted to other therapists
+    return res.status(403).json({ 
+      message: "Forbidden. You don't have permission to access this client." 
+    });
+  } catch (error) {
+    return next(error);
+  }
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -2326,6 +2421,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
   //   // Redirect to the marketing dashboard with migration notice
   //   res.redirect('/crm/marketing?migration=complete');
   // });
+
+  // Add these new session management routes inside the registerRoutes function
+  app.get("/api/auth/session/status", isAuthenticated, (req, res) => {
+    try {
+      // Check if session exists
+      if (!req.session) {
+        return res.status(401).json({ message: "No active session" });
+      }
+
+      // Get the session expiry time
+      const expiryTime = req.session.cookie.expires;
+      let expiresIn = 0;
+      
+      if (expiryTime) {
+        // Calculate time until expiry in milliseconds
+        expiresIn = new Date(expiryTime).getTime() - Date.now();
+      }
+      
+      // Get the last activity timestamp
+      const lastActivity = req.session.lastActivity || Date.now();
+      const inactiveTime = Date.now() - lastActivity;
+      
+      // Session timeout from environment variable or default to 30 minutes
+      const sessionTimeout = parseInt(process.env.SESSION_INACTIVITY_TIMEOUT || '1800000');
+      
+      // Calculate time until timeout due to inactivity
+      const inactivityExpiresIn = Math.max(0, sessionTimeout - inactiveTime);
+      
+      // Return the earlier of the two expiry times
+      const effectiveExpiresIn = Math.min(
+        expiresIn > 0 ? expiresIn : Number.MAX_SAFE_INTEGER,
+        inactivityExpiresIn
+      );
+      
+      res.json({
+        authenticated: true,
+        expiresIn: effectiveExpiresIn,
+        expiresAt: new Date(Date.now() + effectiveExpiresIn).toISOString(),
+      });
+    } catch (error) {
+      console.error("Error checking session status:", error);
+      res.status(500).json({ message: "Failed to check session status" });
+    }
+  });
+
+  app.post("/api/auth/session/refresh", isAuthenticated, (req, res) => {
+    try {
+      // Check if session exists
+      if (!req.session) {
+        return res.status(401).json({ message: "No active session" });
+      }
+      
+      // Update last activity timestamp
+      req.session.lastActivity = Date.now();
+      
+      // Reset session expiry
+      const sessionMaxAge = parseInt(process.env.SESSION_MAX_AGE || '604800000'); // Default 7 days
+      req.session.cookie.maxAge = sessionMaxAge;
+      
+      // Save session changes
+      req.session.save((err) => {
+        if (err) {
+          console.error("Error saving session:", err);
+          return res.status(500).json({ message: "Failed to refresh session" });
+        }
+        
+        // Calculate new expiry time
+        const expiryTime = req.session.cookie.expires;
+        const expiresAt = expiryTime ? new Date(expiryTime).toISOString() : null;
+        
+        res.json({
+          success: true,
+          message: "Session refreshed successfully",
+          expiresAt
+        });
+      });
+    } catch (error) {
+      console.error("Error refreshing session:", error);
+      res.status(500).json({ message: "Failed to refresh session" });
+    }
+  });
 
   const httpServer = createServer(app);
   

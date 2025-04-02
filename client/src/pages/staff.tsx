@@ -7,6 +7,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import type { Staff } from "@shared/schema";
+import { StaffModal } from "@/components/practice/StaffModal";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface StaffMember {
   id: number;
@@ -26,6 +29,9 @@ interface StaffMember {
 export default function StaffPage() {
   const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const { toast } = useToast();
 
   // Fetch staff data
   const {
@@ -51,6 +57,21 @@ export default function StaffPage() {
     }
   });
 
+  const handleAddStaff = () => {
+    setSelectedStaff(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditStaff = (staff: any) => {
+    setSelectedStaff(staff);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedStaff(null);
+  };
+
   // If user is not authenticated, show login form
   if (!user) {
     return <LoginForm />;
@@ -64,6 +85,11 @@ export default function StaffPage() {
         <TopBar title="Staff Management" />
         
         <div className="p-6 bg-neutral-50 min-h-screen">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Staff Management</h1>
+            <Button onClick={handleAddStaff}>Add Staff Member</Button>
+          </div>
+
           {isLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-12 w-full" />
@@ -74,9 +100,15 @@ export default function StaffPage() {
               {error || "An error occurred while loading staff data. Please try refreshing the page."}
             </div>
           ) : (
-            <StaffList initialStaff={staffData || []} />
+            <StaffList initialStaff={staffData || []} onEdit={handleEditStaff} />
           )}
         </div>
+
+        <StaffModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          staff={selectedStaff}
+        />
       </div>
     </div>
   );

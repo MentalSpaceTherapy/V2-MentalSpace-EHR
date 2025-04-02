@@ -197,6 +197,14 @@ export default function DocumentationDashboard() {
     }
   };
 
+  const handleNewIntakeForm = () => {
+    toast({
+      title: "Creating New Intake Form",
+      description: "Opening intake assessment form...",
+    });
+    setLocation('/documentation/intake');
+  };
+
   const handleEditDocument = (docId: number) => {
     const doc = documents.find(d => d.id === docId);
     if (doc) {
@@ -205,8 +213,13 @@ export default function DocumentationDashboard() {
         description: `Opening document for ${doc.clientName}...`,
       });
       
-      // In a real app, this would navigate to the document edit page
-      // For now, just show a toast
+      // Navigate based on document type
+      if (doc.type === "Intake Form") {
+        setLocation('/documentation/intake');
+      } else {
+        // Handle other document types
+        setLocation(`/documentation?docId=${doc.id}&type=${encodeURIComponent(doc.type)}&clientName=${encodeURIComponent(doc.clientName)}`);
+      }
     }
   };
 
@@ -274,6 +287,39 @@ export default function DocumentationDashboard() {
             </CardHeader>
             
             <CardContent>
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold mb-4">Document Types</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div onClick={handleNewIntakeForm} className="cursor-pointer">
+                    <Card className="border-2 border-purple-200 hover:border-purple-500 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                      <div className="h-1.5 w-full bg-purple-500" />
+                      <CardContent className="p-6 flex flex-col items-center text-center">
+                        <div className="bg-purple-100 p-4 rounded-full mb-4">
+                          <UserPlus className="h-8 w-8 text-purple-600" />
+                        </div>
+                        <h3 className="font-bold text-lg mb-1">Intake Assessment</h3>
+                        <p className="text-sm text-gray-500 mb-4">Comprehensive client intake evaluation</p>
+                        <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">New</Badge>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div onClick={() => setLocation('/documentation/progress-notes')} className="cursor-pointer">
+                    <Card className="border-2 border-blue-200 hover:border-blue-500 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                      <div className="h-1.5 w-full bg-blue-500" />
+                      <CardContent className="p-6 flex flex-col items-center text-center">
+                        <div className="bg-blue-100 p-4 rounded-full mb-4">
+                          <ClipboardEdit className="h-8 w-8 text-blue-600" />
+                        </div>
+                        <h3 className="font-bold text-lg mb-1">Progress Note</h3>
+                        <p className="text-sm text-gray-500 mb-4">Session documentation and progress</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                </div>
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <Card className="shadow-sm border-neutral-200 hover:shadow-md transition-all">
                   <CardContent className="p-5">
@@ -385,8 +431,8 @@ export default function DocumentationDashboard() {
               {viewMode === 'card' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                   {filteredDocuments.map((doc) => (
-                    <Link key={doc.id} href={`/documentation?docId=${doc.id}&type=${encodeURIComponent(doc.type)}&clientName=${encodeURIComponent(doc.clientName)}`} className="block">
-                      <Card className="overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer border-neutral-200 hover:border-primary-200">
+                    <div key={doc.id} onClick={() => handleEditDocument(doc.id)} className="block cursor-pointer">
+                      <Card className="overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group border-neutral-200 hover:border-primary-200">
                         <div className={`h-1.5 w-full ${
                           doc.status === "Overdue" ? "bg-red-500" : 
                           doc.status === "Due Today" ? "bg-amber-500" : 
@@ -428,7 +474,7 @@ export default function DocumentationDashboard() {
                           </div>
                         </CardContent>
                       </Card>
-                    </Link>
+                    </div>
                   ))}
                   {filteredDocuments.length === 0 && (
                     <div className="col-span-full p-10 text-center bg-white rounded-lg border border-dashed border-neutral-300">
@@ -467,7 +513,7 @@ export default function DocumentationDashboard() {
                       <tbody className="bg-white divide-y divide-neutral-200">
                         {filteredDocuments.length > 0 ? (
                           filteredDocuments.map((doc) => (
-                            <tr key={doc.id} className="hover:bg-neutral-50 cursor-pointer" onClick={() => setLocation(`/documentation?docId=${doc.id}&type=${encodeURIComponent(doc.type)}&clientName=${encodeURIComponent(doc.clientName)}`)}>
+                            <tr key={doc.id} className="hover:bg-neutral-50 cursor-pointer" onClick={() => handleEditDocument(doc.id)}>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-800">
                                 <div className="flex items-center">
                                   <User className="h-4 w-4 mr-2 text-neutral-500" />

@@ -9,11 +9,190 @@ import {
   FormProvider,
   useFormContext,
 } from "react-hook-form"
+import { forwardRef, useState } from "react"
 
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
+import { FormProps, FormControlProps } from "./types"
 
-const Form = FormProvider
+const Form = forwardRef<HTMLFormElement, FormProps>(
+  (
+    {
+      className,
+      children,
+      onSubmit,
+      defaultValues,
+      validate,
+      resetOnSubmit = false,
+      testId,
+      ...props
+    },
+    ref
+  ) => {
+    const [values, setValues] = useState<Record<string, any>>(defaultValues || {})
+    const [errors, setErrors] = useState<Record<string, string>>({})
+    const [touched, setTouched] = useState<Record<string, boolean>>({})
+
+    // Handle form submission
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault()
+
+      // Validate form values if validate function is provided
+      let formErrors: Record<string, string> = {}
+      if (validate) {
+        formErrors = validate(values)
+        setErrors(formErrors)
+      }
+
+      // If there are no errors, call onSubmit
+      if (Object.keys(formErrors).length === 0 && onSubmit) {
+        onSubmit(values)
+
+        // Reset form if resetOnSubmit is true
+        if (resetOnSubmit) {
+          setValues(defaultValues || {})
+          setTouched({})
+          
+          // Reset form element
+          const formElement = e.target as HTMLFormElement
+          formElement.reset()
+        }
+      }
+    }
+
+    // Create a context value to share with FormControl components
+    const formContextValue = {
+      values,
+      errors,
+      touched,
+      setValues: (name: string, value: any) => {
+        setValues((prev) => ({ ...prev, [name]: value }))
+      },
+      setTouched: (name: string) => {
+        setTouched((prev) => ({ ...prev, [name]: true }))
+      },
+    }
+
+    return (
+      <FormContext.Provider value={formContextValue}>
+        <form
+          ref={ref}
+          className={cn("space-y-4", className)}
+          onSubmit={handleSubmit}
+          data-testid={testId}
+          {...props}
+        >
+          {typeof children === 'function'
+            ? children(formContextValue)
+            : children}
+        </form>
+      </FormContext.Provider>
+    )
+  }
+)
+Form.displayName = "Form"
+
+// Create a context for form state
+interface FormContextValue {
+  values: Record<string, any>
+  errors: Record<string, string>
+  touched: Record<string, boolean>
+  setValues: (name: string, value: any) => void
+  setTouched: (name: string) => void
+}
+
+const FormContext = React.createContext<FormContextValue | undefined>(undefined)
+
+// Hook to use form context
+export const useFormContext = () => {
+  const context = React.useContext(FormContext)
+  if (!context) {
+    throw new Error("useFormContext must be used within a Form component")
+  }
+  return context
+}
+
+/**
+ * FormControl component
+ * 
+ * A container for form elements with label and error message handling.
+ * 
+ * @example
+ * ```tsx
+ * <FormControl label="Email" isRequired>
+ *   <Input name="email" type="email" />
+ * </FormControl>
+ * ```
+ */
+export const FormControl = forwardRef<HTMLDivElement, FormControlProps>(
+  (
+    {
+      className,
+      children,
+      label,
+      helperText,
+      errorText,
+      isRequired,
+      isDisabled,
+      isInvalid,
+      isReadOnly,
+      testId,
+      ...props
+    },
+    ref
+  ) => {
+    // Generate unique ID for the label
+    const id = React.useId()
+
+    return (
+      <div
+        ref={ref}
+        className={cn("flex flex-col gap-1.5", className)}
+        data-testid={testId}
+        {...props}
+      >
+        {label && (
+          <label
+            htmlFor={id}
+            className={cn(
+              "text-sm font-medium text-neutral-700",
+              isRequired && "after:ml-0.5 after:text-error-500 after:content-['*']",
+              isDisabled && "text-neutral-400"
+            )}
+          >
+            {label}
+          </label>
+        )}
+
+        {/* Clone children with additional props */}
+        {React.Children.map(children, (child) => {
+          if (!React.isValidElement(child)) return child
+
+          return React.cloneElement(child as React.ReactElement<any>, {
+            id,
+            disabled: isDisabled,
+            "aria-invalid": isInvalid,
+            "aria-required": isRequired,
+            "aria-readonly": isReadOnly,
+          })
+        })}
+
+        {/* Helper or error text */}
+        {(helperText || errorText) && (
+          <div className="space-y-1">
+            {helperText && !errorText && (
+              <p className="text-xs text-neutral-500">{helperText}</p>
+            )}
+            {errorText && (
+              <p className="text-xs text-error-500">{errorText}</p>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+)
+FormControl.displayName = "FormControl"
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,

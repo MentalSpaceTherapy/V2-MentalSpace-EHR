@@ -6,35 +6,126 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Pen } from "lucide-react";
+import { Pen, AlertCircle } from "lucide-react";
+import { useLocation } from "wouter";
 
 export function LoginForm() {
-  const [email, setEmail] = useState("therapist@mentalspace.com");
-  const [password, setPassword] = useState("password123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
+  const [touched, setTouched] = useState<{ username: boolean; password: boolean }>({ username: false, password: false });
   const { loginMutation, isLoading } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+
+  // Validate single field
+  const validateField = (name: string, value: string) => {
+    if (name === 'username') {
+      if (!value.trim()) {
+        return 'Username is required';
+      }
+      return undefined;
+    }
+    
+    if (name === 'password') {
+      if (!value) {
+        return 'Password is required';
+      }
+      if (value.length < 6) {
+        return 'Password must be at least 6 characters';
+      }
+      return undefined;
+    }
+    
+    return undefined;
+  };
+
+  // Handle field blur
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+    
+    const error = validateField(name, value);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  // Handle field change
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'username') {
+      setUsername(value);
+    } else if (name === 'password') {
+      setPassword(value);
+    }
+    
+    // Only validate if field has been touched
+    if (touched[name as keyof typeof touched]) {
+      const error = validateField(name, value);
+      setErrors(prev => ({ ...prev, [name]: error }));
+    }
+  };
+
+  // Validate all fields before submission
+  const validateForm = () => {
+    const usernameError = validateField('username', username);
+    const passwordError = validateField('password', password);
+    
+    setErrors({
+      username: usernameError,
+      password: passwordError
+    });
+    
+    setTouched({
+      username: true,
+      password: true
+    });
+    
+    return !usernameError && !passwordError;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       const result = await loginMutation.mutateAsync({
-        username: email,
+        username,
         password
       });
       
-      if (!result) {
+      if (result) {
+        toast({
+          title: "Login Successful",
+          description: "Welcome back!",
+        });
+        setLocation("/");
+      } else {
         toast({
           title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
+          description: "Invalid username or password. Please try again.",
           variant: "destructive",
         });
       }
     } catch (error) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("Login error:", error);
+      }
+      
+      // Extract error message if available
+      let errorMessage = "An unexpected error occurred. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Login Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -56,26 +147,54 @@ export function LoginForm() {
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username" className="flex justify-between">
+                <span>Username</span>
+                {errors.username && touched.username && (
+                  <span className="text-red-500 text-xs flex items-center">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {errors.username}
+                  </span>
+                )}
+              </Label>
               <Input 
-                id="email" 
-                type="email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@example.com" 
+                id="username" 
+                name="username"
+                type="text" 
+                value={username}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                placeholder="Enter your username" 
                 required
+                disabled={isLoading}
+                className={errors.username && touched.username ? "border-red-500" : ""}
+                aria-invalid={!!errors.username}
+                aria-describedby={errors.username ? "username-error" : undefined}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="flex justify-between">
+                <span>Password</span>
+                {errors.password && touched.password && (
+                  <span className="text-red-500 text-xs flex items-center">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {errors.password}
+                  </span>
+                )}
+              </Label>
               <Input 
                 id="password" 
+                name="password"
                 type="password" 
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={handleChange}
+                onBlur={handleBlur}
                 placeholder="••••••••" 
                 required
+                disabled={isLoading}
+                className={errors.password && touched.password ? "border-red-500" : ""}
+                aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? "password-error" : undefined}
               />
             </div>
 
@@ -85,32 +204,28 @@ export function LoginForm() {
                   id="remember" 
                   checked={rememberMe}
                   onCheckedChange={(checked) => setRememberMe(checked === true)}
+                  disabled={isLoading}
                 />
                 <Label htmlFor="remember" className="text-sm">Remember me</Label>
               </div>
 
-              <Button variant="link" className="p-0 h-auto text-primary-600 hover:text-primary-800">
+              <Button 
+                variant="link" 
+                className="p-0 h-auto text-primary-600 hover:text-primary-800"
+                disabled={isLoading}
+                type="button"
+              >
                 Forgot password?
               </Button>
             </div>
 
-            <button 
+            <Button 
               type="submit" 
-              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-4 text-base shadow-md rounded-md"
-              style={{ 
-                display: 'block !important', 
-                marginTop: '1rem', 
-                width: '100%', 
-                backgroundColor: '#4f46e5',
-                color: 'white',
-                padding: '1rem',
-                borderRadius: '0.375rem',
-                fontWeight: '500'
-              }}
-              disabled={isLoading}
+              className="w-full"
+              disabled={isLoading || Object.values(errors).some(error => !!error)}
             >
               {isLoading ? "Signing in..." : "Sign in"}
-            </button>
+            </Button>
             
             <div className="flex items-center justify-center mt-4">
               <p className="text-sm text-neutral-500">

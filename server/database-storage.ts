@@ -32,63 +32,136 @@ import { IStorage } from "./storage";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import pkg from 'pg';
-const { Pool } = pkg;
+import { Pool } from 'pg';
+import { comparePasswords } from './utils/auth';
+import { InsertPasswordResetToken, PasswordResetToken, InsertTwoFactorAuth, TwoFactorAuth } from './storage';
 
 // Create a PostgreSQL session store
 const PostgresSessionStore = connectPg(session);
 
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  passwordHash: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface InsertUser {
+  username: string;
+  email: string;
+  passwordHash: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+}
+
 export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
+  private pool: Pool;
 
-  constructor() {
+  constructor(connectionString: string) {
     // Initialize the PostgreSQL session store
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+    this.pool = new Pool({
+      connectionString,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     });
     
     this.sessionStore = new PostgresSessionStore({ 
-      pool, 
+      pool: this.pool, 
       createTableIfMissing: true 
     });
   }
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    const query = 'SELECT * FROM users WHERE id = $1';
+    const result = await this.pool.query(query, [id]);
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+    return result.rows[0] as User;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    const query = 'SELECT * FROM users WHERE username = $1';
+    const result = await this.pool.query(query, [username]);
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+    return result.rows[0] as User;
+  }
+
+  async deleteUserByUsername(username: string): Promise<void> {
+    const query = 'DELETE FROM users WHERE username = $1';
+    await this.pool.query(query, [username]);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+    const query = `
+      INSERT INTO users (username, email, password_hash, first_name, last_name, role)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `;
+    const values = [
+      insertUser.username,
+      insertUser.email,
+      insertUser.passwordHash,
+      insertUser.firstName,
+      insertUser.lastName,
+      insertUser.role
+    ];
+    const result = await this.pool.query(query, values);
+    return result.rows[0] as User;
   }
 
   async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
-    const [updatedUser] = await db
-      .update(users)
-      .set(userData)
-      .where(eq(users.id, id))
-      .returning();
-    
-    return updatedUser;
+    const query = `
+      UPDATE users
+      SET username = $1,
+          email = $2,
+          password_hash = $3,
+          first_name = $4,
+          last_name = $5,
+          role = $6,
+          updated_at = $7
+      WHERE id = $8
+      RETURNING *
+    `;
+    const values = [
+      userData.username,
+      userData.email,
+      userData.passwordHash,
+      userData.firstName,
+      userData.lastName,
+      userData.role,
+      new Date(),
+      id
+    ];
+    const result = await this.pool.query(query, values);
+    return result.rows.length > 0 ? result.rows[0] as User : undefined;
   }
 
   // Client methods
   async getClient(id: number): Promise<Client | undefined> {
-    const [client] = await db.select().from(clients).where(eq(clients.id, id));
-    return client;
+    const query = 'SELECT * FROM clients WHERE id = $1';
+    const result = await this.pool.query(query, [id]);
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+    return result.rows[0] as Client;
   }
 
   async getClients(therapistId?: number, status?: string): Promise<Client[]> {
-    const result = await db.select().from(clients);
+    const query = 'SELECT * FROM clients';
+    let result = await this.pool.query(query);
     
     // Filter in memory to avoid typing issues
-    let filteredClients = result;
+    let filteredClients = result.rows as Client[];
     
     if (therapistId !== undefined) {
       filteredClients = filteredClients.filter(client => 
@@ -114,9 +187,27 @@ export class DatabaseStorage implements IStorage {
     } = clientData;
     
     // Create the client record
-    const [client] = await db.insert(clients).values(baseClientData).returning();
+    const query = `
+      INSERT INTO clients (emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
+                         insurance_provider, insurance_policy_number, insurance_group_number, insurance_copay,
+                         insurance_deductible, ${Object.keys(baseClientData).join(', ')})
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, ${Object.values(baseClientData).map(() => '$9').join(', ')})
+      RETURNING *
+    `;
+    const values = [
+      emergencyContactName,
+      emergencyContactPhone,
+      emergencyContactRelationship,
+      insuranceProvider,
+      insurancePolicyNumber,
+      insuranceGroupNumber,
+      insuranceCopay,
+      insuranceDeductible,
+      ...Object.values(baseClientData)
+    ];
+    const result = await this.pool.query(query, values);
     
-    return client;
+    return result.rows[0] as Client;
   }
 
   async updateClient(id: number, clientData: Partial<ExtendedClient>): Promise<Client | undefined> {
@@ -128,19 +219,45 @@ export class DatabaseStorage implements IStorage {
     } = clientData;
     
     // Update the client record
-    const [updatedClient] = await db
-      .update(clients)
-      .set(baseClientData)
-      .where(eq(clients.id, id))
-      .returning();
+    const query = `
+      UPDATE clients
+      SET emergency_contact_name = $1,
+          emergency_contact_phone = $2,
+          emergency_contact_relationship = $3,
+          insurance_provider = $4,
+          insurance_policy_number = $5,
+          insurance_group_number = $6,
+          insurance_copay = $7,
+          insurance_deductible = $8,
+          ${Object.keys(baseClientData).map(key => `${key} = $${Object.keys(baseClientData).indexOf(key) + 9}`).join(', ')}
+      WHERE id = $${Object.keys(baseClientData).length + 9}
+      RETURNING *
+    `;
+    const values = [
+      emergencyContactName,
+      emergencyContactPhone,
+      emergencyContactRelationship,
+      insuranceProvider,
+      insurancePolicyNumber,
+      insuranceGroupNumber,
+      insuranceCopay,
+      insuranceDeductible,
+      ...Object.values(baseClientData),
+      id
+    ];
+    const result = await this.pool.query(query, values);
     
-    return updatedClient;
+    return result.rows.length > 0 ? result.rows[0] as Client : undefined;
   }
 
   // Session/Appointment methods
   async getSession(id: number): Promise<Session | undefined> {
-    const [session] = await db.select().from(sessions).where(eq(sessions.id, id));
-    return session;
+    const query = 'SELECT * FROM sessions WHERE id = $1';
+    const result = await this.pool.query(query, [id]);
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+    return result.rows[0] as Session;
   }
 
   async getSessions(filters?: {
@@ -150,10 +267,11 @@ export class DatabaseStorage implements IStorage {
     endDate?: Date;
     status?: string;
   }): Promise<Session[]> {
-    const result = await db.select().from(sessions);
+    const query = 'SELECT * FROM sessions';
+    let result = await this.pool.query(query);
     
     // Filter in memory to avoid typing issues
-    let filteredSessions = result;
+    let filteredSessions = result.rows as Session[];
     
     if (filters) {
       if (filters.clientId !== undefined) {
@@ -197,28 +315,50 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSession(sessionData: InsertSession): Promise<Session> {
-    const [session] = await db.insert(sessions).values(sessionData).returning();
-    return session;
+    const query = `
+      INSERT INTO sessions (client_id, therapist_id, start_time, end_time, status)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *
+    `;
+    const values = [
+      sessionData.clientId,
+      sessionData.therapistId,
+      sessionData.startTime,
+      sessionData.endTime,
+      sessionData.status
+    ];
+    const result = await this.pool.query(query, values);
+    return result.rows[0] as Session;
   }
 
   async updateSession(id: number, sessionData: Partial<InsertSession>): Promise<Session | undefined> {
-    const [updatedSession] = await db
-      .update(sessions)
-      .set(sessionData)
-      .where(eq(sessions.id, id))
-      .returning();
-    
-    return updatedSession;
+    const query = `
+      UPDATE sessions
+      SET client_id = $1,
+          therapist_id = $2,
+          start_time = $3,
+          end_time = $4,
+          status = $5
+      WHERE id = $6
+      RETURNING *
+    `;
+    const values = [
+      sessionData.clientId,
+      sessionData.therapistId,
+      sessionData.startTime,
+      sessionData.endTime,
+      sessionData.status,
+      id
+    ];
+    const result = await this.pool.query(query, values);
+    return result.rows.length > 0 ? result.rows[0] as Session : undefined;
   }
 
   async deleteSession(id: number): Promise<boolean> {
     try {
-      const result = await db
-        .delete(sessions)
-        .where(eq(sessions.id, id))
-        .returning({ id: sessions.id });
-      
-      return result.length > 0;
+      const query = 'DELETE FROM sessions WHERE id = $1';
+      const result = await this.pool.query(query, [id]);
+      return result.rowCount > 0;
     } catch (error) {
       console.error(`Error deleting session ${id}:`, error);
       return false;
@@ -227,8 +367,12 @@ export class DatabaseStorage implements IStorage {
 
   // Documentation methods
   async getDocument(id: number): Promise<Documentation | undefined> {
-    const [document] = await db.select().from(documentation).where(eq(documentation.id, id));
-    return document;
+    const query = 'SELECT * FROM documentation WHERE id = $1';
+    const result = await this.pool.query(query, [id]);
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+    return result.rows[0] as Documentation;
   }
 
   async getDocuments(filters?: {
@@ -238,10 +382,11 @@ export class DatabaseStorage implements IStorage {
     type?: string;
     status?: string;
   }): Promise<Documentation[]> {
-    const result = await db.select().from(documentation);
+    const query = 'SELECT * FROM documentation';
+    let result = await this.pool.query(query);
     
     // Filter in memory to avoid typing issues
-    let filteredDocs = result;
+    let filteredDocs = result.rows as Documentation[];
     
     if (filters) {
       if (filters.clientId !== undefined) {
@@ -282,28 +427,59 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDocument(docData: InsertDocumentation): Promise<Documentation> {
-    const [document] = await db.insert(documentation).values(docData).returning();
-    return document;
+    const query = `
+      INSERT INTO documentation (client_id, therapist_id, session_id, type, status, content, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `;
+    const values = [
+      docData.clientId,
+      docData.therapistId,
+      docData.sessionId,
+      docData.type,
+      docData.status,
+      docData.content,
+      new Date(),
+      new Date()
+    ];
+    const result = await this.pool.query(query, values);
+    return result.rows[0] as Documentation;
   }
 
   async updateDocument(id: number, docData: Partial<InsertDocumentation>): Promise<Documentation | undefined> {
-    const [updatedDocument] = await db
-      .update(documentation)
-      .set(docData)
-      .where(eq(documentation.id, id))
-      .returning();
-    
-    return updatedDocument;
+    const query = `
+      UPDATE documentation
+      SET client_id = $1,
+          therapist_id = $2,
+          session_id = $3,
+          type = $4,
+          status = $5,
+          content = $6,
+          updated_at = $7
+      WHERE id = $8
+      RETURNING *
+    `;
+    const values = [
+      docData.clientId,
+      docData.therapistId,
+      docData.sessionId,
+      docData.type,
+      docData.status,
+      docData.content,
+      new Date(),
+      id
+    ];
+    const result = await this.pool.query(query, values);
+    return result.rows.length > 0 ? result.rows[0] as Documentation : undefined;
   }
 
   // Notification methods
   async getNotifications(userId: number, isRead?: boolean): Promise<Notification[]> {
-    const result = await db.select().from(notifications);
+    const query = 'SELECT * FROM notifications WHERE user_id = $1';
+    let result = await this.pool.query(query, [userId]);
     
     // Filter in memory to avoid typing issues
-    let filteredNotifications = result.filter(notification => 
-      notification.userId === userId
-    );
+    let filteredNotifications = result.rows as Notification[];
     
     if (isRead !== undefined) {
       filteredNotifications = filteredNotifications.filter(notification => 
@@ -318,25 +494,43 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createNotification(notificationData: InsertNotification): Promise<Notification> {
-    const [notification] = await db.insert(notifications).values(notificationData).returning();
-    return notification;
+    const query = `
+      INSERT INTO notifications (user_id, type, is_read, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *
+    `;
+    const values = [
+      notificationData.userId,
+      notificationData.type,
+      notificationData.isRead,
+      new Date(),
+      new Date()
+    ];
+    const result = await this.pool.query(query, values);
+    return result.rows[0] as Notification;
   }
 
   async markNotificationAsRead(id: number): Promise<Notification | undefined> {
-    const [updatedNotification] = await db
-      .update(notifications)
-      .set({ isRead: true })
-      .where(eq(notifications.id, id))
-      .returning();
-    
-    return updatedNotification;
+    const query = `
+      UPDATE notifications
+      SET is_read = $1,
+          updated_at = $2
+      WHERE id = $3
+      RETURNING *
+    `;
+    const values = [
+      true,
+      new Date(),
+      id
+    ];
+    const result = await this.pool.query(query, values);
+    return result.rows.length > 0 ? result.rows[0] as Notification : undefined;
   }
 
   // Message methods
   async getMessages(clientId: number, therapistId: number): Promise<Message[]> {
-    const result = await db.select()
-      .from(messages)
-      .where(eq(messages.clientId, clientId) && eq(messages.therapistId, therapistId));
+    const query = 'SELECT * FROM messages WHERE client_id = $1 AND therapist_id = $2';
+    const result = await this.pool.query(query, [clientId, therapistId]);
     
     // Sort by date created, most recent first
     return result.sort((a, b) => 
@@ -1984,5 +2178,331 @@ export class DatabaseStorage implements IStorage {
       console.error("Error deleting staff member:", error);
       throw error;
     }
+  }
+
+  // Password reset token methods
+  async createPasswordResetToken(tokenData: InsertPasswordResetToken): Promise<PasswordResetToken> {
+    const query = `
+      INSERT INTO password_reset_tokens (user_id, token, expires_at)
+      VALUES ($1, $2, $3)
+      RETURNING *
+    `;
+    const values = [
+      tokenData.userId,
+      tokenData.token,
+      tokenData.expiresAt
+    ];
+    
+    const result = await this.pool.query(query, values);
+    return this.mapToPasswordResetToken(result.rows[0]);
+  }
+  
+  async getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    const query = 'SELECT * FROM password_reset_tokens WHERE token = $1';
+    const result = await this.pool.query(query, [token]);
+    
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+    
+    return this.mapToPasswordResetToken(result.rows[0]);
+  }
+  
+  async deletePasswordResetToken(token: string): Promise<void> {
+    const query = 'DELETE FROM password_reset_tokens WHERE token = $1';
+    await this.pool.query(query, [token]);
+  }
+  
+  // User password verification and update
+  async verifyUserPassword(userId: number, password: string): Promise<boolean> {
+    const query = 'SELECT password_hash FROM users WHERE id = $1';
+    const result = await this.pool.query(query, [userId]);
+    
+    if (result.rows.length === 0) {
+      return false;
+    }
+    
+    const hashedPassword = result.rows[0].password_hash;
+    return await comparePasswords(password, hashedPassword);
+  }
+  
+  async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
+    const query = `
+      UPDATE users
+      SET password_hash = $1, updated_at = $2
+      WHERE id = $3
+    `;
+    
+    await this.pool.query(query, [hashedPassword, new Date(), userId]);
+  }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const query = 'SELECT * FROM users WHERE email = $1';
+    const result = await this.pool.query(query, [email]);
+    
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+    
+    return result.rows[0] as User;
+  }
+  
+  // Helper method to map DB row to PasswordResetToken interface
+  private mapToPasswordResetToken(row: any): PasswordResetToken {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      token: row.token,
+      expiresAt: new Date(row.expires_at),
+      createdAt: new Date(row.created_at)
+    };
+  }
+
+  // 2FA methods
+  async enableTwoFactorAuth(data: InsertTwoFactorAuth): Promise<TwoFactorAuth> {
+    // First, check if the user already has 2FA enabled
+    const existingAuth = await this.getTwoFactorAuth(data.userId);
+    
+    if (existingAuth) {
+      // Update the existing record
+      const query = `
+        UPDATE two_factor_auth
+        SET secret = $1, enabled = $2, recovery_codes = $3, updated_at = $4
+        WHERE user_id = $5
+        RETURNING *
+      `;
+      
+      const result = await this.pool.query(query, [
+        data.secret,
+        data.enabled,
+        JSON.stringify(data.recoveryCodes),
+        new Date(),
+        data.userId
+      ]);
+      
+      return this.mapToTwoFactorAuth(result.rows[0]);
+    } else {
+      // Create a new record
+      const query = `
+        INSERT INTO two_factor_auth (user_id, secret, enabled, recovery_codes)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *
+      `;
+      
+      const result = await this.pool.query(query, [
+        data.userId,
+        data.secret,
+        data.enabled,
+        JSON.stringify(data.recoveryCodes)
+      ]);
+      
+      return this.mapToTwoFactorAuth(result.rows[0]);
+    }
+  }
+  
+  async getTwoFactorAuth(userId: number): Promise<TwoFactorAuth | undefined> {
+    const query = 'SELECT * FROM two_factor_auth WHERE user_id = $1';
+    const result = await this.pool.query(query, [userId]);
+    
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+    
+    return this.mapToTwoFactorAuth(result.rows[0]);
+  }
+  
+  async disableTwoFactorAuth(userId: number): Promise<void> {
+    const query = 'DELETE FROM two_factor_auth WHERE user_id = $1';
+    await this.pool.query(query, [userId]);
+  }
+  
+  async updateTwoFactorRecoveryCodes(userId: number, recoveryCodes: string[]): Promise<TwoFactorAuth | undefined> {
+    const query = `
+      UPDATE two_factor_auth
+      SET recovery_codes = $1, updated_at = $2
+      WHERE user_id = $3
+      RETURNING *
+    `;
+    
+    const result = await this.pool.query(query, [
+      JSON.stringify(recoveryCodes),
+      new Date(),
+      userId
+    ]);
+    
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+    
+    return this.mapToTwoFactorAuth(result.rows[0]);
+  }
+  
+  async consumeRecoveryCode(userId: number, codeIndex: number): Promise<void> {
+    // Get current recovery codes
+    const twoFactorAuth = await this.getTwoFactorAuth(userId);
+    
+    if (!twoFactorAuth) {
+      throw new Error('2FA not set up for this user');
+    }
+    
+    const recoveryCodes = twoFactorAuth.recoveryCodes;
+    
+    // Remove the used code
+    if (codeIndex >= 0 && codeIndex < recoveryCodes.length) {
+      recoveryCodes.splice(codeIndex, 1);
+      
+      // Update the recovery codes in the database
+      await this.updateTwoFactorRecoveryCodes(userId, recoveryCodes);
+    } else {
+      throw new Error('Invalid recovery code index');
+    }
+  }
+  
+  // Helper method to map DB row to TwoFactorAuth interface
+  private mapToTwoFactorAuth(row: any): TwoFactorAuth {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      secret: row.secret,
+      enabled: row.enabled,
+      recoveryCodes: row.recovery_codes ? JSON.parse(row.recovery_codes) : [],
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at)
+    };
+  }
+
+  /**
+   * Fetches client history events
+   * @param clientId ID of the client
+   * @returns Array of history events for the client
+   */
+  async getClientHistory(clientId: number): Promise<HistoryEvent[]> {
+    const query = `
+      SELECT * FROM audit_log
+      WHERE entity_type = 'client' AND entity_id = $1
+      ORDER BY timestamp DESC
+    `;
+    
+    const result = await this.db.query(query, [clientId]);
+    
+    return result.rows.map(row => ({
+      id: row.id,
+      entityId: row.entity_id,
+      entityType: row.entity_type,
+      action: row.action,
+      timestamp: row.timestamp,
+      userId: row.user_id,
+      details: row.details,
+      metadata: row.metadata
+    }));
+  }
+
+  /**
+   * Creates an audit log entry
+   * @param logData Audit log data to insert
+   * @returns Created audit log entry
+   */
+  async createAuditLogEntry(logData: InsertAuditLog): Promise<AuditLog> {
+    const query = `
+      INSERT INTO audit_log (
+        user_id, action, entity_type, entity_id, details, metadata
+      ) VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `;
+    
+    const params = [
+      logData.userId,
+      logData.action,
+      logData.entityType,
+      logData.entityId,
+      logData.details,
+      logData.metadata || {}
+    ];
+    
+    const result = await this.db.query(query, params);
+    
+    if (result.rows.length === 0) {
+      throw new Error('Failed to create audit log entry');
+    }
+    
+    return {
+      id: result.rows[0].id,
+      userId: result.rows[0].user_id,
+      action: result.rows[0].action,
+      entityType: result.rows[0].entity_type,
+      entityId: result.rows[0].entity_id,
+      timestamp: result.rows[0].timestamp,
+      details: result.rows[0].details,
+      metadata: result.rows[0].metadata
+    };
+  }
+
+  /**
+   * Retrieves audit log entries with optional filtering
+   * @param filters Optional filters to apply to the query
+   * @returns Array of audit log entries
+   */
+  async getAuditLogs(filters?: {
+    userId?: number;
+    entityType?: string;
+    entityId?: number;
+    action?: string;
+    from?: Date;
+    to?: Date;
+  }): Promise<AuditLog[]> {
+    let query = `
+      SELECT * FROM audit_log
+      WHERE 1=1
+    `;
+    
+    const params: any[] = [];
+    let paramIndex = 1;
+    
+    if (filters) {
+      if (filters.userId !== undefined) {
+        query += ` AND user_id = $${paramIndex++}`;
+        params.push(filters.userId);
+      }
+      
+      if (filters.entityType) {
+        query += ` AND entity_type = $${paramIndex++}`;
+        params.push(filters.entityType);
+      }
+      
+      if (filters.entityId !== undefined) {
+        query += ` AND entity_id = $${paramIndex++}`;
+        params.push(filters.entityId);
+      }
+      
+      if (filters.action) {
+        query += ` AND action = $${paramIndex++}`;
+        params.push(filters.action);
+      }
+      
+      if (filters.from) {
+        query += ` AND timestamp >= $${paramIndex++}`;
+        params.push(filters.from);
+      }
+      
+      if (filters.to) {
+        query += ` AND timestamp <= $${paramIndex++}`;
+        params.push(filters.to);
+      }
+    }
+    
+    query += ` ORDER BY timestamp DESC`;
+    
+    const result = await this.db.query(query, params);
+    
+    return result.rows.map(row => ({
+      id: row.id,
+      userId: row.user_id,
+      action: row.action,
+      entityType: row.entity_type,
+      entityId: row.entity_id,
+      timestamp: row.timestamp,
+      details: row.details,
+      metadata: row.metadata
+    }));
   }
 }

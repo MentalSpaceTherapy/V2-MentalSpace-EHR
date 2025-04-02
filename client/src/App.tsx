@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, useLocation, Redirect, Router as WouterRouter } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -21,7 +21,7 @@ import Telehealth from "@/pages/telehealth";
 import SignaturePage from "@/pages/sign";
 import Staff from "@/pages/staff";
 import StaffFormPage from "./pages/staff-form";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { CRMProvider } from "@/hooks/use-crm";
 import CRMIndex from "@/pages/crm";
 import CRMDashboard from "@/pages/crm/dashboard";
@@ -37,6 +37,8 @@ import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { UpdateNotification } from "@/components/pwa/UpdateNotification";
 import { useEffect } from "react";
 import { registerServiceWorker } from "@/lib/pwa-utils";
+import LoginPage from "@/pages/login";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Component to handle the documentation routes and pass the formType
 const DocumentationRoute = () => {
@@ -65,65 +67,230 @@ const DocumentationRoute = () => {
   return <Documentation formType={formType} />;
 };
 
-function Router() {
-  return (
-    <Switch>
-      <Route path="/password-reset" component={PasswordResetPage} />
-      <Route path="/practice-registration" component={PracticeRegistrationPage} />
-      <Route path="/sign/:accessUrl" component={SignaturePage} />
-      <Route path="/settings/profile" component={ProfileSettingsPage} />
-      <Route path="/" component={Dashboard} />
-      <Route path="/clients" component={Clients} />
-      <Route path="/clients/:id" component={Clients} />
-      
-      {/* Documentation routes */}
-      <Route path="/documentation" component={DocumentationRoute} />
-      <Route path="/documentation/:type" component={DocumentationRoute} />
-      <Route path="/documentation-bulk" component={DocumentationBulk} />
-      <Route path="/templates" component={Templates} />
-      
-      <Route path="/scheduling" component={Scheduling} />
-      <Route path="/messages" component={Messages} />
-      
-      {/* CRM routes - wrapped with CRMProvider */}
-      <WrappedCRMRoute path="/crm" component={CRMIndex} />
-      <WrappedCRMRoute path="/crm/dashboard" component={CRMDashboard} />
-      <WrappedCRMRoute path="/crm/campaigns" component={CRMCampaigns} />
-      <WrappedCRMRoute path="/crm/client-acquisition" component={CRMClientAcquisition} />
-      <WrappedCRMRoute path="/crm/marketing" component={CRMMarketing} />
-      <WrappedCRMRoute path="/crm/analytics" component={CRMAnalytics} />
-      <WrappedCRMRoute path="/crm/events" component={CRMEvents} />
-      <WrappedCRMRoute path="/crm/referral-sources" component={CRMReferralSources} />
-      <WrappedCRMRoute path="/crm/contact-history" component={CRMContactHistory} />
-      
-      <Route path="/billing" component={Billing} />
-      <Route path="/reports" component={Reports} />
-      <Route path="/practice" component={Practice} />
-      <Route path="/telehealth" component={Telehealth} />
-      <Route path="/staff" component={Staff} />
-      <Route path="/add-staff" component={AddStaffPage} />
-      <Route path="/staff-form" component={StaffFormPage} />
-      <Route path="/staff-new" component={() => {
-        const StaffNewPage = require("./pages/staff-new").default;
-        return <StaffNewPage />;
-      }} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
-
-// Component to wrap CRM related routes
-const CRMRoute = ({ Component }: { Component: React.ComponentType }) => {
+// Component to wrap CRM related routes with the CRM provider
+const CRMRoute = ({ children }: { children: React.ReactNode }) => {
   return (
     <CRMProvider>
-      <Component />
+      {children}
     </CRMProvider>
   );
 };
 
-// Wrap CRM routes with the CRM provider
-function WrappedCRMRoute({ component: Component, path }: { component: React.ComponentType, path: string }) {
-  return <Route path={path} component={() => <CRMRoute Component={Component} />} />;
+function Router() {
+  const { user } = useAuth();
+  const [location] = useLocation();
+
+  // Redirect to dashboard if user is logged in and trying to access login page
+  if (user && location === "/login") {
+    return <Redirect to="/" />;
+  }
+
+  return (
+    <Switch>
+      <Route path="/login">
+        <LoginPage />
+      </Route>
+      <Route path="/password-reset">
+        <PasswordResetPage />
+      </Route>
+      <Route path="/practice-registration">
+        <PracticeRegistrationPage />
+      </Route>
+      <Route path="/sign/:accessUrl">
+        <SignaturePage />
+      </Route>
+      
+      {/* Protected Routes */}
+      <Route path="/settings/profile">
+        <ProtectedRoute>
+          <ProfileSettingsPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/clients">
+        <ProtectedRoute>
+          <Clients />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/clients/:id">
+        <ProtectedRoute>
+          <Clients />
+        </ProtectedRoute>
+      </Route>
+      
+      {/* Documentation routes */}
+      <Route path="/documentation">
+        <ProtectedRoute>
+          <DocumentationRoute />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/documentation/:type">
+        <ProtectedRoute>
+          <DocumentationRoute />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/documentation-bulk">
+        <ProtectedRoute>
+          <DocumentationBulk />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/templates">
+        <ProtectedRoute>
+          <Templates />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/scheduling">
+        <ProtectedRoute>
+          <Scheduling />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/messages">
+        <ProtectedRoute>
+          <Messages />
+        </ProtectedRoute>
+      </Route>
+      
+      {/* CRM routes with CRM provider */}
+      <Route path="/crm">
+        <ProtectedRoute requiredRoles={["administrator", "therapist"]}>
+          <CRMRoute>
+            <CRMIndex />
+          </CRMRoute>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/crm/dashboard">
+        <ProtectedRoute requiredRoles={["administrator", "therapist"]}>
+          <CRMRoute>
+            <CRMDashboard />
+          </CRMRoute>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/crm/campaigns">
+        <ProtectedRoute requiredRoles={["administrator", "therapist"]}>
+          <CRMRoute>
+            <CRMCampaigns />
+          </CRMRoute>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/crm/client-acquisition">
+        <ProtectedRoute requiredRoles={["administrator", "therapist"]}>
+          <CRMRoute>
+            <CRMClientAcquisition />
+          </CRMRoute>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/crm/marketing">
+        <ProtectedRoute requiredRoles={["administrator", "therapist"]}>
+          <CRMRoute>
+            <CRMMarketing />
+          </CRMRoute>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/crm/analytics">
+        <ProtectedRoute requiredRoles={["administrator", "therapist"]}>
+          <CRMRoute>
+            <CRMAnalytics />
+          </CRMRoute>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/crm/events">
+        <ProtectedRoute requiredRoles={["administrator", "therapist"]}>
+          <CRMRoute>
+            <CRMEvents />
+          </CRMRoute>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/crm/referral-sources">
+        <ProtectedRoute requiredRoles={["administrator", "therapist"]}>
+          <CRMRoute>
+            <CRMReferralSources />
+          </CRMRoute>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/crm/contact-history">
+        <ProtectedRoute requiredRoles={["administrator", "therapist"]}>
+          <CRMRoute>
+            <CRMContactHistory />
+          </CRMRoute>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/billing">
+        <ProtectedRoute requiredRoles={["administrator", "biller"]}>
+          <Billing />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/reports">
+        <ProtectedRoute requiredRoles={["administrator"]}>
+          <Reports />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/practice">
+        <ProtectedRoute requiredRoles={["administrator"]}>
+          <Practice />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/telehealth">
+        <ProtectedRoute>
+          <Telehealth />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/staff">
+        <ProtectedRoute requiredRoles={["administrator"]}>
+          <Staff />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/add-staff">
+        <ProtectedRoute requiredRoles={["administrator"]}>
+          <AddStaffPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/staff-form">
+        <ProtectedRoute requiredRoles={["administrator"]}>
+          <StaffFormPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/staff-new">
+        <ProtectedRoute requiredRoles={["administrator"]}>
+          {(() => {
+            const StaffNewPage = require("./pages/staff-new").default;
+            return <StaffNewPage />;
+          })()}
+        </ProtectedRoute>
+      </Route>
+      
+      <Route>
+        <NotFound />
+      </Route>
+    </Switch>
+  );
 }
 
 function App() {
@@ -131,20 +298,22 @@ function App() {
   useEffect(() => {
     registerServiceWorker()
       .then((success) => {
-        if (success) {
-          console.log('Service worker registered successfully');
-        }
+        // Service worker registration handled silently
       })
-      .catch(console.error);
+      .catch(() => {
+        // Errors are handled silently in production
+      });
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router />
-        <Toaster />
-        <InstallPrompt />
-        <UpdateNotification />
+        <WouterRouter base="/">
+          <Router />
+          <Toaster />
+          <InstallPrompt />
+          <UpdateNotification />
+        </WouterRouter>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -32,46 +32,49 @@ type RegisterData = {
   licenseType?: string;
 };
 
-// Default user for development
-const defaultUser: SelectUser = {
-  id: 1,
-  username: "admin",
-  passwordHash: "",
-  firstName: "Admin",
-  lastName: "User",
-  email: "admin@example.com",
-  role: "administrator",
-  licenseType: "LPC",
-  licenseNumber: null,
-  licenseExpirationDate: null,
-  profileImageUrl: null,
-  status: "active"
-};
-
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   
-  // Always return the default user
+  // Query for current user
   const { data: user, error, isLoading } = useQuery<SelectUser | null, Error>({
-    queryKey: ["/api/user"],
-    queryFn: () => Promise.resolve(defaultUser),
-    staleTime: Infinity,
+    queryKey: ["/api/auth/me"],
+    queryFn: async (): Promise<SelectUser | null> => {
+      try {
+        const data = await apiRequest("/api/auth/me");
+        if (!data) return null;
+        return data as SelectUser;
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith("401:")) {
+          return null;
+        }
+        console.error('Auth error:', error);
+        return null;
+      }
+    },
+    retry: false,
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep data in cache for 10 minutes
   });
 
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginData) => {
-      return defaultUser;
+  const loginMutation = useMutation<SelectUser, Error, LoginData>({
+    mutationFn: async (credentials): Promise<SelectUser> => {
+      const data = await apiRequest("/api/auth/login", {
+        method: "POST",
+        data: credentials
+      });
+      if (!data) throw new Error('No data received from server');
+      return data as SelectUser;
     },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
+    onSuccess: (user) => {
+      queryClient.setQueryData(["/api/auth/me"], user);
       toast({
         title: "Login successful",
         description: `Welcome back, ${user.firstName}!`,
       });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         title: "Login failed",
         description: error.message || "Invalid username or password",
@@ -80,18 +83,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const registerMutation = useMutation({
-    mutationFn: async (userData: RegisterData) => {
-      return defaultUser;
+  const registerMutation = useMutation<SelectUser, Error, RegisterData>({
+    mutationFn: async (userData): Promise<SelectUser> => {
+      const data = await apiRequest("/api/auth/register", {
+        method: "POST",
+        data: userData
+      });
+      if (!data) throw new Error('No data received from server');
+      return data as SelectUser;
     },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
+    onSuccess: (user) => {
+      queryClient.setQueryData(["/api/auth/me"], user);
       toast({
         title: "Registration successful",
         description: `Welcome to MentalSpace, ${user.firstName}!`,
       });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         title: "Registration failed",
         description: error.message || "Could not create account",
@@ -100,18 +108,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const logoutMutation = useMutation({
+  const logoutMutation = useMutation<void, Error, void>({
     mutationFn: async () => {
-      // Do nothing on logout
-    },
-    onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], defaultUser);
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out",
+      await apiRequest("/api/auth/logout", {
+        method: "POST"
       });
     },
-    onError: (error: Error) => {
+    onSuccess: () => {
+      queryClient.setQueryData(["/api/auth/me"], null);
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+    },
+    onError: (error) => {
       toast({
         title: "Logout failed",
         description: error.message,
@@ -123,9 +133,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user: user ?? defaultUser,
-        isLoading: false,
-        error: null,
+        user: user ?? null,
+        isLoading,
+        error,
         loginMutation,
         logoutMutation,
         registerMutation,

@@ -1,0 +1,141 @@
+name: PR Tests
+
+on:
+  pull_request:
+    paths:
+      - '**.ts'
+      - '**.tsx'
+      - '**.js'
+      - '**.jsx'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/**'
+      - 'jest.config.js'
+      - 'jest.e2e.config.js'
+      - 'tsconfig.json'
+
+jobs:
+  determine_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      server_changes: ${{ steps.filter.outputs.server }}
+      client_changes: ${{ steps.filter.outputs.client }}
+      test_changes: ${{ steps.filter.outputs.tests }}
+      migrations_changes: ${{ steps.filter.outputs.migrations }}
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          server:
+            - 'server/**/*.ts'
+            - 'server/**/*.js'
+            - '!server/**/*.test.ts'
+            - '!server/**/*.test.js'
+          client:
+            - 'client/**/*.ts'
+            - 'client/**/*.tsx'
+            - 'client/**/*.js'
+            - 'client/**/*.jsx'
+            - '!client/**/*.test.ts'
+            - '!client/**/*.test.tsx'
+            - '!client/**/*.test.js'
+          tests:
+            - '**/*.test.ts'
+            - '**/*.test.tsx'
+            - '**/*.test.js'
+            - '**/*.test.jsx'
+            - 'jest.config.js'
+            - 'jest.e2e.config.js'
+          migrations:
+            - 'server/db/**/*.ts'
+            - 'server/migrations/**/*.ts'
+
+  test_affected:
+    needs: determine_changes
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mental_space_ehr_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js 18
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Create .env file
+      run: |
+        echo "NODE_ENV=test" > .env.test
+        echo "PORT=3001" >> .env.test
+        echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mental_space_ehr_test" >> .env.test
+        echo "SESSION_SECRET=test_secret_key_for_ci" >> .env.test
+        echo "JWT_SECRET=test_jwt_secret_key_for_ci" >> .env.test
+    
+    - name: Run database migrations
+      run: npm run init-db
+      if: needs.determine_changes.outputs.server_changes == 'true' || needs.determine_changes.outputs.migrations_changes == 'true'
+      env:
+        NODE_ENV: test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mental_space_ehr_test
+    
+    - name: Type check
+      run: npm run test:types
+      
+    - name: Run backend tests
+      if: needs.determine_changes.outputs.server_changes == 'true' || needs.determine_changes.outputs.test_changes == 'true'
+      run: npm run test:backend:ci
+      env:
+        NODE_ENV: test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mental_space_ehr_test
+    
+    - name: Run frontend tests
+      if: needs.determine_changes.outputs.client_changes == 'true' || needs.determine_changes.outputs.test_changes == 'true'
+      run: npm run test:frontend:ci
+    
+    - name: Run E2E tests
+      if: needs.determine_changes.outputs.server_changes == 'true' || needs.determine_changes.outputs.client_changes == 'true' || needs.determine_changes.outputs.test_changes == 'true'
+      run: npm run test:e2e:ci
+      env:
+        NODE_ENV: test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mental_space_ehr_test
+    
+    - name: Leave PR comment with test results
+      uses: thollander/actions-comment-pull-request@v2
+      with:
+        message: |
+          ## 🧪 PR Tests for Changed Files
+          
+          Results from testing the changes in this PR:
+          
+          ${{ needs.determine_changes.outputs.server_changes == 'true' && '✅ Server code tests passed' || '➖ No server code changes' }}
+          ${{ needs.determine_changes.outputs.client_changes == 'true' && '✅ Client code tests passed' || '➖ No client code changes' }}
+          ${{ needs.determine_changes.outputs.test_changes == 'true' && '✅ Test file changes are valid' || '➖ No test file changes' }}
+          ${{ needs.determine_changes.outputs.migrations_changes == 'true' && '✅ Migration files tests passed' || '➖ No migration file changes' }}
+          
+          [View detailed results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+        
+        comment_tag: pr_test_results
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

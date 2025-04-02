@@ -1,79 +1,136 @@
-import * as React from "react"
+import React, { forwardRef } from "react";
+import { cn } from "../../lib/utils";
+import { CardProps } from "./types";
+import { useTheme } from "./ThemeProvider";
 
-import { cn } from "@/lib/utils"
+/**
+ * Card component
+ * 
+ * A versatile container component for grouping related content and actions.
+ * Supports various style options, headers, and footers.
+ * 
+ * @example
+ * ```tsx
+ * <Card title="User Profile" subtitle="Personal information">
+ *   <p>Card content goes here</p>
+ * </Card>
+ * 
+ * <Card 
+ *   title="Settings" 
+ *   headerAction={<Button variant="ghost" size="sm">Edit</Button>}
+ *   footer={<Button>Save Changes</Button>}
+ *   isHoverable
+ * >
+ *   <p>Card content goes here</p>
+ * </Card>
+ * ```
+ */
+const Card = forwardRef<HTMLDivElement, CardProps>(
+  (
+    {
+      className,
+      title,
+      subtitle,
+      headerAction,
+      footer,
+      children,
+      borderRadius = "lg",
+      shadow = "md",
+      isHoverable = false,
+      padding = "md",
+      border = true,
+      maxWidth,
+      testId,
+      ...props
+    },
+    ref
+  ) => {
+    // Mapping shadow options to Tailwind classes
+    const shadowMap = {
+      none: "",
+      sm: "shadow-sm",
+      md: "shadow",
+      lg: "shadow-md",
+      xl: "shadow-lg",
+      "2xl": "shadow-xl",
+      inner: "shadow-inner",
+    };
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
-    )}
-    {...props}
-  />
-))
-Card.displayName = "Card"
+    // Mapping border radius options to Tailwind classes
+    const radiusMap = {
+      none: "rounded-none",
+      sm: "rounded-sm",
+      md: "rounded",
+      lg: "rounded-lg",
+      xl: "rounded-xl",
+      "2xl": "rounded-2xl",
+      "3xl": "rounded-3xl",
+      full: "rounded-full",
+    };
 
-const CardHeader = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
-    {...props}
-  />
-))
-CardHeader.displayName = "CardHeader"
+    // Mapping padding options to Tailwind classes
+    const paddingMap = {
+      none: "p-0",
+      sm: "p-3",
+      md: "p-5",
+      lg: "p-7",
+    };
 
-const CardTitle = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-  <h3
-    ref={ref}
-    className={cn(
-      "text-2xl font-semibold leading-none tracking-tight",
-      className
-    )}
-    {...props}
-  />
-))
-CardTitle.displayName = "CardTitle"
+    // Has header if title, subtitle, or headerAction is provided
+    const hasHeader = title || subtitle || headerAction;
 
-const CardDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
-CardDescription.displayName = "CardDescription"
+    return (
+      <div
+        ref={ref}
+        data-testid={testId}
+        className={cn(
+          // Base styles
+          "bg-white overflow-hidden",
+          // Border
+          border && "border border-neutral-200",
+          // Shadow and radius from props
+          shadowMap[shadow],
+          radiusMap[borderRadius],
+          // Hover effect
+          isHoverable && "transition-shadow hover:shadow-lg",
+          className
+        )}
+        style={{ maxWidth: maxWidth || undefined }}
+        {...props}
+      >
+        {/* Card Header */}
+        {hasHeader && (
+          <div className="flex justify-between items-start border-b border-neutral-200 px-5 py-4">
+            <div>
+              {title && (
+                <h3 className="text-lg font-semibold text-neutral-900">
+                  {title}
+                </h3>
+              )}
+              {subtitle && (
+                <p className="mt-1 text-sm text-neutral-500">{subtitle}</p>
+              )}
+            </div>
+            {headerAction && <div>{headerAction}</div>}
+          </div>
+        )}
 
-const CardContent = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
-))
-CardContent.displayName = "CardContent"
+        {/* Card Body */}
+        <div className={!hasHeader && !footer ? paddingMap[padding] : 'px-5 py-4'}>
+          {children}
+        </div>
 
-const CardFooter = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex items-center p-6 pt-0", className)}
-    {...props}
-  />
-))
-CardFooter.displayName = "CardFooter"
+        {/* Card Footer */}
+        {footer && (
+          <div className="border-t border-neutral-200 px-5 py-4 bg-neutral-50">
+            {footer}
+          </div>
+        )}
+      </div>
+    );
+  }
+);
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+Card.displayName = "Card";
+
+export { Card };

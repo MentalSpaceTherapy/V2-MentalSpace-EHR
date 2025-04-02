@@ -11,6 +11,9 @@ import fs from "fs";
 import path from "path";
 import util from "util";
 import { z } from "zod";
+import { sendCreated, sendPaginatedSuccess, sendUpdated, sendSuccess, sendSuccessNoContent } from "../utils/api-response";
+import { asyncHandler } from "../utils/async-handler";
+import { ApiError } from "../utils/api-error";
 
 // Create reports router
 const router = express.Router();
@@ -216,211 +219,208 @@ router.post("/generate", async (req: Request, res: Response) => {
       isArchived: false
     } as any); // Cast to any because isArchived isn't in the schema yet
     
-    res.status(201).json({
+    const responseData = {
       reportId: savedReport.id,
       name: savedReport.name,
       format: savedReport.format,
       fileUrl: savedReport.fileUrl,
       fileSize: savedReport.size,
       data: format === "json" ? reportData : undefined
-    });
+    };
+    
+    sendCreated(res, responseData, "Report generated successfully");
   } catch (error) {
-    console.error("Error generating report:", error);
-    res.status(500).json({ error: "Failed to generate report" });
+    next(fromError(error, "Failed to generate report"));
   }
 });
 
 // Get all saved reports
-router.get("/saved", async (req: Request, res: Response) => {
-  try {
-    // Get the current user ID from the session
-    const userId = req.session.userId;
-    if (!userId) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    const { templateId, isArchived } = req.query;
-    const filters = {
-      createdById: userId,
-      isArchived: isArchived === "true" ? true : isArchived === "false" ? false : undefined,
-      templateId: templateId ? parseInt(templateId as string) : undefined
-    };
-    
-    const reports = await storage.getSavedReports(filters);
-    res.json(reports);
-  } catch (error) {
-    console.error("Error getting saved reports:", error);
-    res.status(500).json({ error: "Failed to get saved reports" });
+router.get("/saved", asyncHandler(async (req: Request, res: Response) => {
+  // Get the current user ID from the session
+  const userId = req.session.userId;
+  if (!userId) {
+    throw new ApiError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
   }
-});
+  
+  const { templateId, isArchived, page = "1", limit = "20" } = req.query;
+  const filters = {
+    createdById: userId,
+    isArchived: isArchived === "true" ? true : isArchived === "false" ? false : undefined,
+    templateId: templateId ? parseInt(templateId as string) : undefined
+  };
+  
+  // Parse pagination parameters
+  const pageNum = parseInt(page as string);
+  const limitNum = parseInt(limit as string);
+  
+  // Get reports with count
+  const reports = await storage.getSavedReports(filters);
+  
+  // Apply pagination
+  const startIndex = (pageNum - 1) * limitNum;
+  const endIndex = startIndex + limitNum;
+  const paginatedReports = reports.slice(startIndex, endIndex);
+  
+  // Create pagination metadata
+  const pagination = {
+    page: pageNum,
+    limit: limitNum,
+    totalItems: reports.length,
+    totalPages: Math.ceil(reports.length / limitNum),
+    hasNextPage: endIndex < reports.length,
+    hasPrevPage: pageNum > 1
+  };
+  
+  sendPaginatedSuccess(res, paginatedReports, pagination, { filters });
+}));
 
 // Get a specific saved report
-router.get("/saved/:id", async (req: Request, res: Response) => {
-  try {
-    const id = parseInt(req.params.id);
-    
-    // Get the current user ID from the session
-    const userId = req.session.userId;
-    if (!userId) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Get the report
-    const report = await storage.getSavedReport(id);
-    
-    if (!report) {
-      return res.status(404).json({ error: "Saved report not found" });
-    }
-    
-    // Check if the user is authorized to access this report
-    if (report.createdById !== userId && req.session.userRole !== "admin") {
-      return res.status(403).json({ error: "Not authorized to access this report" });
-    }
-    
-    // If format is json, include the data
-    if (report.format === "json") {
-      res.json(report);
-    } else {
-      // Otherwise, only include metadata and file URL
-      const { data, ...metadata } = report;
-      res.json(metadata);
-    }
-  } catch (error) {
-    console.error("Error getting saved report:", error);
-    res.status(500).json({ error: "Failed to get saved report" });
+router.get("/saved/:id", asyncHandler(async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  
+  // Get the current user ID from the session
+  const userId = req.session.userId;
+  if (!userId) {
+    throw new ApiError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
   }
-});
+  
+  // Get the report
+  const report = await storage.getSavedReport(id);
+  
+  if (!report) {
+    throw new ApiError("Saved report not found", 404, "RESOURCE_NOT_FOUND");
+  }
+  
+  // Check if the user is authorized to access this report
+  if (report.createdById !== userId && req.session.userRole !== "admin") {
+    throw new ApiError("Not authorized to access this report", 403, "FORBIDDEN");
+  }
+  
+  // If format is json, include the data
+  if (report.format === "json") {
+    sendSuccess(res, report);
+  } else {
+    // Otherwise, only include metadata and file URL
+    const { data, ...metadata } = report;
+    sendSuccess(res, metadata);
+  }
+}));
 
 // Archive or unarchive a saved report
-router.put("/saved/:id/archive", async (req: Request, res: Response) => {
-  try {
-    const id = parseInt(req.params.id);
-    
-    // Get the current user ID from the session
-    const userId = req.session.userId;
-    if (!userId) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Get the report
-    const report = await storage.getSavedReport(id);
-    
-    if (!report) {
-      return res.status(404).json({ error: "Saved report not found" });
-    }
-    
-    // Check if the user is authorized to modify this report
-    if (report.createdById !== userId && req.session.userRole !== "admin") {
-      return res.status(403).json({ error: "Not authorized to modify this report" });
-    }
-    
-    // Toggle the archived status
-    const isArchived = req.body.isArchived === undefined ? !report.isArchived : req.body.isArchived;
-    
-    // Update the report
-    const updatedReport = await storage.updateSavedReport(id, {
-      isArchived: isArchived as any // Cast to any because isArchived isn't in the schema yet
-    });
-    
-    res.json(updatedReport);
-  } catch (error) {
-    console.error("Error archiving/unarchiving saved report:", error);
-    res.status(500).json({ error: "Failed to update saved report" });
+router.put("/saved/:id/archive", asyncHandler(async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  
+  // Get the current user ID from the session
+  const userId = req.session.userId;
+  if (!userId) {
+    throw new ApiError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
   }
-});
+  
+  // Get the report
+  const report = await storage.getSavedReport(id);
+  
+  if (!report) {
+    throw new ApiError("Saved report not found", 404, "RESOURCE_NOT_FOUND");
+  }
+  
+  // Check if the user is authorized to modify this report
+  if (report.createdById !== userId && req.session.userRole !== "admin") {
+    throw new ApiError("Not authorized to modify this report", 403, "FORBIDDEN");
+  }
+  
+  // Toggle the archived status
+  const isArchived = req.body.isArchived === undefined ? !report.isArchived : req.body.isArchived;
+  
+  // Update the report
+  const updatedReport = await storage.updateSavedReport(id, {
+    isArchived: isArchived as any // Cast to any because isArchived isn't in the schema yet
+  });
+  
+  sendUpdated(res, updatedReport, `Report ${isArchived ? 'archived' : 'unarchived'} successfully`);
+}));
 
 // Delete a saved report
-router.delete("/saved/:id", async (req: Request, res: Response) => {
-  try {
-    const id = parseInt(req.params.id);
-    
-    // Get the current user ID from the session
-    const userId = req.session.userId;
-    if (!userId) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Get the report
-    const report = await storage.getSavedReport(id);
-    
-    if (!report) {
-      return res.status(404).json({ error: "Saved report not found" });
-    }
-    
-    // Check if the user is authorized to delete this report
-    if (report.createdById !== userId && req.session.userRole !== "admin") {
-      return res.status(403).json({ error: "Not authorized to delete this report" });
-    }
-    
-    // If there's a file URL, delete the file
-    if (report.fileUrl) {
-      const fileName = report.fileUrl.split("/").pop();
-      const filePath = path.join(uploadsDir, fileName!);
-      
-      if (fs.existsSync(filePath)) {
-        await fs.promises.unlink(filePath);
-      }
-    }
-    
-    // Delete the report
-    const success = await storage.deleteSavedReport(id);
-    
-    if (success) {
-      res.status(204).end();
-    } else {
-      res.status(500).json({ error: "Failed to delete saved report" });
-    }
-  } catch (error) {
-    console.error("Error deleting saved report:", error);
-    res.status(500).json({ error: "Failed to delete saved report" });
+router.delete("/saved/:id", asyncHandler(async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  
+  // Get the current user ID from the session
+  const userId = req.session.userId;
+  if (!userId) {
+    throw new ApiError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
   }
-});
+  
+  // Get the report
+  const report = await storage.getSavedReport(id);
+  
+  if (!report) {
+    throw new ApiError("Saved report not found", 404, "RESOURCE_NOT_FOUND");
+  }
+  
+  // Check if the user is authorized to delete this report
+  if (report.createdById !== userId && req.session.userRole !== "admin") {
+    throw new ApiError("Not authorized to delete this report", 403, "FORBIDDEN");
+  }
+  
+  // If there's a file URL, delete the file
+  if (report.fileUrl) {
+    const fileName = report.fileUrl.split("/").pop();
+    const filePath = path.join(uploadsDir, fileName!);
+    
+    if (fs.existsSync(filePath)) {
+      await fs.promises.unlink(filePath);
+    }
+  }
+  
+  // Delete the report
+  const success = await storage.deleteSavedReport(id);
+  
+  if (success) {
+    sendSuccessNoContent(res);
+  } else {
+    throw new ApiError("Failed to delete saved report", 500, "INTERNAL_SERVER_ERROR");
+  }
+}));
 
 // Download a report file
-router.get("/download/:id", async (req: Request, res: Response) => {
-  try {
-    const fileName = req.params.id;
-    const filePath = path.join(uploadsDir, fileName);
-    
-    // Check if the file exists
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: "Report file not found" });
-    }
-    
-    // Get the report by file name
-    const reports = await storage.getSavedReports({});
-    const report = reports.find(r => r.fileUrl?.includes(fileName));
-    
-    if (!report) {
-      return res.status(404).json({ error: "Report not found" });
-    }
-    
-    // Get the current user ID from the session
-    const userId = req.session.userId;
-    if (!userId) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    // Check if the user is authorized to access this report
-    if (report.createdById !== userId && req.session.userRole !== "admin") {
-      return res.status(403).json({ error: "Not authorized to access this report" });
-    }
-    
-    // Determine the content type
-    const contentType = getContentType(report.format);
-    
-    // Set headers
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Content-Disposition", `attachment; filename="report-${report.name.replace(/\s+/g, "-")}.${report.format}"`);
-    
-    // Stream the file
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-  } catch (error) {
-    console.error("Error downloading report:", error);
-    res.status(500).json({ error: "Failed to download report" });
+router.get("/download/:id", asyncHandler(async (req: Request, res: Response) => {
+  const fileName = req.params.id;
+  const filePath = path.join(uploadsDir, fileName);
+  
+  // Check if the file exists
+  if (!fs.existsSync(filePath)) {
+    throw new ApiError("Report file not found", 404, "RESOURCE_NOT_FOUND");
   }
-});
+  
+  // Get the report by file name
+  const reports = await storage.getSavedReports({});
+  const report = reports.find(r => r.fileUrl?.includes(fileName));
+  
+  if (!report) {
+    throw new ApiError("Report not found", 404, "RESOURCE_NOT_FOUND");
+  }
+  
+  // Get the current user ID from the session
+  const userId = req.session.userId;
+  if (!userId) {
+    throw new ApiError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
+  }
+  
+  // Check if the user is authorized to access this report
+  if (report.createdById !== userId && req.session.userRole !== "admin") {
+    throw new ApiError("Not authorized to access this report", 403, "FORBIDDEN");
+  }
+  
+  // Determine the content type
+  const contentType = getContentType(report.format);
+  
+  // Set headers
+  res.setHeader("Content-Type", contentType);
+  res.setHeader("Content-Disposition", `attachment; filename="report-${report.name.replace(/\s+/g, "-")}.${report.format}"`);
+  
+  // Stream the file
+  const fileStream = fs.createReadStream(filePath);
+  fileStream.pipe(res);
+}));
 
 // Helper functions
 async function generateReportData(template: any, parameters: any): Promise<any> {

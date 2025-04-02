@@ -16,8 +16,8 @@ export default function AuthPage() {
   const { toast } = useToast();
   
   // Login form state
-  const [loginUsername, setLoginUsername] = useState("therapist@mentalspace.com");
-  const [loginPassword, setLoginPassword] = useState("password123");
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   
   // Registration form state
   const [registerFirstName, setRegisterFirstName] = useState("");
@@ -117,13 +117,13 @@ export default function AuthPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="username">Username</Label>
                     <div className="relative">
                       <AtSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input 
-                        id="email" 
-                        type="email" 
-                        placeholder="you@example.com" 
+                        id="username" 
+                        type="text" 
+                        placeholder="Enter your username" 
                         className="pl-10"
                         value={loginUsername}
                         onChange={(e) => setLoginUsername(e.target.value)}
